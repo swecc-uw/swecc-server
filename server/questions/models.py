@@ -6,6 +6,10 @@ class QuestionTopic(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     name = models.CharField(max_length=100)
 
+    def __str__(self):
+        return self.name
+
+
 class TechnicalQuestion(models.Model):
     question_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created = models.DateTimeField(auto_now_add=True)
@@ -17,6 +21,7 @@ class TechnicalQuestion(models.Model):
     solution = models.TextField()
     follow_ups = models.TextField(blank=True, null=True)
     source = models.CharField(max_length=255, blank=True, null=True)
+    
 
 class BehavioralQuestion(models.Model):
     question_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
