@@ -1,0 +1,772 @@
+openapi: 3.0.3
+info:
+  title: swecc-backend
+  version: 1.0.0
+  description: backend for SWEC
+paths:
+  /api/members/:
+    get:
+      operationId: members_list
+      tags:
+      - Members
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Member'
+          description: ''
+    post:
+      operationId: members_create
+      tags:
+      - Members
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Member'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Member'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Member'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+          description: ''
+  /api/members/{member_id}/:
+    get:
+      operationId: members_retrieve
+      parameters:
+      - in: path
+        name: member_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Members
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+          description: ''
+    put:
+      operationId: members_update
+      parameters:
+      - in: path
+        name: member_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Members
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Member'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Member'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Member'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+          description: ''
+    patch:
+      operationId: members_partial_update
+      parameters:
+      - in: path
+        name: member_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Members
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMember'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMember'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMember'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+          description: ''
+    delete:
+      operationId: members_destroy
+      parameters:
+      - in: path
+        name: member_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Members
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/questions/{type}/:
+    post:
+      operationId: questions_create
+      parameters:
+      - in: path
+        name: type
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: type
+        schema:
+          type: string
+        description: Question type (technical or behavioral)
+        required: true
+      tags:
+      - questions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TechnicalQuestion'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TechnicalQuestion'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TechnicalQuestion'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TechnicalQuestion'
+          description: ''
+  /api/questions/{type}/{question_id}/:
+    get:
+      operationId: questions_retrieve
+      parameters:
+      - in: path
+        name: question_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: type
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: type
+        schema:
+          type: string
+        description: Question type (technical or behavioral)
+        required: true
+      tags:
+      - questions
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TechnicalQuestion'
+          description: ''
+    put:
+      operationId: questions_update
+      parameters:
+      - in: path
+        name: question_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: type
+        schema:
+          type: string
+        required: true
+      tags:
+      - questions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TechnicalQuestion'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TechnicalQuestion'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TechnicalQuestion'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TechnicalQuestion'
+          description: ''
+    patch:
+      operationId: questions_partial_update
+      parameters:
+      - in: path
+        name: question_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: type
+        schema:
+          type: string
+        required: true
+      tags:
+      - questions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTechnicalQuestion'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTechnicalQuestion'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTechnicalQuestion'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TechnicalQuestion'
+          description: ''
+    delete:
+      operationId: questions_destroy
+      parameters:
+      - in: path
+        name: question_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: type
+        schema:
+          type: string
+        required: true
+      tags:
+      - questions
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/questions/{type}/all/:
+    get:
+      operationId: questions_all_list
+      parameters:
+      - in: query
+        name: topic
+        schema:
+          type: string
+        description: Filter by topic name
+      - in: path
+        name: type
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: type
+        schema:
+          type: string
+        description: Question type (technical or behavioral)
+        required: true
+      tags:
+      - questions
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TechnicalQuestion'
+          description: ''
+  /api/questions/topics/:
+    get:
+      operationId: questions_topics_list
+      tags:
+      - questions
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QuestionTopic'
+          description: ''
+    post:
+      operationId: questions_topics_create
+      tags:
+      - questions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionTopic'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/QuestionTopic'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/QuestionTopic'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionTopic'
+          description: ''
+  /api/token/:
+    post:
+      operationId: token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/token/refresh/:
+    post:
+      operationId: token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/user/register/:
+    post:
+      operationId: user_register_create
+      summary: Register a new user
+      tags:
+      - user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+components:
+  schemas:
+    Member:
+      type: object
+      properties:
+        user:
+          type: integer
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        role:
+          type: string
+          maxLength: 100
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        preview:
+          type: string
+          nullable: true
+        major:
+          type: string
+          nullable: true
+          maxLength: 100
+        grad_date:
+          type: string
+          format: date
+          nullable: true
+        discord_username:
+          type: string
+          maxLength: 100
+        linkedin:
+          nullable: true
+        github:
+          nullable: true
+        leetcode:
+          nullable: true
+        resume_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+        local:
+          type: string
+          nullable: true
+          maxLength: 100
+        bio:
+          type: string
+          nullable: true
+        discord_id:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+      required:
+      - created
+      - discord_id
+      - discord_username
+      - email
+      - first_name
+      - last_name
+      - role
+      - user
+    PatchedMember:
+      type: object
+      properties:
+        user:
+          type: integer
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        role:
+          type: string
+          maxLength: 100
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        preview:
+          type: string
+          nullable: true
+        major:
+          type: string
+          nullable: true
+          maxLength: 100
+        grad_date:
+          type: string
+          format: date
+          nullable: true
+        discord_username:
+          type: string
+          maxLength: 100
+        linkedin:
+          nullable: true
+        github:
+          nullable: true
+        leetcode:
+          nullable: true
+        resume_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+        local:
+          type: string
+          nullable: true
+          maxLength: 100
+        bio:
+          type: string
+          nullable: true
+        discord_id:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+    PatchedTechnicalQuestion:
+      type: object
+      properties:
+        question_id:
+          type: string
+          format: uuid
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        last_assigned:
+          type: string
+          format: date
+          nullable: true
+        prompt:
+          type: string
+        solution:
+          type: string
+        follow_ups:
+          type: string
+          nullable: true
+        source:
+          type: string
+          nullable: true
+          maxLength: 255
+        created_by:
+          type: integer
+        approved_by:
+          type: integer
+          nullable: true
+        topic:
+          type: string
+          format: uuid
+    QuestionTopic:
+      type: object
+      properties:
+        topic_id:
+          type: string
+          format: uuid
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+      required:
+      - created
+      - name
+      - topic_id
+    TechnicalQuestion:
+      type: object
+      properties:
+        question_id:
+          type: string
+          format: uuid
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        last_assigned:
+          type: string
+          format: date
+          nullable: true
+        prompt:
+          type: string
+        solution:
+          type: string
+        follow_ups:
+          type: string
+          nullable: true
+        source:
+          type: string
+          nullable: true
+          maxLength: 255
+        created_by:
+          type: integer
+        approved_by:
+          type: integer
+          nullable: true
+        topic:
+          type: string
+          format: uuid
+      required:
+      - created
+      - created_by
+      - prompt
+      - question_id
+      - solution
+      - topic
+    TokenObtainPair:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - password
+      - refresh
+      - username
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+      required:
+      - id
+      - password
+      - username
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
