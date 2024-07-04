@@ -16,7 +16,7 @@ def validate_social_field(value):
         raise ValidationError('The "isPrivate" field must be a boolean.')
 
 class Member(models.Model):
-    member_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField('auth.User', on_delete=models.CASCADE, primary_key=True)
     created = models.DateTimeField(auto_now_add=True)
     email = models.EmailField(max_length=254, unique=True)
     role = models.CharField(max_length=100)
