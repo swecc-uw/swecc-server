@@ -39,6 +39,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'rest_framework',
     'questions.apps.QuestionsConfig',
     'members.apps.MembersConfig',
     'django.contrib.admin',
