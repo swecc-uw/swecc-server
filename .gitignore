@@ -1,3 +1,7 @@
+.vevn/
 venv
 *node_modules*
 *__pycache__*
+.vscode/*
+frontend/.vscode/*
+backend/.vscode/*
