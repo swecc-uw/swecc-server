@@ -13,4 +13,4 @@ class MembersList(generics.ListCreateAPIView):
 class MemberRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     queryset = Member.objects.all()
     serializer_class = MemberSerializer
-    lookup_field = 'member_id'
+    lookup_field = ''

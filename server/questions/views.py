@@ -6,7 +6,7 @@ from .models import TechnicalQuestion, QuestionTopic, BehavioralQuestion
 from .serializers import TechnicalQuestionSerializer, QuestionTopicSerializer, BehavioralQuestionSerializer
 
 class QuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'question_id'
 
     def get_serializer_class(self):
@@ -22,22 +22,29 @@ class QuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
             return BehavioralQuestion.objects.all()
 
 class QuestionCreateView(generics.CreateAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self):
         if self.kwargs['type'] == 'technical':
             return TechnicalQuestionSerializer
         elif self.kwargs['type'] == 'behavioral':
             return BehavioralQuestionSerializer
+    
+    def perform_create(self, serializer):
+        if serializer.is_valid():
+            serializer.save(created_by=self.request.user)
+        else:
+            print(serializer.errors)
 
     def get_queryset(self):
+        user = self.request.user
         if self.kwargs['type'] == 'technical':
             return TechnicalQuestion.objects.all()
         elif self.kwargs['type'] == 'behavioral':
             return BehavioralQuestion.objects.all()
 
 class QuestionListView(generics.ListAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self):
         if self.kwargs['type'] == 'technical':
@@ -59,4 +66,4 @@ class QuestionListView(generics.ListAPIView):
 class QuestionTopicListView(generics.ListCreateAPIView):
     queryset = QuestionTopic.objects.all()
     serializer_class = QuestionTopicSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
