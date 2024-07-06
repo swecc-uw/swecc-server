@@ -8,4 +8,6 @@ urlpatterns = [
         views.MemberRetrieveUpdateDestroy.as_view(), 
         name='member-retrieve-update-destroy'
         ),
+    path('profile/', views.AuthenticatedMemberProfile.as_view(), name='authenticated-profile'),
+
 ]
