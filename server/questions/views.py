@@ -7,7 +7,7 @@ from .serializers import TechnicalQuestionSerializer, QuestionTopicSerializer, B
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 
 class QuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'question_id'
 
     @extend_schema(
@@ -33,41 +33,30 @@ class QuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
         return TechnicalQuestion.objects.none()  # TODO: replace with reasonable default
 
 class QuestionCreateView(generics.CreateAPIView):
-    permission_classes = [permissions.AllowAny]
-
-    @extend_schema(
-        parameters=[
-            OpenApiParameter(name='type', description='Question type (technical or behavioral)', required=True, type=str)
-        ]
-    )
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self):
         if self.kwargs.get('type') == 'technical':
             return TechnicalQuestionSerializer
         elif self.kwargs.get('type') == 'behavioral':
             return BehavioralQuestionSerializer
-        return TechnicalQuestionSerializer  # TODO: replace with reasonable default
+    
+    def perform_create(self, serializer):
+        if serializer.is_valid():
+            serializer.save(created_by=self.request.user)
+        else:
+            print(serializer.errors)
 
     def get_queryset(self):
-        if self.kwargs.get('type') == 'technical':
+        user = self.request.user
+        if self.kwargs['type'] == 'technical':
             return TechnicalQuestion.objects.all()
         elif self.kwargs.get('type') == 'behavioral':
             return BehavioralQuestion.objects.all()
         return TechnicalQuestion.objects.none()  # TODO: replace with reasonable default
 
 class QuestionListView(generics.ListAPIView):
-    permission_classes = [permissions.AllowAny]
-
-    @extend_schema(
-        parameters=[
-            OpenApiParameter(name='type', description='Question type (technical or behavioral)', required=True, type=str),
-            OpenApiParameter(name='topic', description='Filter by topic name', required=False, type=str)
-        ]
-    )
-    def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self):
         if self.kwargs.get('type') == 'technical':
@@ -92,4 +81,4 @@ class QuestionListView(generics.ListAPIView):
 class QuestionTopicListView(generics.ListCreateAPIView):
     queryset = QuestionTopic.objects.all()
     serializer_class = QuestionTopicSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]

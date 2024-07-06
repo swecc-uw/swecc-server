@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
-from auth.views import CreateUserView
+from custom_auth.views import CreateUserView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 

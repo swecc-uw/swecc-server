@@ -4,7 +4,6 @@ django-cors-headers
 djangorestframework 
 djangorestframework-simplejwt 
 PyJWT 
-pytz 
 sqlparse
 drf_spectacular
 psycopg2-binary

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 import os
 
 DB_HOST = os.environ['DB_HOST']
@@ -33,7 +34,7 @@ SECRET_KEY = 'django-insecure-ehylqtrwm(8+eq!m#*3fq3(m6j9jfvm6bzb8=f-uz=l@4$l&^g
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 REST_FRAMEWORK = {
     # YOUR SETTINGS
@@ -47,14 +48,20 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'backend for SWEC',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
 }
 
-# Application definition
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+}
 
 INSTALLED_APPS = [
-    'rest_framework',
-    'questions.apps.QuestionsConfig',
-    'members.apps.MembersConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -62,9 +69,15 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'drf_spectacular',
+    'rest_framework',
+    'questions.apps.QuestionsConfig',
+    'members.apps.MembersConfig',
+    "custom_auth.apps.AuthConfig",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -150,3 +163,6 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CORS_ALLOW_ALL_ORIGINS = True #Will change later, this is just temp
+CORS_ALL_CREDENTIALS = True
