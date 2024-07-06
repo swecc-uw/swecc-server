@@ -6,6 +6,8 @@ import Home from "./pages/Home"
 import Topic from "./pages/Topic"
 import NotFound from "./pages/NotFound"
 import ProtectedRoute from "./components/ProtectedRoute"
+import MemberPage from "./pages/MemberProfile"
+import MemberOnboarding from "./pages/MemberOnboarding"
 
 function Logout() {
   localStorage.clear()
@@ -29,10 +31,12 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/profile" element={<ProtectedRoute><MemberPage /></ProtectedRoute>} />
         <Route path="/login" element={<Login />} />
         <Route path="/logout" element={<Logout />} />
         <Route path="/register" element={<RegisterAndLogout />} />
         <Route path="/topics" element={<ProtectedRoute><Topic /></ProtectedRoute>} />
+        <Route path="/onboarding" element={<ProtectedRoute><MemberOnboarding /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />}></Route>
       </Routes>
     </BrowserRouter>
