@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'questions.apps.QuestionsConfig',
     'members.apps.MembersConfig',
     "custom_auth.apps.AuthConfig",
+    "interview.apps.InterviewConfig",
     "corsheaders",
 ]
 
