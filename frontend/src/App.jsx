@@ -9,6 +9,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import MemberPage from "./pages/MemberProfile";
 import MemberOnboarding from "./pages/MemberOnboarding";
 import InterviewPoolSignUp from "./pages/InterviewPool";
+import DirectoryPage from "./pages/DirectoryPage";
 
 function Logout() {
   localStorage.clear();
@@ -60,6 +61,14 @@ function App() {
           }
         />
         <Route path="/interview" element={<InterviewPoolSignUp />} />
+        <Route
+          path="/directory"
+          element={
+            <ProtectedRoute>
+              <DirectoryPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<NotFound />}></Route>
       </Routes>
     </BrowserRouter>
