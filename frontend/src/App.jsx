@@ -1,3 +1,4 @@
+import react from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -60,22 +61,6 @@ function App() {
           }
         />
         <Route path="/interview" element={<InterviewPoolSignUp />} />
-        <Route
-          path="/topics"
-          element={
-            <ProtectedRoute>
-              <Topic />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/onboarding"
-          element={
-            <ProtectedRoute>
-              <MemberOnboarding />
-            </ProtectedRoute>
-          }
-        />
         <Route
           path="/directory"
           element={
