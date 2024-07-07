@@ -25,5 +25,3 @@ export DB_PASSWORD= <...>
 | task | command | 
 | --- | --- |
 | run server | `python server/manage.py runserver` |
-| generate openapi schema | `python server/manage.py spectacular --color --file schema.yml` |
-| swagger ui | `docker run -p 80:8080 -e SWAGGER_JSON=/schema.yml -v /Users/emm12/repos/swecc-server/schema.yml:/schema.yml swaggerapi/swagger-ui` |

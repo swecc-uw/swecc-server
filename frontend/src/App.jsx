@@ -1,4 +1,3 @@
-import react from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -9,6 +8,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import MemberPage from "./pages/MemberProfile";
 import MemberOnboarding from "./pages/MemberOnboarding";
 import InterviewPoolSignUp from "./pages/InterviewPool";
+import DirectoryPage from "./pages/DirectoryPage";
 
 function Logout() {
   localStorage.clear();
@@ -60,6 +60,30 @@ function App() {
           }
         />
         <Route path="/interview" element={<InterviewPoolSignUp />} />
+        <Route
+          path="/topics"
+          element={
+            <ProtectedRoute>
+              <Topic />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/onboarding"
+          element={
+            <ProtectedRoute>
+              <MemberOnboarding />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/directory"
+          element={
+            <ProtectedRoute>
+              <DirectoryPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<NotFound />}></Route>
       </Routes>
     </BrowserRouter>
