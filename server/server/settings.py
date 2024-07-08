@@ -1,7 +1,6 @@
 from pathlib import Path
 from datetime import timedelta
 import os
-from celery.schedules import crontab
 
 DB_HOST = os.environ['DB_HOST']
 DB_NAME = os.environ['DB_NAME']
