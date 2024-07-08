@@ -13,9 +13,23 @@ function Form({ route, method }) {
 
     const name = method === "login" ? "Login" : "Register";
 
+    const checkIfMemberExists = async () => {
+        console.log("checking if member exists")
+        try {
+            const res = await api.get('/api/members/profile/')
+            console.log(res)
+            alert(res.status)
+            return res.status === 200
+        } catch (error) {
+            console.log(error)
+            return false
+        }
+    }
+
     const handleSubmit = async (e) => {
         setLoading(true);
         e.preventDefault();
+        console.log("submitting", username, password);
 
         try {
             const res = await api.post(route, { username, password })
@@ -23,10 +37,13 @@ function Form({ route, method }) {
                 localStorage.setItem(ACCESS_TOKEN, res.data.access);
                 localStorage.setItem(REFRESH_TOKEN, res.data.refresh);
 
-                if (localStorage.getItem(ONBOARDED) === "true")
+                if (await checkIfMemberExists()) {
+                    alert('exists')
                     navigate("/")
-                else
+                } else {
+                    alert('does not exist')
                     navigate("/onboarding")
+                }
 
             } else {
                 navigate("/login")

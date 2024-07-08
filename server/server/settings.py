@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'members.apps.MembersConfig',
     'discord.apps.DiscordConfig',
     'custom_auth.apps.AuthConfig',
+    'interview.apps.InterviewConfig',
     'corsheaders',
     'rest_framework_api_key',
 ]
