@@ -20,6 +20,10 @@ export DB_USER= <...>
 export DB_PASSWORD= <...>
 ```
 
+###Cron job for clearning 1 day old authkeys
+
+`0 * * * * ~/swecc-server/venv/bin/python /swecc-server/server/manage.py prune_authkeys`
+
 ## Reference
 
 | task | command | 
