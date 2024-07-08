@@ -20,8 +20,14 @@ export DB_USER= <...>
 export DB_PASSWORD= <...>
 ```
 
+###Cron job for clearning 1 day old authkeys
+
+`0 * * * * ~/swecc-server/venv/bin/python /swecc-server/server/manage.py prune_authkeys`
+
 ## Reference
 
 | task | command | 
 | --- | --- |
 | run server | `python server/manage.py runserver` |
+| generate openapi schema | `python server/manage.py spectacular --color --file schema.yml` |
+| swagger ui | `docker run -p 80:8080 -e SWAGGER_JSON=/schema.yml -v /Users/emm12/repos/swecc-server/schema.yml:/schema.yml swaggerapi/swagger-ui` |
