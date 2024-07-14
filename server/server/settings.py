@@ -2,12 +2,21 @@ from pathlib import Path
 from datetime import timedelta
 import os
 
+DJANGO_DEBUG = os.environ['DJANGO_DEBUG']
 DB_HOST = os.environ['DB_HOST']
 DB_NAME = os.environ['DB_NAME']
 DB_PORT = os.environ['DB_PORT']
 DB_USER = os.environ['DB_USER']
 DB_PASSWORD = os.environ['DB_PASSWORD']
 
+print({
+    "DJANGO_DEBUG": DJANGO_DEBUG,
+    "DB_HOST": DB_HOST,
+    "DB_NAME": DB_NAME,
+    "DB_PORT": DB_PORT,
+    "DB_USER": DB_USER,
+    "DB_PASSWORD": DB_PASSWORD,
+})
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
