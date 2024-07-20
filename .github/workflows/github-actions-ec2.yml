@@ -32,7 +32,7 @@ jobs:
       env:
         DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         DJANGO_DEBUG: ${{secrets.DJANGO_DEBUG}}
-        DB_HOST: ${{secrets.DB_HOST}}}
+        DB_HOST: ${{secrets.DB_HOST}}
         DB_NAME: ${{secrets.DB_NAME}}
         DB_PORT: ${{secrets.DB_PORT}}
         DB_USER: ${{secrets.DB_USER}}
