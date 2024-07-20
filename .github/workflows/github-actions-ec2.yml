@@ -16,5 +16,8 @@ jobs:
     - name: get parent directory
       run: cd ../
 
+    - name: echo working directory
+      run: cwd | echo "Helloword"
+
     - name: prove u work
       run: touch test.txt
