@@ -28,10 +28,16 @@ jobs:
           ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest
           ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:${{ github.sha }}
 
-    # - name: Deploy application
-    #   env:
-    #     DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-    #   run: |
-    #     cd /home/ubuntu
-    #     docker pull $DOCKERHUB_USERNAME/swecc-server:latest
-    #     docker-compose up -d
+    - name: Deploy application
+      env:
+        DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        DJANGO_DEBUG: ${{DJANGO_DEBUG}}
+        DB_HOST: ${{DB_HOST}}}
+        DB_NAME: ${{DB_NAME}}
+        DB_PORT: ${{DB_PORT}}
+        DB_USER: ${{DB_USER}}
+        DB_PASSWORD: ${{DB_PASSWORD}}
+      run: |
+        cd /home/ubuntu
+        docker pull $DOCKERHUB_USERNAME/swecc-server:latest
+        docker run --name swecc-server-be-container -p 8000:8000 -d $DOCKERHUB_USERNAME/swecc-server:latest
