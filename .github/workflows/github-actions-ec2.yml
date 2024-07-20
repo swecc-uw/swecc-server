@@ -13,7 +13,25 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v2
 
-    - name: get parent directory
-      run: | 
-        cd /home/ubuntu
-        echo "testing" >> test.txt
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        push: true
+        tags: |
+          ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest
+          ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:${{ github.sha }}
+
+    # - name: Deploy application
+    #   env:
+    #     DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+    #   run: |
+    #     cd /home/ubuntu
+    #     docker pull $DOCKERHUB_USERNAME/swecc-server:latest
+    #     docker-compose up -d
