@@ -15,3 +15,6 @@ jobs:
 
     - name: get parent directory
       run: cd ../
+
+    - name: prove u work
+      run: touch test.txt
