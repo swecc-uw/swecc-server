@@ -31,12 +31,12 @@ jobs:
     - name: Deploy application
       env:
         DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-        DJANGO_DEBUG: ${{DJANGO_DEBUG}}
-        DB_HOST: ${{DB_HOST}}}
-        DB_NAME: ${{DB_NAME}}
-        DB_PORT: ${{DB_PORT}}
-        DB_USER: ${{DB_USER}}
-        DB_PASSWORD: ${{DB_PASSWORD}}
+        DJANGO_DEBUG: ${{secrets.DJANGO_DEBUG}}
+        DB_HOST: ${{secrets.DB_HOST}}}
+        DB_NAME: ${{secrets.DB_NAME}}
+        DB_PORT: ${{secrets.DB_PORT}}
+        DB_USER: ${{secrets.DB_USER}}
+        DB_PASSWORD: ${{secrets.DB_PASSWORD}}
       run: |
         cd /home/ubuntu
         docker pull $DOCKERHUB_USERNAME/swecc-server:latest
