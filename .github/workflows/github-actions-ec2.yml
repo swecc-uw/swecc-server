@@ -14,10 +14,6 @@ jobs:
       uses: actions/checkout@v2
 
     - name: get parent directory
-      run: cd /home/ubuntu
-
-    - name: echo working directory
-      run: pwd
-
-    - name: prove u work
-      run: echo "testing" >> test.txt
+      run: | 
+        cd /home/ubuntu
+        echo "testing" >> test.txt
