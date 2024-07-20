@@ -17,7 +17,7 @@ jobs:
       run: cd ../
 
     - name: echo working directory
-      run: cwd | echo "Helloword"
+      run: pwd | echo "Helloword"
 
     - name: prove u work
       run: touch test.txt
