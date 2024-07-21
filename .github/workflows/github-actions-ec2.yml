@@ -39,7 +39,9 @@ jobs:
         DB_PASSWORD: ${{secrets.DB_PASSWORD}}
       run: |
         cd /home/ubuntu
+        echo $DJANGO_DEBUG
+        echo $DOCKERHUB_USERNAME
         docker stop swecc-server-be-container || true
         docker rm swecc-server-be-container || true
-        docker pull $DOCKERHUB_USERNAME/swecc-server:latest
-        docker run --name swecc-server-be-container -p 8000:8000 -d $DOCKERHUB_USERNAME/swecc-server:latest
+        docker pull  ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest
+        docker run --name swecc-server-be-container -p 8000:8000 -d  ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest
