@@ -10,3 +10,4 @@ COPY . .
 
 # CMD ["gunicorn", "--bind", "0.0.0.0:8000", "server.wsgi:application"]
 # CMD ["python3", "server/manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["sleep","3600"]
