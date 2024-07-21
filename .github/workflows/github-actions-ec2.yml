@@ -44,4 +44,12 @@ jobs:
         docker stop swecc-server-be-container || true
         docker rm swecc-server-be-container || true
         docker pull  ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest
-        docker run --name swecc-server-be-container -p 8000:8000 -d  ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest
+        docker run --name swecc-server-be-container \
+          -p 8000:8000 \
+          -e DJANGO_DEBUG=$DJANGO_DEBUG \
+          -e DB_HOST=$DB_HOST \
+          -e DB_NAME=$DB_NAME \
+          -e DB_PORT=$DB_PORT \
+          -e DB_USER=$DB_USER \
+          -e DB_PASSWORD=$DB_PASSWORD \
+          -d ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest
