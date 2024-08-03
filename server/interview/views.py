@@ -1,10 +1,24 @@
 from email.policy import default
+from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+from .algorithm import calculate_preferences, stable_matching, calculate_common_slots
+from .models import Interview
+from .serializers import InterviewSerializer
 from .models import InterviewAvailability, InterviewPool, Interview
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.core.exceptions import ValidationError
+from rest_framework import permissions
+from django.db import transaction
+from django.utils import timezone
+
+# custom permission to only allow participants of an interview to view it.
+class IsInterviewParticipant(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        # Check if the user is either the interviewer or interviewee
+        return obj.interviewer == request.user or obj.interviewee == request.user
 
 # Helper validation functions
 def is_valid_availability(availability):
@@ -101,14 +115,77 @@ class GetInterviewPoolStatus(APIView):
         except InterviewPool.DoesNotExist:
             return Response({"number_sign_up": 0, "members": []})
 
-
 class PairInterview(APIView):
-    # TODO: Change permission class to isAdminUser or using a key service
     permission_classes = [IsAuthenticated]
 
+    stable_matching = staticmethod(stable_matching)
+    calculate_preferences = staticmethod(calculate_preferences)
+    calculate_common_slots = staticmethod(calculate_common_slots)
+
+    @transaction.atomic
     def post(self, request):
-        # TODO: Implement the pairing algorithm
-        return Response({"detail": "Interviews paired."})
+        pool_members = list(InterviewPool.objects.all())
+
+        if len(pool_members) < 2:
+            return Response({"detail": "Not enough members in the pool to pair interviews."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Get availabilities for all members
+        availabilities = {
+            member.member.id: InterviewAvailability.objects.get(member=member.member).interview_availability_slots or [[False] * 48 for _ in range(7)]
+            for member in pool_members
+        }
+
+        preferences = self.calculate_preferences([m.member.id for m in pool_members], availabilities)
+
+        if len(preferences) < 2:
+            return Response({"detail": "Not enough members in the pool to pair interviews."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Perform stable matching
+        matches = self.stable_matching(preferences)
+
+        # Create interviews based on matches
+        paired_interviews = []
+        for i, j in enumerate(matches):
+            if i < j:  # Avoid creating duplicate interviews
+                p1 = pool_members[i].member
+                p2 = pool_members[j].member
+
+                interview1 = Interview.objects.create(
+                    interviewer=p1,
+                    interviewee=p2,
+                    status='pending',
+                    date_effective=timezone.now(),
+                )
+
+                interview2 = Interview.objects.create(
+                    interviewer=p2,
+                    interviewee=p1,
+                    status='pending',
+                    date_effective=timezone.now(),
+                )
+
+                paired_interviews.append(interview1)
+                paired_interviews.append(interview2)
+
+                # Remove paired users from the pool
+                InterviewPool.objects.filter(member__in=[p1, p2]).delete()
+
+        # Check for any unpaired members
+        unpaired_members = [member.member.username for i, member in enumerate(pool_members) if matches[i] == -1]
+
+        return Response({
+            "detail": f"Successfully paired {len(paired_interviews)} interviews.",
+            "paired_interviews": [
+                {
+                    "interview_id": str(interview.interview_id),
+                    "interviewer": interview.interviewer.username,
+                    "interviewee": interview.interviewee.username
+                } for interview in paired_interviews
+            ],
+            "unpaired_members": unpaired_members
+        }, status=status.HTTP_201_CREATED)
 
 
 class NotifyInterview(APIView):
@@ -191,3 +268,34 @@ class InterviewRunningStatus(APIView):
                 {"detail": "No active interview found."},
                 status=status.HTTP_404_NOT_FOUND
             )
+class MemberInterviewsView(generics.ListAPIView):
+    serializer_class = InterviewSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Interview.objects.filter(interviewer=user) | Interview.objects.filter(interviewee=user)
+
+class InterviewerInterviewsView(generics.ListAPIView):
+    serializer_class = InterviewSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Interview.objects.filter(interviewer=self.request.user)
+
+class IntervieweeInterviewsView(generics.ListAPIView):
+    serializer_class = InterviewSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Interview.objects.filter(interviewee=self.request.user)
+
+class InterviewDetailView(generics.RetrieveAPIView):
+    queryset = Interview.objects.all()
+    serializer_class = InterviewSerializer
+    permission_classes = [IsAuthenticated, IsInterviewParticipant]
+    lookup_field = 'interview_id'
+
+    def get_queryset(self):
+        user = self.request.user
+        return Interview.objects.filter(interviewer=user) | Interview.objects.filter(interviewee=user)

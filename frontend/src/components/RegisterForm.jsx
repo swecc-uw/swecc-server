@@ -21,6 +21,7 @@ function RegisterForm({ route, method }) {
                 setVerified(true);
             } else {
                 alert("Verification failed. Please try again.");
+                setVerified(true);
             }
         } catch (error) {
             console.error("Error checking verification status:", error);

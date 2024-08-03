@@ -8,7 +8,6 @@ class MemberSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = self.context['request'].user
-        print('user', user)
         return Member.objects.create(user=user, **validated_data)
 
     def update(self, instance, validated_data):
