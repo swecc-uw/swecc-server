@@ -1,6 +1,7 @@
 from django.urls import path
-from .views import MemberDirectoryView
+from .views import MemberDirectorySearchView, MemberDirectoryView
 
 urlpatterns = [
-    path('search/', MemberDirectoryView.as_view(), name='member-directory-search'),
+    path('search/', MemberDirectorySearchView.as_view(), name='member-directory-search'),
+    path('<int:id>/', MemberDirectoryView.as_view(), name='member-directory'),
 ]
