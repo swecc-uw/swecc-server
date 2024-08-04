@@ -1,4 +1,4 @@
-# directory/views.py
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models import Q
@@ -8,12 +8,8 @@ from .serializers import DirectoryMemberSerializer
 
 # TODO: filter fields by isPrivate
 
-<<<<<<< Updated upstream
-class MemberDirectoryView(APIView):
-=======
 class MemberDirectorySearchView(APIView):
     permission_classes = [IsAuthenticated]
->>>>>>> Stashed changes
     def get(self, request):
         query = request.query_params.get('q', '')
 

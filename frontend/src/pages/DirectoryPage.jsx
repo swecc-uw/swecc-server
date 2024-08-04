@@ -2,33 +2,6 @@ import { useState, useEffect } from 'react';
 import api from '../api';
 
 
-/*
-{
-    "user": 7,
-    "linkedin": {
-        "username": "elimelt"
-    },
-    "github": {
-        "username": "elimelt"
-    },
-    "leetcode": {
-        "username": "elimelt"
-    },
-    "created": "2024-07-06T20:51:00.369769Z",
-    "email": "elimelt@uw.edu",
-    "role": "President",
-    "first_name": "Elijah",
-    "last_name": "Melton",
-    "preview": null,
-    "major": "Computer Engineering",
-    "grad_date": "2024-07-19",
-    "discord_username": "elimelt",
-    "resume_url": "",
-    "local": "Seattle",
-    "bio": "fuck it",
-    "discord_id": 1234
-}
-*/
 const DirectoryEntry = ({ entry }) => {
   if (!entry || !entry.first_name || !entry.last_name)
     throw new Error("bad dirent")

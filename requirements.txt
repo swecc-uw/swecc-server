@@ -8,3 +8,5 @@ pytz
 sqlparse
 psycopg2-binary
 djangorestframework-api-key==2.*
+gunicorn
+numpy
