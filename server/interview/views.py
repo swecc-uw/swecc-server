@@ -1,7 +1,7 @@
 from email.policy import default
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
-from .algorithm import calculate_preferences, stable_matching, calculate_common_slots
+from .algorithm import CommonAvailabilityStableMatching
 from .models import Interview
 from .serializers import InterviewSerializer
 from .models import InterviewAvailability, InterviewPool, Interview
@@ -118,9 +118,9 @@ class GetInterviewPoolStatus(APIView):
 class PairInterview(APIView):
     permission_classes = [IsAuthenticated]
 
-    stable_matching = staticmethod(stable_matching)
-    calculate_preferences = staticmethod(calculate_preferences)
-    calculate_common_slots = staticmethod(calculate_common_slots)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.pairing_algorithm = CommonAvailabilityStableMatching()
 
     @transaction.atomic
     def post(self, request):
@@ -136,14 +136,10 @@ class PairInterview(APIView):
             for member in pool_members
         }
 
-        preferences = self.calculate_preferences([m.member.id for m in pool_members], availabilities)
-
-        if len(preferences) < 2:
-            return Response({"detail": "Not enough members in the pool to pair interviews."},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        # Perform stable matching
-        matches = self.stable_matching(preferences)
+        pool_member_ids = [m.member.id for m in pool_members]
+        self.pairing_algorithm.set_availabilities(availabilities)
+        # Perform pairing using the CommonAvailabilityStableMatching algorithm
+        matches = self.pairing_algorithm.pair(pool_member_ids)
 
         # Create interviews based on matches
         paired_interviews = []
