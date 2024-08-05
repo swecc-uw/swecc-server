@@ -23,10 +23,6 @@ export DB_USER=root
 export DB_PASSWORD=password
 ```
 
-### Cron job for clearing 1 day old auth keys
-
-`0 * * * * ~/swecc-server/venv/bin/python /swecc-server/server/manage.py prune_authkeys`
-
 ## Reference
 
 | task | command | 
