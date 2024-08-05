@@ -18,7 +18,6 @@ def validate_social_field(value):
 class Member(models.Model):
     user = models.OneToOneField('auth.User', on_delete=models.CASCADE, primary_key=True)
     created = models.DateTimeField(auto_now_add=True)
-    email = models.EmailField(max_length=254, unique=True)
     role = models.CharField(max_length=100)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
@@ -32,4 +31,4 @@ class Member(models.Model):
     resume_url = models.URLField(blank=True, null=True)
     local = models.CharField(max_length=100, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
-    discord_id = models.IntegerField()
+    discord_id = models.IntegerField(blank=True, null=True)

@@ -84,6 +84,6 @@ function App() {
       </Layout>
     </BrowserRouter>
   );
-}
+};
 
 export default App;

@@ -9,5 +9,5 @@ urlpatterns = [
         name='member-retrieve-update-destroy'
         ),
     path('profile/', views.AuthenticatedMemberProfile.as_view(), name='authenticated-profile'),
-
+    path('verify-discord/', views.UpdateDiscordID, name='update-discord-id'),
 ]
