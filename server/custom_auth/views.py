@@ -60,19 +60,19 @@ def register_view(request):
     data = json.loads(request.body)
     username = data.get('username')
     password = data.get('password')
-    email = data.get('email')
+    discord_username = data.get('discord_username')
 
-    if not username or not password or not email:
-        return JsonResponse({'detail': 'Please provide username, password, and email.'}, status=400)
+    if not username or not password or not discord_username:
+        return JsonResponse({'detail': 'Please provide username, password, and discord username.'}, status=400)
 
     try:
         with transaction.atomic():
             if User.objects.filter(username=username).exists():
                 return JsonResponse({'detail': 'Username already exists.'}, status=400)
-            if User.objects.filter(email=email).exists():
-                return JsonResponse({'detail': 'Email already exists.'}, status=400)
-            user = User.objects.create_user(username=username, password=password, email=email)
-            Member.objects.create(user=user)
+            if Member.objects.filter(discord_username=discord_username).exists():
+                return JsonResponse({'detail': 'Discord username already exists.'}, status=400)
+            user = User.objects.create_user(username=username, password=password)
+            Member.objects.create(user=user, discord_username=discord_username)
             return JsonResponse({'detail': 'Successfully registered and logged in.'}, status=201)
 
     except Exception as e:
