@@ -73,7 +73,7 @@ def register_view(request):
                 return JsonResponse({'detail': 'Discord username already exists.'}, status=400)
             user = User.objects.create_user(username=username, password=password)
             Member.objects.create(user=user, discord_username=discord_username)
-            return JsonResponse({'detail': 'Successfully registered and logged in.'}, status=201)
+            return JsonResponse({'detail': 'Successfully registered.'}, status=201)
 
     except Exception as e:
         return JsonResponse({'detail': 'An error occurred during registration.', 'error': str(e)}, status=500)
