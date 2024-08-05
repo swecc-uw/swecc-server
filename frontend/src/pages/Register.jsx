@@ -4,4 +4,4 @@ function Register() {
     return <RegisterForm route="/api/user/register/" method="register" />
 }
 
-export default RegisterPage;
+export default Register
