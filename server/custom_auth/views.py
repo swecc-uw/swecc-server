@@ -49,7 +49,7 @@ def login_view(request):
             logout(request)
             return JsonResponse({
                 "detail": "Your account does not have a Discord ID associated with it.",
-                "user_id": user.id
+                "user_id": member.user.username
             }, status=403)
 
     return JsonResponse({'detail': 'Invalid credentials.'}, status=400)
