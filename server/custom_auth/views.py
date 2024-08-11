@@ -103,3 +103,23 @@ class WhoAmIView(views.APIView):
     @staticmethod
     def get(request, format=None):
         return JsonResponse({'username': request.user.username})
+
+# endpoint for checking if a user's account is verified through
+# Discord. Essentially, if they have a Discord ID associated with
+# their account. user does not need to be logged in to access this view
+class DiscordVerificationView(views.APIView):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [AllowAny]
+
+    @staticmethod
+    def get(request, id, format=None):
+        try:
+            user = User.objects.get(id=id)
+            member = Member.objects.get(user=user)
+            return JsonResponse({'verified': bool(member.discord_id)})
+        except Exception as e:
+            if type(e) == User.DoesNotExist or type(e) == Member.DoesNotExist:
+                return JsonResponse({'detail': 'User not found.'}, status=404)
+            return JsonResponse({'detail': 'An error occurred.'}, status=500)
+
+
