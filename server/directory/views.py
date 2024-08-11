@@ -1,9 +1,9 @@
+from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models import Q
 from members.models import Member
-import status
 from .serializers import DirectoryMemberSerializer
 
 # TODO: filter fields by isPrivate
@@ -35,4 +35,4 @@ class MemberDirectoryView(APIView):
         try:
             member = Member.objects.get(user__id=id)
         except Member.DoesNotExist:
-            return Response({"detail": "Member not found."}, status=status.HTTP_404_NOT_FOUND)
+            return JsonResponse({'detail': 'Member not found.'}, status=404)
