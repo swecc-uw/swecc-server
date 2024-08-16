@@ -33,6 +33,7 @@ jobs:
         docker pull ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest
         
         docker run -d --name swecc-server-be-container \
+          --network swag-network \
           -p 8000:8000 \
           -e DJANGO_DEBUG=${{ secrets.DJANGO_DEBUG }} \
           -e DB_HOST=${{ secrets.DB_HOST }} \
