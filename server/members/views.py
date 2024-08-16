@@ -43,8 +43,8 @@ class UpdateDiscordID(APIView):
     permission_classes = [IsAuthenticatedOrReadOnlyWithAPIKey]
 
     def put(self, request, *args, **kwargs):
-        username = request.data.get('username')
-        discord_username = request.data.get('discord_username')
+        username = request.data.get('username').lower()
+        discord_username = request.data.get('discord_username').lower()
         new_discord_id = request.data.get('discord_id')
 
         if not username or not discord_username or not new_discord_id:

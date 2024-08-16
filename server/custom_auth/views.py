@@ -58,9 +58,9 @@ def login_view(request):
 @require_POST
 def register_view(request):
     data = json.loads(request.body)
-    username = data.get('username')
+    username = data.get('username').lower()
     password = data.get('password')
-    discord_username = data.get('discord_username')
+    discord_username = data.get('discord_username').lower()
 
     if not username or not password or not discord_username:
         return JsonResponse({'detail': 'Please provide username, password, and discord username.'}, status=400)
@@ -115,7 +115,7 @@ class DiscordVerificationView(views.APIView):
     def get(request, id, format=None):
         try:
             user = User.objects.get(id=id)
-            member = Member.objects.get(user=user)
+            member = Member.objects.get(user=user).lower()
             return JsonResponse({'verified': bool(member.discord_id)})
         except Exception as e:
             if type(e) == User.DoesNotExist or type(e) == Member.DoesNotExist:
