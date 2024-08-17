@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Member
 from .serializers import MemberSerializer
 from .permissions import IsAuthenticatedOrReadOnlyWithAPIKey
+from django.shortcuts import get_object_or_404
 
 class MembersList(generics.ListCreateAPIView):
     queryset = Member.objects.all()
@@ -53,23 +54,17 @@ class UpdateDiscordID(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        try:
-            member = Member.objects.get(user__username=username)
 
-            if member.discord_username != discord_username:
-                return Response(
-                    {"detail": "Discord username does not match."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+        member = get_object_or_404(Member, user__username__iexact=username)
 
-            member.discord_id = new_discord_id
-            member.save()
-
-            serializer = MemberSerializer(member)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        except Member.DoesNotExist:
+        if member.discord_username.strip().lower() != discord_username.strip().lower():
             return Response(
-                {"detail": "Member not found."},
-                status=status.HTTP_404_NOT_FOUND
+                {"detail": "Discord username does not match."},
+                status=status.HTTP_400_BAD_REQUEST
             )
+
+        member.discord_id = new_discord_id
+        member.save()
+
+        serializer = MemberSerializer(member)
+        return Response(serializer.data, status=status.HTTP_200_OK)

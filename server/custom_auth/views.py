@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 from members.models import Member
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 
 class CreateUserView(generics.CreateAPIView):
     queryset = models.User.objects.all()
@@ -24,42 +25,35 @@ def get_csrf(request):
 @require_POST
 def login_view(request):
     data = json.loads(request.body)
-    username = data.get('username')
+    username = data.get('username').strip()
     password = data.get('password')
     
     if username is None or password is None:
             return JsonResponse({'detail': 'Please provide username and password.'}, status=400)
     
-    user = authenticate(request, username=username, password=password)
+    user = get_object_or_404(User, username__iexact=username)
+    user = authenticate(request, username=user.username, password=password)
 
-    if user is not None:
-        try:
-            member = Member.objects.get(user=user)
-            if not member.discord_id:
-                logout(request)
-                return JsonResponse({
-                    "detail": "Your account does not have a Discord ID associated with it.",
-                    "username": member.user.username
-                }, status=403)
+    if user is None:
+        return JsonResponse({'detail': 'Invalid credentials.'}, status=400)
 
-            login(request, user)
-            return JsonResponse({'detail': 'Successfully logged in.'})
+    member = get_object_or_404(Member, user=user)
+    if not member.discord_id:
+        logout(request)
+        return JsonResponse({
+            "detail": "Your account does not have a Discord ID associated with it.",
+            "username": member.user.username
+        }, status=403)
 
-        except Member.DoesNotExist:
-            logout(request)
-            return JsonResponse({
-                "detail": "Your account does not have a Discord ID associated with it.",
-                "user_id": member.user.username
-            }, status=403)
-
-    return JsonResponse({'detail': 'Invalid credentials.'}, status=400)
+    login(request, user)
+    return JsonResponse({'detail': 'Successfully logged in.'})
 
 
 @require_POST
 def register_view(request):
     data = json.loads(request.body)
-    username = data.get('username')
-    password = data.get('password')
+    username = data.get('username').strip()
+    password = data.get('password').strip()
     discord_username = data.get('discord_username')
 
     if not username or not password or not discord_username:
@@ -67,9 +61,9 @@ def register_view(request):
 
     try:
         with transaction.atomic():
-            if User.objects.filter(username=username).exists():
+            if User.objects.filter(username__iexact=username).exists():
                 return JsonResponse({'detail': 'Username already exists.'}, status=400)
-            if Member.objects.filter(discord_username=discord_username).exists():
+            if Member.objects.filter(discord_username__iexact=discord_username).exists():
                 return JsonResponse({'detail': 'Discord username already exists.'}, status=400)
             user = User.objects.create_user(username=username, password=password)
             Member.objects.create(user=user, discord_username=discord_username)
