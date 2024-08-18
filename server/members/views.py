@@ -15,7 +15,14 @@ class MembersList(generics.ListCreateAPIView):
 class MemberRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     queryset = Member.objects.all()
     serializer_class = MemberSerializer
-    lookup_field = 'pk'
+
+    def get(self, request, member_id):
+        try:
+            member = Member.objects.get(user_id=member_id)
+            serializer = MemberSerializer(member)
+            return Response(serializer.data)
+        except Member.DoesNotExist:
+            return Response({"detail": "Member not found."}, status=status.HTTP_404_NOT_FOUND)
 
 class AuthenticatedMemberProfile(APIView):
     permission_classes = [IsAuthenticated]
@@ -36,9 +43,8 @@ class AuthenticatedMemberProfile(APIView):
                 serializer.save()
                 return Response(serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Member.DoesNotExist:
+        except Member.DoesNotExact:
             return Response({"detail": "Member profile not found."}, status=status.HTTP_404_NOT_FOUND)
-        
 
 class UpdateDiscordID(APIView):
     permission_classes = [IsAuthenticatedOrReadOnlyWithAPIKey]
@@ -53,7 +59,6 @@ class UpdateDiscordID(APIView):
                 {"detail": "Username, Discord username, and Discord ID are required."},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
 
         member = get_object_or_404(Member, user__username__iexact=username)
 

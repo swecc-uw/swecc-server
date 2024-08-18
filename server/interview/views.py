@@ -295,3 +295,46 @@ class InterviewDetailView(generics.RetrieveAPIView):
     def get_queryset(self):
         user = self.request.user
         return Interview.objects.filter(interviewer=user) | Interview.objects.filter(interviewee=user)
+
+class InterviewAvailabilityView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            interview_availability = InterviewAvailability.objects.get(member=request.user)
+            return Response(
+                {
+                    "id": request.user.id,
+                    "availability": interview_availability.interview_availability_slots
+                },
+                status=status.HTTP_200_OK
+            )
+        except InterviewAvailability.DoesNotExist:
+            return Response(
+                {"detail": "Interview availability not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    def post(self, request):
+        try:
+            interview_availability = InterviewAvailability.objects.get(member=request.user)
+            availability = request.data.get('availability')
+
+            if not is_valid_availability(availability):
+                return Response(
+                    {"detail": "Invalid availability format."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            interview_availability.set_interview_availability(availability)
+            interview_availability.save()
+
+            return Response(
+                {"detail": "Interview availability updated."},
+                status=status.HTTP_200_OK
+            )
+        except InterviewAvailability.DoesNotExist:
+            return Response(
+                {"detail": "Interview availability not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )

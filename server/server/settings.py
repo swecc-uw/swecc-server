@@ -29,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-ehylqtrwm(8+eq!m#*3fq3(m6j9jfvm6bzb8=f-uz=l@4$l&^g'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -152,12 +152,19 @@ CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
 CORS_ALLOW_CREDENTIALS = True
 
 
-CSRF_COOKIE_SAMESITE = 'None'
-SESSION_COOKIE_SAMESITE = 'None'
-CSRF_COOKIE_HTTPONLY = True
-SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'None' if not DJANGO_DEBUG else 'Lax'
+SESSION_COOKIE_SAMESITE = 'None' if not DJANGO_DEBUG else 'Lax'
+CSRF_COOKIE_HTTPONLY = not DJANGO_DEBUG
+SESSION_COOKIE_HTTPONLY = not DJANGO_DEBUG
 CSRF_TRUSTED_ORIGINS = ['https://interview.swecc.org']
 
+devclient = 'http://localhost:5173'
+
+if DJANGO_DEBUG:
+    CORS_ALLOWED_ORIGINS.append(devclient)
+    CSRF_TRUSTED_ORIGINS.append(devclient)
+
+
 # PROD ONLY
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = not DJANGO_DEBUG
+SESSION_COOKIE_SECURE = not DJANGO_DEBUG

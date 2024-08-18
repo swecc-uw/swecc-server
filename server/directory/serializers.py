@@ -2,6 +2,7 @@ from rest_framework import serializers
 from members.models import Member
 
 class DirectoryMemberSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
     linkedin = serializers.SerializerMethodField()
     github = serializers.SerializerMethodField()
     leetcode = serializers.SerializerMethodField()
