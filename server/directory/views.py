@@ -27,12 +27,10 @@ class MemberDirectorySearchView(APIView):
 class MemberDirectoryView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        # get id from path parameter
-        id = request.query_params.get('id')
-
-        # get Member object with member.user.id == id
+    def get(self, request, id):
         try:
             member = Member.objects.get(user__id=id)
+            serializer = DirectoryMemberSerializer(member)
+            return Response(serializer.data)
         except Member.DoesNotExist:
             return JsonResponse({'detail': 'Member not found.'}, status=404)

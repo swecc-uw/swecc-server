@@ -147,7 +147,7 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOWED_ORIGINS = ['https://interview.swecc.org']
+CORS_ALLOWED_ORIGINS = ['https://interview.swecc.org', 'http://localhost:5173']
 CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
 CORS_ALLOW_CREDENTIALS = True
 
@@ -156,7 +156,7 @@ CSRF_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SAMESITE = 'None'
 CSRF_COOKIE_HTTPONLY = True
 SESSION_COOKIE_HTTPONLY = True
-CSRF_TRUSTED_ORIGINS = ['https://interview.swecc.org']
+CSRF_TRUSTED_ORIGINS = ['https://interview.swecc.org', 'http://localhost:5173']
 
 # PROD ONLY
 CSRF_COOKIE_SECURE = True

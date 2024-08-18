@@ -37,4 +37,9 @@ urlpatterns = [
         views.InterviewDetailView.as_view(),
         name='interview-detail'
     ),
+    path(
+        'availability/',
+        views.InterviewAvailabilityView.as_view(),
+        name='interview-availability'
+    ),
 ]
