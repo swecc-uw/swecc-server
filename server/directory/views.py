@@ -1,4 +1,5 @@
-# directory/views.py
+from django.http import JsonResponse
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models import Q
@@ -7,7 +8,8 @@ from .serializers import DirectoryMemberSerializer
 
 # TODO: filter fields by isPrivate
 
-class MemberDirectoryView(APIView):
+class MemberDirectorySearchView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         query = request.query_params.get('q', '')
 
@@ -21,3 +23,14 @@ class MemberDirectoryView(APIView):
 
         serializer = DirectoryMemberSerializer(members, many=True)
         return Response(serializer.data)
+
+class MemberDirectoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        try:
+            member = Member.objects.get(user__id=id)
+            serializer = DirectoryMemberSerializer(member)
+            return Response(serializer.data)
+        except Member.DoesNotExist:
+            return JsonResponse({'detail': 'Member not found.'}, status=404)
