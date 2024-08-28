@@ -3,6 +3,11 @@ from . import views
 
 urlpatterns = [
     path(
+        "all/",
+        views.InterviewAll.as_view(),
+        name="interviewer-list-create"
+    ),
+    path(
         "pair/",
         views.PairInterview.as_view(),
         name="pair-interviews"
@@ -18,28 +23,28 @@ urlpatterns = [
         name="interview-pool-status"
     ),
     path(
-        'interviews/',
-        views.MemberInterviewsView.as_view(),
-        name='member-interviews'
+        'mine/',
+        views.InterviewDetailViewAsUser.as_view(),
+        name='interview-detail-user'
     ),
     path(
-        'interviews/interviewer/',
-        views.InterviewerInterviewsView.as_view(),
-        name='interviewer-interviews'
-    ),
-    path(
-        'interviews/interviewee/',
-        views.IntervieweeInterviewsView.as_view(),
-        name='interviewee-interviews'
-    ),
-    path(
-        'interviews/<uuid:interview_id>/',
-        views.InterviewDetailView.as_view(),
-        name='interview-detail'
+        '/<uuid:interview_id>/',
+        views.InterviewDetailViewAsAdmin.as_view(),
+        name='interview-detail-admin'
     ),
     path(
         'availability/',
         views.InterviewAvailabilityView.as_view(),
         name='interview-availability'
     ),
+    path(
+        "assign/",
+        views.InterviewAssignQuestionRandom.as_view(),
+        name="assign-interview-question"
+    ),
+    path(
+        "assign/<uuid:interview_id>/",
+        views.InterviewAssignQuestionRandomIndividual.as_view(),
+        name="assign-interview-question"
+    )
 ]
