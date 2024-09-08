@@ -1,5 +1,5 @@
 import json
-from django.contrib.auth import authenticate, login, logout, models
+from django.contrib.auth import authenticate, login, logout
 from rest_framework import generics, views
 from .serializers import UserSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -7,13 +7,12 @@ from django.http import JsonResponse
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from django.middleware.csrf import get_token
 from django.views.decorators.http import require_POST
-from members.models import Member
-from django.contrib.auth.models import User
+from members.models import User
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 
 class CreateUserView(generics.CreateAPIView):
-    queryset = models.User.objects.all()
+    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (AllowAny,)
 
@@ -29,21 +28,15 @@ def login_view(request):
     password = data.get('password')
     
     if username is None or password is None:
-            return JsonResponse({'detail': 'Please provide username and password.'}, status=400)
+        return JsonResponse({'detail': 'Please provide username and password.'}, status=400)
     
-    user = get_object_or_404(User, username__iexact=username)
-    user = authenticate(request, username=user.username, password=password)
+    try:
+        user = authenticate(request, username=username, password=password)
+    except Exception as e:
+        print(e)
 
     if user is None:
         return JsonResponse({'detail': 'Invalid credentials.'}, status=400)
-
-    member = get_object_or_404(Member, user=user)
-    if not member.discord_id:
-        logout(request)
-        return JsonResponse({
-            "detail": "Your account does not have a Discord ID associated with it.",
-            "username": member.user.username
-        }, status=403)
 
     login(request, user)
     return JsonResponse({'detail': 'Successfully logged in.'})
@@ -61,12 +54,11 @@ def register_view(request):
 
     try:
         with transaction.atomic():
-            if User.objects.filter(username__iexact=username).exists():
+            if User.objects.filter(username=username).exists():
                 return JsonResponse({'detail': 'Username already exists.'}, status=400)
-            if Member.objects.filter(discord_username__iexact=discord_username).exists():
+            if User.objects.filter(discord_username__iexact=discord_username).exists():
                 return JsonResponse({'detail': 'Discord username already exists.'}, status=400)
-            user = User.objects.create_user(username=username, password=password)
-            Member.objects.create(user=user, discord_username=discord_username)
+            user = User.objects.create_user(username=username, password=password, discord_username=discord_username)
             return JsonResponse({'detail': 'Successfully registered.', 'id': user.id}, status=201)
 
     except Exception as e:
@@ -101,19 +93,19 @@ class WhoAmIView(views.APIView):
 # endpoint for checking if a user's account is verified through
 # Discord. Essentially, if they have a Discord ID associated with
 # their account. user does not need to be logged in to access this view
-class DiscordVerificationView(views.APIView):
-    authentication_classes = [SessionAuthentication, BasicAuthentication]
-    permission_classes = [AllowAny]
+# class DiscordVerificationView(views.APIView):
+#     authentication_classes = [SessionAuthentication, BasicAuthentication]
+#     permission_classes = [AllowAny]
 
-    @staticmethod
-    def get(request, id, format=None):
-        try:
-            user = User.objects.get(id=id)
-            member = Member.objects.get(user=user)
-            return JsonResponse({'verified': bool(member.discord_id)})
-        except Exception as e:
-            if type(e) == User.DoesNotExist or type(e) == Member.DoesNotExist:
-                return JsonResponse({'detail': 'User not found.'}, status=404)
-            return JsonResponse({'detail': 'An error occurred.'}, status=500)
+#     @staticmethod
+#     def get(request, id, format=None):
+#         try:
+#             user = User.objects.get(id=id)
+#             member = Member.objects.get(user=user)
+#             return JsonResponse({'verified': bool(member.discord_id)})
+#         except Exception as e:
+#             if type(e) == User.DoesNotExist or type(e) == Member.DoesNotExist:
+#                 return JsonResponse({'detail': 'User not found.'}, status=404)
+#             return JsonResponse({'detail': 'An error occurred.'}, status=500)
 
 
