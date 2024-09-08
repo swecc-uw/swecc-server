@@ -7,6 +7,7 @@ from .models import User
 from .serializers import UserSerializer
 from .permissions import IsAuthenticatedOrReadOnlyWithAPIKey
 from django.shortcuts import get_object_or_404
+from django.contrib.auth.models import Group
 
 class MembersList(generics.ListCreateAPIView):
     queryset = User.objects.all()
@@ -70,6 +71,9 @@ class UpdateDiscordID(APIView):
 
         member.discord_id = new_discord_id
         member.save()
+
+        is_verified_group, created = Group.objects.get_or_create(name='is_verified')
+        member.groups.add(is_verified_group)
 
         serializer = UserSerializer(member)
         return Response(serializer.data, status=status.HTTP_200_OK)

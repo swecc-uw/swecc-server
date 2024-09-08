@@ -9,7 +9,6 @@ from django.middleware.csrf import get_token
 from django.views.decorators.http import require_POST
 from members.models import User
 from django.db import transaction
-from django.shortcuts import get_object_or_404
 
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -30,10 +29,7 @@ def login_view(request):
     if username is None or password is None:
         return JsonResponse({'detail': 'Please provide username and password.'}, status=400)
     
-    try:
-        user = authenticate(request, username=username, password=password)
-    except Exception as e:
-        print(e)
+    user = authenticate(request, username=username, password=password)
 
     if user is None:
         return JsonResponse({'detail': 'Invalid credentials.'}, status=400)
@@ -54,11 +50,12 @@ def register_view(request):
 
     try:
         with transaction.atomic():
-            if User.objects.filter(username=username).exists():
+            if User.objects.filter(username__iexact=username).exists():
                 return JsonResponse({'detail': 'Username already exists.'}, status=400)
             if User.objects.filter(discord_username__iexact=discord_username).exists():
                 return JsonResponse({'detail': 'Discord username already exists.'}, status=400)
             user = User.objects.create_user(username=username, password=password, discord_username=discord_username)
+            
             return JsonResponse({'detail': 'Successfully registered.', 'id': user.id}, status=201)
 
     except Exception as e:
