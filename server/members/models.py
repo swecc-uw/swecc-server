@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
-import uuid
+from django.contrib.auth.models import AbstractUser, UserManager
+from django.db import models
 
 def validate_social_field(value):
     if value is None:
@@ -15,12 +16,15 @@ def validate_social_field(value):
     if not isinstance(value['isPrivate'], bool):
         raise ValidationError('The "isPrivate" field must be a boolean.')
 
-class Member(models.Model):
-    user = models.OneToOneField('auth.User', on_delete=models.CASCADE, primary_key=True)
+class CustomUserManager(UserManager):
+    def get_by_natural_key(self, username):
+        case_insensitive_username_field = '{}__iexact'.format(self.model.USERNAME_FIELD)
+        return self.get(**{case_insensitive_username_field: username})
+
+class User(AbstractUser):
+    first_name = models.CharField(blank = True, max_length = 20)
+    last_name = models.CharField(blank = True, max_length = 20)
     created = models.DateTimeField(auto_now_add=True)
-    role = models.CharField(max_length=100)
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
     preview = models.TextField(blank=True, null=True)
     major = models.CharField(max_length=100, blank=True, null=True)
     grad_date = models.DateField(blank=True, null=True)
@@ -32,3 +36,9 @@ class Member(models.Model):
     local = models.CharField(max_length=100, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     discord_id = models.BigIntegerField(null=True, blank=True)
+    
+    objects = CustomUserManager()
+
+    class Meta:
+        permissions = (("is_verified", "Users discord is verified"),
+                        ("is_admin", "User is an admin"))   

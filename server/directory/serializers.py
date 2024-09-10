@@ -1,15 +1,14 @@
 from rest_framework import serializers
-from members.models import Member
+from members.models import User
 
 class DirectoryMemberSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source='user.username', read_only=True)
     linkedin = serializers.SerializerMethodField()
     github = serializers.SerializerMethodField()
     leetcode = serializers.SerializerMethodField()
 
     class Meta:
-        model = Member
-        fields = "__all__"
+        model = User
+        fields = ['id', 'username', 'first_name', 'last_name', 'major', 'grad_date', 'linkedin', 'github', 'leetcode']
 
     def get_social_field(self, obj, field_name):
         field = getattr(obj, field_name)
@@ -30,9 +29,12 @@ class DirectoryMemberSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
 
         # remove empty fields
-        for field in instance._meta.get_fields():
-            field = field.name
-            if representation[field] is None or representation[field] == {} or representation[field] == [] or representation[field] == '':
-                representation.pop(field)
+        fields_to_remove = []
+        for field in self.Meta.fields:
+            if representation.get(field) in [None, {}, [], '']:
+                fields_to_remove.append(field)
+        
+        for field in fields_to_remove:
+            representation.pop(field)
 
         return representation

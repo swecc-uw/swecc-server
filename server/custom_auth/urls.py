@@ -9,5 +9,5 @@ urlpatterns = [
     path('session/', views.SessionView.as_view(), name='api-session'),  
     path('whoami/', views.WhoAmIView.as_view(), name='api-whoami'), 
     path('register/', views.register_view, name='register'),
-    path('<int:id>/verified/', views.DiscordVerificationView.as_view(), name='api-verified'),
+    # path('<int:id>/verified/', views.DiscordVerificationView.as_view(), name='api-verified'),
 ]
