@@ -44,7 +44,7 @@ class AuthenticatedMemberProfile(APIView):
                 serializer.save()
                 return Response(serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except User.DoesNotExact:
+        except User.DoesNotExist:
             return Response({"detail": "Member profile not found."}, status=status.HTTP_404_NOT_FOUND)
 
 class UpdateDiscordID(APIView):
