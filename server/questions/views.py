@@ -40,11 +40,12 @@ class QuestionCreateView(generics.CreateAPIView):
             return QuestionTopicSerializer
     
     def perform_create(self, serializer):
-        if serializer.is_valid() and self.kwargs['type'] != 'topic':
-            # TODO: if a topic is not provided, create a new one
-            serializer.save(created_by=self.request.user)
-        elif serializer.is_valid() and self.kwargs['type'] == 'topic':
-            serializer.save()
+        if serializer.is_valid():
+            if self.kwargs['type'] != 'topic':
+                # TODO: if a topic is not provided, create a new one
+                serializer.save(created_by=self.request.user)
+            elif self.kwargs['type'] == 'topic':
+                serializer.save()
         else:
             print(serializer.errors)
 

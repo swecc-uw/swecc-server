@@ -23,12 +23,12 @@ urlpatterns = [
         name="interview-pool-status"
     ),
     path(
-        'mine/',
+        'interview/',
         views.InterviewDetailViewAsUser.as_view(),
         name='interview-detail-user'
     ),
     path(
-        '/<uuid:interview_id>/',
+        '<uuid:interview_id>/',
         views.InterviewDetailViewAsAdmin.as_view(),
         name='interview-detail-admin'
     ),

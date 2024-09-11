@@ -41,4 +41,4 @@ class User(AbstractUser):
 
     class Meta:
         permissions = (("is_verified", "Users discord is verified"),
-                        ("is_admin", "User is an admin"))   
+                        ("is_admin", "User is an admin"))

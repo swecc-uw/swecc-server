@@ -103,8 +103,7 @@ class AuthenticatedMemberSignupForInterview(APIView):
 
 
 class GetInterviewPoolStatus(APIView):
-    # TODO: Change permission class to isAdminUser
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     def get(self, request):
         try:
@@ -120,7 +119,7 @@ class GetInterviewPoolStatus(APIView):
             return Response({"number_sign_up": 0, "members": []})
 
 class PairInterview(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -189,60 +188,35 @@ class PairInterview(APIView):
 
 
 class NotifyInterview(APIView):
-    # TODO: Change permission class to isAdminUser or using a key service
-    permission_classes = [IsAuthenticated]
+    # TODO: Add permission for using a key service
+    permission_classes = [IsAdminUser]
 
     def post(self, request):
         # TODO: Implement the notification service
         return Response({"detail": "Notification sent."})
     
 class InterviewAll(APIView):
-    permission_classes = [IsAuthenticated]
-    # TODO: admin permission
+    # permission_classes = [IsAdminUser]
     def get(self, request):
         interviews = Interview.objects.all()
 
         # Check if there are no interviews
-        if not interviews:
+        if not interviews.exists():
             return Response(
                 {"detail": "No interviews found."},
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        # Prepare the response data
-        interview_data = []
-        for interview in interviews:
-            behavioral_questions = interview.behavioral_questions.all() if interview.behavioral_questions else []
-            for question in behavioral_questions:
-                print(question.prompt)
-            interview_data.append({
-                "interview_id": interview.interview_id,
-                "interviewer": interview.interviewer.username if interview.interviewer else "N/A",
-                "interviewee": interview.interviewee.username if interview.interviewee else "N/A",
-                "technical_question": {
-                    "prompt": interview.technical_question.prompt if interview.technical_question else "N/A",
-                    "solution": interview.technical_question.solution if interview.technical_question else "N/A"
-                },
-                "behavioral_questions": [
-                    {
-                        "prompt": question.prompt,
-                        "solution": question.solution
-                    } for question in behavioral_questions
-                ],
-                "status": interview.status,
-                "date_effective": interview.date_effective,
-                "date_completed": interview.date_completed,
-            })
-        
+        # Serialize the interview data
+        serializer = InterviewSerializer(interviews, many=True)
         return Response(
-            {"interviews": interview_data},
+            {"interviews": serializer.data},
             status=status.HTTP_200_OK
         )
 
 
 class InterviewAssignQuestionRandom(APIView):
-    permission_classes = [IsAuthenticated]
-    # TODO: Change permission class to isAdminUser
+    permission_classes = [IsAdminUser]
     def post(self, request):
         try:
             # find all interview within this week (from last monday to next monday)
@@ -263,8 +237,6 @@ class InterviewAssignQuestionRandom(APIView):
             for interview in interviews:
                 interview.technical_question = technicalQ
                 interview.behavioral_questions.set(behavioralQ)
-                print(interview.technical_question)
-                print(interview.behavioral_questions.all())
                 interview.save()
             # interview = Interview.objects.get(interview_id=interview_id)
             return Response(
@@ -278,8 +250,7 @@ class InterviewAssignQuestionRandom(APIView):
             )
 
 class InterviewAssignQuestionRandomIndividual(APIView):
-    #TODO: add admin permission
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     def post(self, request, interview_id):
         try:
@@ -301,8 +272,7 @@ class InterviewAssignQuestionRandomIndividual(APIView):
         
 
 class InterviewQuestions(APIView):
-    # TODO: Change permission class to isAdminUser
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     def get(self, request, interview_id):
         try:
@@ -405,32 +375,17 @@ class InterviewDetailViewAsUser(APIView):
 
     def _format_interview_data(self, interview, user):
         # Prepare interview data based on user role and interview status
-        behavioral_questions = interview.behavioral_questions.all() if interview.behavioral_questions.exists() else []
-        interview_data = {
-            "interview_id": interview.interview_id,
-            "interviewer": interview.interviewer.username if interview.interviewer else "N/A",
-            "interviewee": interview.interviewee.username if interview.interviewee else "N/A",
-            "technical_question": {
-                "prompt": interview.technical_question.prompt if interview.technical_question else "N/A",
-                "solution": interview.technical_question.solution if interview.technical_question else "N/A"
-            },
-            "behavioral_questions": [
-                {
-                    "prompt": question.prompt,
-                    "solution": question.solution
-                } for question in behavioral_questions
-            ],
-            "status": interview.status,
-            "date_effective": interview.date_effective,
-            "date_completed": interview.date_completed,
-        }
+        serializer = InterviewSerializer(interview)
 
+        interview_data = serializer.data
+
+        # Remove questions if user role and status conditions are met
         if interview.interviewer != user and interview.status != 'completed':
-            # If the user is not the interviewer and the interview is not completed, omit detailed questions
             interview_data.pop("technical_question", None)
             interview_data.pop("behavioral_questions", None)
 
         return interview_data
+
 
 class InterviewAvailabilityView(APIView):
     permission_classes = [IsAuthenticated]
