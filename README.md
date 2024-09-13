@@ -28,6 +28,6 @@ export DB_PASSWORD=password
 | task | command | 
 | --- | --- |
 | run server locally (requires prod.venv active) | `python server/manage.py runserver` |
-| run server in docker (requires dev.venv active) | `docker-compose up` |
+| run server in docker (requires dev.venv active) | `docker compose up --build` |
 | generate openapi schema | `python server/manage.py spectacular --color --file schema.yml` |
 | swagger ui | `docker run -p 80:8080 -e SWAGGER_JSON=/schema.yml -v /Users/emm12/repos/swecc-server/schema.yml:/schema.yml swaggerapi/swagger-ui` |

@@ -4,7 +4,9 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from .models import TechnicalQuestion, QuestionTopic, BehavioralQuestion
 from .serializers import TechnicalQuestionSerializer, QuestionTopicSerializer, BehavioralQuestionSerializer
+import logging
 
+logger = logging.getLogger(__name__)
 class QuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'question_id'
@@ -34,7 +36,7 @@ class QuestionCreateView(generics.CreateAPIView):
         if serializer.is_valid():
             serializer.save(created_by=self.request.user)
         else:
-            print(serializer.errors)
+            logger.error(f'Error creating question: {serializer.errors}')
 
     def get_queryset(self):
         user = self.request.user

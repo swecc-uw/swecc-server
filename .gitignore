@@ -5,3 +5,5 @@
 .vscode/*
 frontend/.vscode/*
 backend/.vscode/*
+logs/
+*.log
