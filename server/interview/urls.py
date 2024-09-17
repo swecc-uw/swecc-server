@@ -42,4 +42,7 @@ urlpatterns = [
         views.InterviewAvailabilityView.as_view(),
         name='interview-availability'
     ),
+    path('interviews/<uuid:interview_id>/propose/', views.ProposeView.as_view(), name='interview-propose'),
+    path('interviews/<uuid:interview_id>/commit/', views.CommitView.as_view(), name='interview-commit'),
+    path('interviews/<uuid:interview_id>/complete/', views.CompleteView.as_view(), name='interview-complete'),
 ]
