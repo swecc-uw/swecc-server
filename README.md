@@ -60,7 +60,7 @@ docker exec -it swecc-server-web-1 python server/manage.py createsuperuser
 6. In the admin panel, create a new API key. Doesn't matter what you name it, but make sure to **copy the key somewhere safe**. I recommend putting it in your `dev.venv/bin/activate` file, e.g. `export VERIFICATION_KEY=your_key_here`.
 
 7. Verify your discord account, using the API key you just created, and the **non-superuser** credentials you created in step 3.
-```json
+```bash
 curl -X PUT \
 -H "Authorization: Api-Key <VERIFICATION_KEY>" \
 -H "Content-Type: application/json" \
