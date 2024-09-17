@@ -475,7 +475,6 @@ class ProposeView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Convert proposed_time to datetime if it's a string
             if isinstance(proposed_time, str):
                 try:
                     proposed_time = timezone.datetime.fromisoformat(proposed_time)
@@ -543,7 +542,6 @@ class CommitView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Convert commit_time to datetime if it's a string
             if isinstance(commit_time, str):
                 try:
                     commit_time = timezone.datetime.fromisoformat(commit_time)
@@ -606,7 +604,6 @@ class CompleteView(APIView):
 
             completion_time = request.data.get("time")
             if completion_time:
-                # Convert completion_time to datetime if it's a string
                 if isinstance(completion_time, str):
                     try:
                         completion_time = timezone.datetime.fromisoformat(

@@ -22,7 +22,7 @@ def health_check(request):
 
 urlpatterns.append(path('health/', health_check))
 
-from django.contrib import admin
-admin.autodiscover()
+# from django.contrib import admin
+# admin.autodiscover()
 
-urlpatterns.append(path('admin/', admin.site.urls))
+# urlpatterns.append(path('admin/', admin.site.urls))

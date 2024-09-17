@@ -10,7 +10,7 @@ urlpatterns = [
     path(
         "pool/",
         views.AuthenticatedMemberSignupForInterview.as_view(),
-        name="interview-pool"
+        name="interview-pool",
     ),
     path(
         "status/",
@@ -18,31 +18,43 @@ urlpatterns = [
         name="interview-pool-status"
     ),
     path(
-        'interviews/',
+        "interviews/",
         views.MemberInterviewsView.as_view(),
-        name='member-interviews'
+        name="member-interviews"
     ),
     path(
-        'interviews/interviewer/',
+        "interviews/interviewer/",
         views.InterviewerInterviewsView.as_view(),
-        name='interviewer-interviews'
+        name="interviewer-interviews",
     ),
     path(
-        'interviews/interviewee/',
+        "interviews/interviewee/",
         views.IntervieweeInterviewsView.as_view(),
-        name='interviewee-interviews'
+        name="interviewee-interviews",
     ),
     path(
-        'interviews/<uuid:interview_id>/',
+        "interviews/<uuid:interview_id>/",
         views.InterviewDetailView.as_view(),
-        name='interview-detail'
+        name="interview-detail",
     ),
     path(
-        'availability/',
+        "availability/",
         views.InterviewAvailabilityView.as_view(),
-        name='interview-availability'
+        name="interview-availability",
     ),
-    path('interviews/<uuid:interview_id>/propose/', views.ProposeView.as_view(), name='interview-propose'),
-    path('interviews/<uuid:interview_id>/commit/', views.CommitView.as_view(), name='interview-commit'),
-    path('interviews/<uuid:interview_id>/complete/', views.CompleteView.as_view(), name='interview-complete'),
+    path(
+        "interviews/<uuid:interview_id>/propose/",
+        views.ProposeView.as_view(),
+        name="interview-propose",
+    ),
+    path(
+        "interviews/<uuid:interview_id>/commit/",
+        views.CommitView.as_view(),
+        name="interview-commit",
+    ),
+    path(
+        "interviews/<uuid:interview_id>/complete/",
+        views.CompleteView.as_view(),
+        name="interview-complete",
+    ),
 ]
