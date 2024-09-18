@@ -1,3 +1,4 @@
+from datetime import datetime
 from email.policy import default
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
@@ -17,6 +18,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def parse_date(x):
+    date = datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ")
+
+    if timezone.is_aware(date):
+        return date
+    return timezone.make_aware(date)
 
 # custom permission to only allow participants of an interview to view it.
 class IsInterviewParticipant(permissions.BasePermission):
@@ -477,9 +484,9 @@ class ProposeView(APIView):
 
             if isinstance(proposed_time, str):
                 try:
-                    proposed_time = timezone.datetime.fromisoformat(proposed_time)
+                    proposed_time = parse_date(proposed_time)
                 except ValueError:
-                    logger.warning("Invalid time format provided")
+                    logger.warning(f"Invalid time format provided: {proposed_time}")
                     return Response(
                         {"detail": "Invalid time format. Please use ISO format."},
                         status=status.HTTP_400_BAD_REQUEST,
@@ -491,9 +498,10 @@ class ProposeView(APIView):
             interview.committed_time = None
             interview.save()
 
+            updated_interview_serialized = InterviewSerializer(interview).data
             logger.info(f"Interview proposal updated. ID: {interview_id}")
             return Response(
-                {"detail": "Interview time proposed successfully."},
+                {"detail": "Interview time proposed successfully.", "interview": updated_interview_serialized},
                 status=status.HTTP_200_OK,
             )
 
@@ -544,7 +552,7 @@ class CommitView(APIView):
 
             if isinstance(commit_time, str):
                 try:
-                    commit_time = timezone.datetime.fromisoformat(commit_time)
+                    commit_time = parse_date(commit_time)
                 except ValueError:
                     logger.warning("Invalid time format provided")
                     return Response(
@@ -553,7 +561,7 @@ class CommitView(APIView):
                     )
 
             if commit_time != interview.proposed_time:
-                logger.warning("Commit time does not match proposed time")
+                logger.warning(f"Commit time does not match proposed time, proposed: {interview.proposed_time}, commit: {commit_time}")
                 return Response(
                     {"detail": "Commit time must match the proposed time."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -566,9 +574,11 @@ class CommitView(APIView):
             interview.proposed_by = None
             interview.save()
 
+            updated_interview_serialized = InterviewSerializer(interview).data
+
             logger.info(f"Interview committed successfully. ID: {interview_id}")
             return Response(
-                {"detail": "Interview committed successfully."},
+                {"detail": "Interview committed successfully.", "interview": updated_interview_serialized},
                 status=status.HTTP_200_OK,
             )
 
@@ -593,7 +603,7 @@ class CompleteView(APIView):
         try:
             interview = Interview.objects.get(interview_id=interview_id)
 
-            if interview.status != "inactive_unconfirmed":
+            if interview.status != "active":
                 logger.warning(
                     f"Invalid interview status for completion. Status: {interview.status}"
                 )
@@ -606,7 +616,7 @@ class CompleteView(APIView):
             if completion_time:
                 if isinstance(completion_time, str):
                     try:
-                        completion_time = timezone.datetime.fromisoformat(
+                        completion_time = parse_date(
                             completion_time
                         )
                     except ValueError:
@@ -623,12 +633,15 @@ class CompleteView(APIView):
 
             interview.save()
 
+            updated_interview_serialized = InterviewSerializer(interview).data
+
             logger.info(
                 f"Interview marked as {'completed' if completion_time else 'incomplete'}. ID: {interview_id}"
             )
             return Response(
                 {
-                    "detail": f"Interview marked as {'completed' if completion_time else 'incomplete'}."
+                    "detail": f"Interview marked as {'completed' if completion_time else 'incomplete'}.",
+                    "interview": updated_interview_serialized
                 },
                 status=status.HTTP_200_OK,
             )
