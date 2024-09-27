@@ -28,11 +28,11 @@ def login_view(request):
     data = json.loads(request.body)
     username = data.get('username').strip()
     password = data.get('password')
-    
+
     if username is None or password is None:
         logger.error('Error logging in: username or password not provided')
         return JsonResponse({'detail': 'Please provide username and password.'}, status=400)
-    
+
     user = authenticate(request, username=username, password=password)
 
     if user is None:
@@ -41,7 +41,7 @@ def login_view(request):
 
     login(request, user)
 
-    logger.info(f'User {username} logged in')
+    logger.info('User %s logged in', username)
     return JsonResponse({'detail': 'Successfully logged in.'})
 
 
@@ -65,12 +65,12 @@ def register_view(request):
                 logger.error('Error registering: discord username already exists')
                 return JsonResponse({'detail': 'Discord username already exists.'}, status=400)
             user = User.objects.create_user(username=username, password=password, discord_username=discord_username)
-            
-            logger.info(f'User {username} registered')
+
+            logger.info('User %s registered', username)
             return JsonResponse({'detail': 'Successfully registered.', 'id': user.id}, status=201)
 
     except Exception as e:
-        logger.error(f'Error registering: {str(e)}')
+        logger.error('Error registering: %s', str(e))
         return JsonResponse({'detail': 'An error occurred during registration.', 'error': str(e)}, status=500)
 
 
@@ -80,7 +80,7 @@ def logout_view(request):
         return JsonResponse({'detail': 'You\'re not logged in.'}, status=400)
 
     logout(request)
-    logger.info(f'User {request.user.username} logged out')
+    logger.info('User %s logged out', request.user.username)
     return JsonResponse({'detail': 'Successfully logged out.'})
 
 

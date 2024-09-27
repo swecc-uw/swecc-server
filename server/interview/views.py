@@ -113,7 +113,7 @@ class AuthenticatedMemberSignupForInterview(APIView):
             # If user is not in pool, add them and save availability
             InterviewPool.objects.create(member=request.user)
             interview_availability.save()
-            logger.info(f"User {request.user.username} signed up for an interview")
+            logger.info("User %s signed up for an interview", request.user.username)
             return Response(
                 {"detail": "You have successfully signed up for an interview."},
                 status=status.HTTP_201_CREATED,
@@ -126,13 +126,14 @@ class AuthenticatedMemberSignupForInterview(APIView):
         try:
             interview_pool = InterviewPool.objects.get(member=request.user)
             interview_pool.delete()
-            logger.info(f"User {request.user.username} cancelled their interview")
+            logger.info("User %s cancelled their interview", request.user.username)
             return Response(
                 {"detail": "You have successfully cancelled your interview."}
             )
         except InterviewPool.DoesNotExist:
             logger.warning(
-                f"User {request.user.username} attempted to cancel a non-existent interview"
+                "User %s attempted to cancel a non-existent interview",
+                request.user.username
             )
             return Response(
                 {"detail": "You are not signed up for an interview."},
@@ -148,7 +149,7 @@ class GetInterviewPoolStatus(APIView):
         logger.debug("GET request received for GetInterviewPoolStatus")
         try:
             interview_pool = InterviewPool.objects.all()
-            logger.info(f"Interview pool status: {len(interview_pool)} members")
+            logger.info("Interview pool status: %d members signed up", len(interview_pool))
             return Response(
                 {
                     "number_sign_up": len(interview_pool),
@@ -268,7 +269,7 @@ class InterviewQuestions(APIView):
         )
         try:
             interview = Interview.objects.get(interview_id=interview_id)
-            logger.info(f"Retrieved questions for interview ID: {interview_id}")
+            logger.info("Retrieved questions for interview ID: %s", interview_id)
             return Response(
                 {
                     "interview_id": interview.interview_id,
@@ -280,7 +281,7 @@ class InterviewQuestions(APIView):
                 }
             )
         except Interview.DoesNotExist:
-            logger.error(f"Interview not found. ID: {interview_id}")
+            logger.error("Interview not found. ID: %s", interview_id)
             return Response(
                 {"detail": "Interview not found."}, status=status.HTTP_404_NOT_FOUND
             )
@@ -297,7 +298,7 @@ class InterviewRunningStatus(APIView):
             interview = Interview.objects.get(
                 interviewer=request.user, interview_id=interview_id, status="active"
             )
-            logger.info(f"Retrieved active interview status. ID: {interview_id}")
+            logger.info("Retrieved active interview status. ID: %s", interview_id)
             return Response(
                 {
                     "interview_id": interview.interview_id,
@@ -308,7 +309,7 @@ class InterviewRunningStatus(APIView):
                 }
             )
         except Interview.DoesNotExist:
-            logger.warning(f"No active interview found. ID: {interview_id}")
+            logger.warning("No active interview found. ID: %s", interview_id)
             return Response(
                 {"detail": "No active interview found."},
                 status=status.HTTP_404_NOT_FOUND,
@@ -326,12 +327,12 @@ class InterviewRunningStatus(APIView):
             # not quite sure best way to handle this
             interview.status = "inactive"
             interview.save()
-            logger.info(f"Interview completed. ID: {interview_id}")
+            logger.info("Interview completed. ID: %s", interview_id)
             return Response(
                 {"detail": "Interview completed."}, status=status.HTTP_200_OK
             )
         except Interview.DoesNotExist:
-            logger.warning(f"No active interview found to complete. ID: {interview_id}")
+            logger.warning("No active interview found to complete. ID: %s", interview_id)
             return Response(
                 {"detail": "No active interview found."},
                 status=status.HTTP_404_NOT_FOUND,
@@ -344,7 +345,7 @@ class MemberInterviewsView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        logger.debug(f"Retrieving interviews for user: {user.username}")
+        logger.debug("Retrieving interviews for user: %s", user.username)
         return Interview.objects.filter(interviewer=user) | Interview.objects.filter(
             interviewee=user
         )
@@ -356,7 +357,8 @@ class InterviewerInterviewsView(generics.ListAPIView):
 
     def get_queryset(self):
         logger.debug(
-            f"Retrieving interviews where user is interviewer: {self.request.user.username}"
+            "Retrieving interviews where user is interviewer: %s",
+            self.request.user.username
         )
         return Interview.objects.filter(interviewer=self.request.user)
 
@@ -380,7 +382,7 @@ class InterviewDetailView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        logger.debug(f"Retrieving interview details for user: {user.username}")
+        logger.debug("Retrieving interview details for user: %s", user.username)
         return Interview.objects.filter(interviewer=user) | Interview.objects.filter(
             interviewee=user
         )
@@ -486,7 +488,7 @@ class ProposeView(APIView):
                 try:
                     proposed_time = parse_date(proposed_time)
                 except ValueError:
-                    logger.warning(f"Invalid time format provided: {proposed_time}")
+                    logger.warning("Invalid time format provided: %s", proposed_time)
                     return Response(
                         {"detail": "Invalid time format. Please use ISO format."},
                         status=status.HTTP_400_BAD_REQUEST,
@@ -499,19 +501,19 @@ class ProposeView(APIView):
             interview.save()
 
             updated_interview_serialized = InterviewSerializer(interview).data
-            logger.info(f"Interview proposal updated. ID: {interview_id}")
+            logger.info("Interview proposal updated. ID: %s", interview_id)
             return Response(
                 {"detail": "Interview time proposed successfully.", "interview": updated_interview_serialized},
                 status=status.HTTP_200_OK,
             )
 
         except Interview.DoesNotExist:
-            logger.error(f"Interview not found. ID: {interview_id}")
+            logger.error("Interview not found. ID: %s", interview_id)
             return Response(
                 {"detail": "Interview not found."}, status=status.HTTP_404_NOT_FOUND
             )
         except ValidationError as e:
-            logger.error(f"Validation error: {str(e)}")
+            logger.error("Validation error: %s", str(e))
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -561,7 +563,7 @@ class CommitView(APIView):
                     )
 
             if commit_time != interview.proposed_time:
-                logger.warning(f"Commit time does not match proposed time, proposed: {interview.proposed_time}, commit: {commit_time}")
+                logger.warning("Commit time does not match proposed time, proposed: %s, commit: %s", interview.proposed_time, commit_time)
                 return Response(
                     {"detail": "Commit time must match the proposed time."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -576,19 +578,19 @@ class CommitView(APIView):
 
             updated_interview_serialized = InterviewSerializer(interview).data
 
-            logger.info(f"Interview committed successfully. ID: {interview_id}")
+            logger.info("Interview committed successfully. ID: %s", interview_id)
             return Response(
                 {"detail": "Interview committed successfully.", "interview": updated_interview_serialized},
                 status=status.HTTP_200_OK,
             )
 
         except Interview.DoesNotExist:
-            logger.error(f"Interview not found. ID: {interview_id}")
+            logger.error("Interview not found. ID: %s", interview_id)
             return Response(
                 {"detail": "Interview not found."}, status=status.HTTP_404_NOT_FOUND
             )
         except ValidationError as e:
-            logger.error(f"Validation error: {str(e)}")
+            logger.error("Validation error: %s", str(e))
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -647,10 +649,10 @@ class CompleteView(APIView):
             )
 
         except Interview.DoesNotExist:
-            logger.error(f"Interview not found. ID: {interview_id}")
+            logger.error("Interview not found. ID: %s", interview_id)
             return Response(
                 {"detail": "Interview not found."}, status=status.HTTP_404_NOT_FOUND
             )
         except ValidationError as e:
-            logger.error(f"Validation error: {str(e)}")
+            logger.error("Validation error: %s", str(e))
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
