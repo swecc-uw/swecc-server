@@ -24,7 +24,7 @@ class QuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
             return BehavioralQuestion.objects.all()
 
 class QuestionCreateView(generics.CreateAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAdminUser]
 
     def get_serializer_class(self):
         if self.kwargs['type'] == 'technical':
