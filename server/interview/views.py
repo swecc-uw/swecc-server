@@ -1,8 +1,10 @@
 from datetime import datetime
+from datetime import datetime
 from email.policy import default
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from .algorithm import CommonAvailabilityStableMatching
+from .notification import interview_paired_notification_html, interview_unpaired_notification_html, send_email
 from .models import Interview
 from .serializers import InterviewSerializer
 from .models import InterviewAvailability, InterviewPool, Interview
@@ -17,6 +19,8 @@ from django.utils import timezone
 import logging
 
 logger = logging.getLogger(__name__)
+
+INTERVIEW_NOTIFICATION_ADDR = "interview@no-reply.swecc.org"
 
 def parse_date(x):
     date = datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ")
@@ -190,6 +194,7 @@ class PairInterview(APIView):
         }
 
         pool_member_ids = [m.member.id for m in pool_members]
+        logger.info("Pairing interviews for %d members", len(pool_member_ids))
         self.pairing_algorithm.set_availabilities(availabilities)
         # Perform pairing using the CommonAvailabilityStableMatching algorithm
         matches = self.pairing_algorithm.pair(pool_member_ids)
@@ -221,7 +226,67 @@ class PairInterview(APIView):
                 # Remove paired users from the pool
                 InterviewPool.objects.filter(member__in=[p1, p2]).delete()
 
+        logger.info("Paired %d interviews", len(paired_interviews))
         # Check for any unpaired members
+        unpaired_members = [member for i, member in enumerate(pool_members) if matches[i] == -1]
+
+        failed_paired_emails = []
+        # notifications
+        logger.info("Sending notifications to %d paired members", len(paired_interviews))
+        for interview in paired_interviews:
+            try:
+                send_email(
+                    from_email=INTERVIEW_NOTIFICATION_ADDR,
+                    to_email=interview.interviewer.email,
+                    subject="You've been paired for an upcoming mock interview!",
+                    html_content=interview_paired_notification_html(
+                        name=interview.interviewer.first_name,
+                        partner_name=interview.interviewee.first_name,
+                        partner_email=interview.interviewee.email,
+                        partner_discord_id=interview.interviewee.discord_id,
+                        partner_discord_username=interview.interviewee.discord_username,
+                        interview_date=interview.date_effective
+                    )
+                )
+            except Exception as e:
+                failed_paired_emails.append((interview.id, interview.interviewer.email, str(e)))
+
+            try:
+                send_email(
+                    from_email=INTERVIEW_NOTIFICATION_ADDR,
+                    to_email=interview.interviewee.email,
+                    subject="You've been paired for an upcoming mock interview!",
+                    html_content=interview_paired_notification_html(
+                        name=interview.interviewee.first_name,
+                        partner_name=interview.interviewer.first_name,
+                        partner_email=interview.interviewer.email,
+                        partner_discord_id=interview.interviewer.discord_id,
+                        partner_discord_username=interview.interviewer.discord_username,
+                        interview_date=interview.date_effective
+                    )
+                )
+            except Exception as e:
+                failed_paired_emails.append((interview.id, interview.interviewee.email, str(e)))
+
+        logger.error("Failed to send notifications to %d paired members", len(failed_paired_emails))
+        logger.info("Sending notifications to %d unpaired members", len(unpaired_members))
+        failed_unpaired_emails = []
+        for pool_member in unpaired_members:
+            try:
+                send_email(
+                    from_email=INTERVIEW_NOTIFICATION_ADDR,
+                    to_email=pool_member.member.email,
+                    subject="You have not been paired for an upcoming mock interview",
+                    html_content=interview_unpaired_notification_html(
+                        pool_member.member.first_name,
+                        timezone.now().strftime("%B %d, %Y")
+                    )
+                )
+            except Exception as e:
+                failed_unpaired_emails.append((pool_member.member.email, str(e)))
+
+        logger.error("Failed to send notifications to %d unpaired members", len(failed_unpaired_emails))
+
         unpaired_members = [
             member.member.username
             for i, member in enumerate(pool_members)
@@ -229,7 +294,8 @@ class PairInterview(APIView):
         ]
 
         logger.info(
-            f"Successfully paired {len(paired_interviews)} interviews. Unpaired members: {len(unpaired_members)}"
+            "Successfully paired %d interviews. Unpaired members: {len(unpaired_members)}",
+            len(paired_interviews)
         )
         return Response(
             {
@@ -243,25 +309,29 @@ class PairInterview(APIView):
                     for interview in paired_interviews
                 ],
                 "unpaired_members": unpaired_members,
+                "failed_paired_emails": failed_paired_emails,
+                "failed_unpaired_emails": failed_unpaired_emails,
             },
             status=status.HTTP_201_CREATED,
         )
 
+    def get(self, request):
+        logger.debug("GET request received for PairInterview")
+        return Response({"detail": "This endpoint is for pairing interviews. Use POST to pair interviews."})
 
-class NotifyInterview(APIView):
-    # TODO: Change permission class to isAdminUser or using a key service
-    permission_classes = [IsAuthenticated]
+# class NotifyInterview(APIView):
+#     permission_classes = [IsAdminUser]
 
-    def post(self, request):
-        logger.debug("POST request received for NotifyInterview")
-        # TODO: Implement the notification service
-        logger.info("Notification sent (placeholder)")
-        return Response({"detail": "Notification sent."})
+#     def post(self, request):
+#         logger.debug("POST request received for NotifyInterview")
+#         # TODO: Implement the notification service
+#         logger.info("Notification sent (placeholder)")
+#         return Response({"detail": "Notification sent."})
 
 
 class InterviewQuestions(APIView):
     # TODO: Change permission class to isAdminUser
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     def get(self, request, interview_id):
         logger.debug(
