@@ -81,7 +81,7 @@ def register_view(request):
                 last_name=last_name
             )
 
-            logger.info(f'User {username} registered')
+            logger.info('User %s registered', username)
             return JsonResponse({'detail': 'Successfully registered.', 'id': user.id}, status=201)
 
     except Exception as e:
