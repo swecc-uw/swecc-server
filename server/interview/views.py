@@ -3,6 +3,8 @@ from datetime import datetime
 from email.policy import default
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
+
+from server.custom_auth.permissions import IsAdmin
 from .algorithm import CommonAvailabilityStableMatching
 from .notification import interview_paired_notification_html, interview_unpaired_notification_html, send_email
 from .models import Interview
@@ -11,7 +13,7 @@ from .models import InterviewAvailability, InterviewPool, Interview
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import ValidationError
 from rest_framework import permissions
 from django.db import transaction
@@ -146,8 +148,7 @@ class AuthenticatedMemberSignupForInterview(APIView):
 
 
 class GetInterviewPoolStatus(APIView):
-    # TODO: Change permission class to isAdminUser
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdmin]
 
     def get(self, request):
         logger.debug("GET request received for GetInterviewPoolStatus")
@@ -320,7 +321,7 @@ class PairInterview(APIView):
         return Response({"detail": "This endpoint is for pairing interviews. Use POST to pair interviews."})
 
 # class NotifyInterview(APIView):
-#     permission_classes = [IsAdminUser]
+#     permission_classes = [IsAdmin]
 
 #     def post(self, request):
 #         logger.debug("POST request received for NotifyInterview")
@@ -330,8 +331,7 @@ class PairInterview(APIView):
 
 
 class InterviewQuestions(APIView):
-    # TODO: Change permission class to isAdminUser
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
 
     def get(self, request, interview_id):
         logger.debug(
