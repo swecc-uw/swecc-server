@@ -7,4 +7,4 @@ frontend/.vscode/*
 backend/.vscode/*
 *.log
 *.log.*
-
+*django.log*
