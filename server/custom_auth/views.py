@@ -49,14 +49,16 @@ def login_view(request):
 @require_POST
 def register_view(request):
     data = json.loads(request.body)
+    first_name = data.get('first_name').strip()
+    last_name = data.get('last_name').strip()
     username = data.get('username').strip()
     email = data.get('email').strip()
     password = data.get('password').strip()
     discord_username = data.get('discord_username')
 
-    if not username or not password or not discord_username or not email:
-        logger.error('Error registering: username, email, password, or discord username not provided')
-        return JsonResponse({'detail': 'Please provide username, email, password, and discord username.'}, status=400)
+    if not username or not password or not discord_username or not email or not first_name or not last_name:
+        logger.error('Error registering: username, email, password, first name, last name, or discord username not provided')
+        return JsonResponse({'detail': 'Please provide username, email, password, first name, last name, and discord username.'}, status=400)
 
     try:
         with transaction.atomic():
@@ -69,9 +71,17 @@ def register_view(request):
             if User.objects.filter(email__iexact=email).exists():
                 logger.error('Error registering: email already exists')
                 return JsonResponse({'detail': 'Email already exists.'}, status=400)
-            user = User.objects.create_user(username=username, email=email, password=password, discord_username=discord_username)
             
-            logger.info(f'User {username} registered')
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                discord_username=discord_username,
+                first_name=first_name,
+                last_name=last_name
+            )
+
+            logger.info('User %s registered', username)
             return JsonResponse({'detail': 'Successfully registered.', 'id': user.id}, status=201)
 
     except Exception as e:
