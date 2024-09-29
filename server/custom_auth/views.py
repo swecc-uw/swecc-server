@@ -29,11 +29,9 @@ def login_view(request):
     username = data.get('username').strip()
     password = data.get('password')
 
-
     if username is None or password is None:
         logger.error('Error logging in: username or password not provided')
         return JsonResponse({'detail': 'Please provide username and password.'}, status=400)
-
 
     user = authenticate(request, username=username, password=password)
 
