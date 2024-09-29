@@ -1,11 +1,16 @@
-import unittest
-import random
-import time
-import numpy as np
-from typing import Dict, List
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.urls import reverse
+from django.utils import timezone
+from rest_framework.test import APIClient
+from rest_framework import status
+from questions.models import BehavioralQuestion, QuestionTopic, TechnicalQuestion
+from .models import Interview
 from .algorithm import CommonAvailabilityStableMatching
+import random
+import numpy as np
 
-class TestCommonAvailabilityStableMatching(unittest.TestCase):
+class TestCommonAvailabilityStableMatching(TestCase):
     def setUp(self):
         self.algorithm = CommonAvailabilityStableMatching()
 
@@ -44,11 +49,12 @@ class TestCommonAvailabilityStableMatching(unittest.TestCase):
             i: [[random.choice([True, False]) for __ in range(48)] for _ in range(7)]
             for i in pool_member_ids
         }
-        start_time = time.perf_counter_ns()
+        start_time = timezone.now()
         self.algorithm.set_availabilities(availabilities)
         self.algorithm.pair(pool_member_ids)
-        end_time = time.perf_counter_ns()
-        print(f"Time taken for pairing with {num_members} members: {(end_time - start_time)/1e6} ms")
+        end_time = timezone.now()
+        duration = (end_time - start_time).total_seconds() * 1000
+        print(f"Time taken for pairing with {num_members} members: {duration:.2f} ms")
 
     def test_perfect_matching(self):
         availabilities = {
@@ -95,10 +101,124 @@ class TestCommonAvailabilityStableMatching(unittest.TestCase):
             i: [[random.choice([True, False]) for __ in range(48)] for _ in range(7)]
             for i in pool_member_ids
         }
-        start_time = time.perf_counter_ns()
+        start_time = timezone.now()
         self.algorithm.calculate_preferences(pool_member_ids, availabilities)
-        end_time = time.perf_counter_ns()
-        print(f"Time taken for calculate_preferences with {num_members} members: {(end_time - start_time)/1e6} ms")
+        end_time = timezone.now()
+        duration = (end_time - start_time).total_seconds() * 1000
+        print(f"Time taken for calculate_preferences with {num_members} members: {duration:.2f} ms")
 
-if __name__ == "__main__":
-    unittest.main()
+User = get_user_model()
+class InterviewLifecycleTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.interviewer = User.objects.create_user(username='interviewer', password='password')
+        self.interviewee = User.objects.create_user(username='interviewee', password='password')
+        self.technical_question = TechnicalQuestion.objects.create(
+            created_by=self.interviewer,
+            prompt='Prompt',
+            solution='Solution',
+            topic=QuestionTopic.objects.create(name='Topic')
+        )
+        self.behavioral_question = BehavioralQuestion.objects.create(
+            created_by=self.interviewer,
+            prompt='Prompt',
+            solution='Solution'
+        )
+        self.interview = Interview.objects.create(
+            interviewer=self.interviewer,
+            interviewee=self.interviewee,
+            date_effective=timezone.now()
+        )
+        self.interview.behavioral_questions.add(self.behavioral_question)
+        self.interview.technical_question = self.technical_question
+
+    def test_propose_view(self):
+        self.client.force_authenticate(user=self.interviewer)
+        url = reverse('interview-propose', kwargs={'interview_id': self.interview.interview_id})
+        proposed_time = timezone.now() + timezone.timedelta(days=1)
+        data = {'time': proposed_time.isoformat()}
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.interview.refresh_from_db()
+        self.assertEqual(self.interview.proposed_time, proposed_time)
+        self.assertEqual(self.interview.proposed_by, self.interviewer)
+        self.assertEqual(self.interview.status, 'pending')
+
+    def test_commit_view(self):
+        self.client.force_authenticate(user=self.interviewee)
+        url = reverse('interview-commit', kwargs={'interview_id': self.interview.interview_id})
+        proposed_time = timezone.now() + timezone.timedelta(days=1)
+        self.interview.proposed_time = proposed_time
+        self.interview.proposed_by = self.interviewer
+        self.interview.save()
+
+        data = {'time': proposed_time.isoformat()}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.interview.refresh_from_db()
+        self.assertEqual(self.interview.committed_time, proposed_time)
+        self.assertEqual(self.interview.status, 'active')
+        self.assertIsNone(self.interview.proposed_time)
+        self.assertIsNone(self.interview.proposed_by)
+
+    def test_complete_view(self):
+        self.client.force_authenticate(user=self.interviewee)
+        url = reverse('interview-complete', kwargs={'interview_id': self.interview.interview_id})
+        self.interview.status = 'inactive_unconfirmed'
+        self.interview.save()
+
+        completion_time = timezone.now()
+        data = {'time': completion_time.isoformat()}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.interview.refresh_from_db()
+        self.assertEqual(self.interview.status, 'inactive_completed')
+        self.assertEqual(self.interview.date_completed, completion_time)
+
+    def test_complete_view_without_time(self):
+        self.client.force_authenticate(user=self.interviewee)
+        url = reverse('interview-complete', kwargs={'interview_id': self.interview.interview_id})
+        self.interview.status = 'inactive_unconfirmed'
+        self.interview.save()
+
+        response = self.client.post(url, {})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.interview.refresh_from_db()
+        self.assertEqual(self.interview.status, 'inactive_incomplete')
+        self.assertIsNotNone(self.interview.date_completed)
+
+    def test_propose_view_invalid_status(self):
+        self.client.force_authenticate(user=self.interviewer)
+        url = reverse('interview-propose', kwargs={'interview_id': self.interview.interview_id})
+        self.interview.status = 'inactive_completed'
+        self.interview.save()
+
+        data = {'time': timezone.now().isoformat()}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_commit_view_invalid_user(self):
+        self.client.force_authenticate(user=self.interviewer)
+        url = reverse('interview-commit', kwargs={'interview_id': self.interview.interview_id})
+        self.interview.proposed_time = timezone.now()
+        self.interview.proposed_by = self.interviewer
+        self.interview.save()
+
+        data = {'time': self.interview.proposed_time.isoformat()}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_complete_view_invalid_status(self):
+        self.client.force_authenticate(user=self.interviewee)
+        url = reverse('interview-complete', kwargs={'interview_id': self.interview.interview_id})
+        self.interview.status = 'active'
+        self.interview.save()
+
+        data = {'time': timezone.now().isoformat()}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

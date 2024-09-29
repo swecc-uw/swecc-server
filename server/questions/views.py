@@ -36,7 +36,7 @@ class QuestionCreateView(generics.CreateAPIView):
         if serializer.is_valid():
             serializer.save(created_by=self.request.user)
         else:
-            logger.error(f'Error creating question: {serializer.errors}')
+            logger.error('Error creating question: %s', serializer.errors)
 
     def get_queryset(self):
         user = self.request.user

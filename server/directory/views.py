@@ -16,7 +16,7 @@ class MemberDirectorySearchView(APIView):
     def get(self, request):
         query = request.query_params.get('q', '')
 
-        logger.info(f'Searching for members with query: {query}')
+        logger.info('Searching for members with query: %s', query)
 
         members = User.objects.all()
 
@@ -39,5 +39,5 @@ class MemberDirectoryView(APIView):
             serializer = DirectoryMemberSerializer(member)
             return Response(serializer.data)
         except User.DoesNotExist:
-            logger.error(f'Error retrieving user: {serializer.errors}')
+            logger.error('Error retrieving user: user with id %s not found', id)
             return JsonResponse({'detail': 'Member not found.'}, status=404)

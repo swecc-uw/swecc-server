@@ -1,3 +1,4 @@
+from datetime import datetime
 from email.policy import default
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
@@ -17,97 +18,126 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def parse_date(x):
+    date = datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ")
+
+    if timezone.is_aware(date):
+        return date
+    return timezone.make_aware(date)
+
 # custom permission to only allow participants of an interview to view it.
 class IsInterviewParticipant(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         # Check if the user is either the interviewer or interviewee
         return obj.interviewer == request.user or obj.interviewee == request.user
 
+
 # Helper validation functions
 def is_valid_availability(availability):
-    return isinstance(availability, list) and len(availability) == 48 and all(isinstance(slot, bool) for slot in availability)
+    return (
+        isinstance(availability, list)
+        and len(availability) == 48
+        and all(isinstance(slot, bool) for slot in availability)
+    )
+
 
 # Create your views here.
 class AuthenticatedMemberSignupForInterview(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        logger.debug(f"GET request received for AuthenticatedMemberSignupForInterview by user {request.user.username}")
+        logger.debug(
+            f"GET request received for AuthenticatedMemberSignupForInterview by user {request.user.username}"
+        )
         try:
             _ = InterviewPool.objects.get(member=request.user)
-            logger.info(f"User {request.user.username} is already signed up for an interview")
+            logger.info(
+                f"User {request.user.username} is already signed up for an interview"
+            )
             return Response(
                 {
                     "sign_up": True,
                     "detail": "You are signed up for an interview.",
-                    "member": request.user.username
+                    "member": request.user.username,
                 },
-                status=status.HTTP_200_OK
+                status=status.HTTP_200_OK,
             )
         except InterviewPool.DoesNotExist:
-            logger.info(f"User {request.user.username} is not signed up for an interview")
+            logger.info(
+                f"User {request.user.username} is not signed up for an interview"
+            )
             return Response(
                 {
                     "sign_up": False,
                     "detail": "You are not signed up for an interview.",
-                    "member": request.user.username
+                    "member": request.user.username,
                 },
-                status=status.HTTP_200_OK
+                status=status.HTTP_200_OK,
             )
 
     def post(self, request):
-        logger.debug(f"POST request received for AuthenticatedMemberSignupForInterview by user {request.user.username}")
+        logger.debug(
+            f"POST request received for AuthenticatedMemberSignupForInterview by user {request.user.username}"
+        )
         # Get or create InterviewAvailability for the user
         interview_availability, _ = InterviewAvailability.objects.get_or_create(
             member=request.user,
         )
 
         # Update availability if provided in the request
-        if 'availability' in request.data:
-            new_availability = request.data['availability']
+        if "availability" in request.data:
+            new_availability = request.data["availability"]
             try:
                 interview_availability.set_interview_availability(new_availability)
             except ValidationError as e:
-                logger.error(f"Validation error for user {request.user.username}: {str(e)}")
-                return Response(
-                    {"detail": str(e)},
-                    status=status.HTTP_400_BAD_REQUEST
+                logger.error(
+                    f"Validation error for user {request.user.username}: {str(e)}"
                 )
+                return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         # Check if user is already in InterviewPool
         try:
             InterviewPool.objects.get(member=request.user)
             interview_availability.save()
-            logger.info(f"User {request.user.username} updated their interview availability")
+            logger.info(
+                f"User {request.user.username} updated their interview availability"
+            )
             return Response(
-                {"detail": "You have successfully updated your interview availability."},
-                status=status.HTTP_200_OK
+                {
+                    "detail": "You have successfully updated your interview availability."
+                },
+                status=status.HTTP_200_OK,
             )
 
         except InterviewPool.DoesNotExist:
             # If user is not in pool, add them and save availability
             InterviewPool.objects.create(member=request.user)
             interview_availability.save()
-            logger.info(f"User {request.user.username} signed up for an interview")
+            logger.info("User %s signed up for an interview", request.user.username)
             return Response(
                 {"detail": "You have successfully signed up for an interview."},
-                status=status.HTTP_201_CREATED
+                status=status.HTTP_201_CREATED,
             )
 
     def delete(self, request):
-        logger.debug(f"DELETE request received for AuthenticatedMemberSignupForInterview by user {request.user.username}")
+        logger.debug(
+            f"DELETE request received for AuthenticatedMemberSignupForInterview by user {request.user.username}"
+        )
         try:
             interview_pool = InterviewPool.objects.get(member=request.user)
             interview_pool.delete()
-            logger.info(f"User {request.user.username} cancelled their interview")
+            logger.info("User %s cancelled their interview", request.user.username)
             return Response(
                 {"detail": "You have successfully cancelled your interview."}
             )
         except InterviewPool.DoesNotExist:
-            logger.warning(f"User {request.user.username} attempted to cancel a non-existent interview")
+            logger.warning(
+                "User %s attempted to cancel a non-existent interview",
+                request.user.username
+            )
             return Response(
                 {"detail": "You are not signed up for an interview."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
 
@@ -119,17 +149,17 @@ class GetInterviewPoolStatus(APIView):
         logger.debug("GET request received for GetInterviewPoolStatus")
         try:
             interview_pool = InterviewPool.objects.all()
-            logger.info(f"Interview pool status: {len(interview_pool)} members")
-            return Response({
-                "number_sign_up": len(interview_pool),
-                "members": [
-                    member.member.username
-                    for member in interview_pool
-                ]
-            })
+            logger.info("Interview pool status: %d members signed up", len(interview_pool))
+            return Response(
+                {
+                    "number_sign_up": len(interview_pool),
+                    "members": [member.member.username for member in interview_pool],
+                }
+            )
         except InterviewPool.DoesNotExist:
             logger.info("Interview pool is empty")
             return Response({"number_sign_up": 0, "members": []})
+
 
 class PairInterview(APIView):
     permission_classes = [IsAuthenticated]
@@ -145,12 +175,17 @@ class PairInterview(APIView):
 
         if len(pool_members) < 2:
             logger.warning("Not enough members in the pool to pair interviews")
-            return Response({"detail": "Not enough members in the pool to pair interviews."},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Not enough members in the pool to pair interviews."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Get availabilities for all members
         availabilities = {
-            member.member.id: InterviewAvailability.objects.get(member=member.member).interview_availability_slots or [[False] * 48 for _ in range(7)]
+            member.member.id: InterviewAvailability.objects.get(
+                member=member.member
+            ).interview_availability_slots
+            or [[False] * 48 for _ in range(7)]
             for member in pool_members
         }
 
@@ -169,14 +204,14 @@ class PairInterview(APIView):
                 interview1 = Interview.objects.create(
                     interviewer=p1,
                     interviewee=p2,
-                    status='pending',
+                    status="pending",
                     date_effective=timezone.now(),
                 )
 
                 interview2 = Interview.objects.create(
                     interviewer=p2,
                     interviewee=p1,
-                    status='pending',
+                    status="pending",
                     date_effective=timezone.now(),
                 )
 
@@ -187,20 +222,30 @@ class PairInterview(APIView):
                 InterviewPool.objects.filter(member__in=[p1, p2]).delete()
 
         # Check for any unpaired members
-        unpaired_members = [member.member.username for i, member in enumerate(pool_members) if matches[i] == -1]
+        unpaired_members = [
+            member.member.username
+            for i, member in enumerate(pool_members)
+            if matches[i] == -1
+        ]
 
-        logger.info(f"Successfully paired {len(paired_interviews)} interviews. Unpaired members: {len(unpaired_members)}")
-        return Response({
-            "detail": f"Successfully paired {len(paired_interviews)} interviews.",
-            "paired_interviews": [
-                {
-                    "interview_id": str(interview.interview_id),
-                    "interviewer": interview.interviewer.username,
-                    "interviewee": interview.interviewee.username
-                } for interview in paired_interviews
-            ],
-            "unpaired_members": unpaired_members
-        }, status=status.HTTP_201_CREATED)
+        logger.info(
+            f"Successfully paired {len(paired_interviews)} interviews. Unpaired members: {len(unpaired_members)}"
+        )
+        return Response(
+            {
+                "detail": f"Successfully paired {len(paired_interviews)} interviews.",
+                "paired_interviews": [
+                    {
+                        "interview_id": str(interview.interview_id),
+                        "interviewer": interview.interviewer.username,
+                        "interviewee": interview.interviewee.username,
+                    }
+                    for interview in paired_interviews
+                ],
+                "unpaired_members": unpaired_members,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class NotifyInterview(APIView):
@@ -219,16 +264,16 @@ class InterviewQuestions(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, interview_id):
-        logger.debug(f"GET request received for InterviewQuestions. Interview ID: {interview_id}")
+        logger.debug(
+            f"GET request received for InterviewQuestions. Interview ID: {interview_id}"
+        )
         try:
             interview = Interview.objects.get(interview_id=interview_id)
-            logger.info(f"Retrieved questions for interview ID: {interview_id}")
+            logger.info("Retrieved questions for interview ID: %s", interview_id)
             return Response(
                 {
                     "interview_id": interview.interview_id,
-                    "technical_question": (
-                        interview.technical_question.question
-                    ),
+                    "technical_question": (interview.technical_question.question),
                     "behavioral_questions": [
                         question.question
                         for question in interview.behavioral_questions.all()
@@ -236,10 +281,9 @@ class InterviewQuestions(APIView):
                 }
             )
         except Interview.DoesNotExist:
-            logger.error(f"Interview not found. ID: {interview_id}")
+            logger.error("Interview not found. ID: %s", interview_id)
             return Response(
-                {"detail": "Interview not found."},
-                status=status.HTTP_404_NOT_FOUND
+                {"detail": "Interview not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
 
@@ -247,14 +291,14 @@ class InterviewRunningStatus(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, interview_id):
-        logger.debug(f"GET request received for InterviewRunningStatus. Interview ID: {interview_id}")
+        logger.debug(
+            f"GET request received for InterviewRunningStatus. Interview ID: {interview_id}"
+        )
         try:
             interview = Interview.objects.get(
-                interviewer=request.user,
-                interview_id=interview_id,
-                status='active'
+                interviewer=request.user, interview_id=interview_id, status="active"
             )
-            logger.info(f"Retrieved active interview status. ID: {interview_id}")
+            logger.info("Retrieved active interview status. ID: %s", interview_id)
             return Response(
                 {
                     "interview_id": interview.interview_id,
@@ -265,35 +309,35 @@ class InterviewRunningStatus(APIView):
                 }
             )
         except Interview.DoesNotExist:
-            logger.warning(f"No active interview found. ID: {interview_id}")
+            logger.warning("No active interview found. ID: %s", interview_id)
             return Response(
                 {"detail": "No active interview found."},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
 
     def put(self, request, interview_id):
-        logger.debug(f"PUT request received for InterviewRunningStatus. Interview ID: {interview_id}")
+        logger.debug(
+            f"PUT request received for InterviewRunningStatus. Interview ID: {interview_id}"
+        )
         try:
             interview = Interview.objects.get(
-                interviewer=request.user,
-                interview_id=interview_id,
-                status='active'
+                interviewer=request.user, interview_id=interview_id, status="active"
             )
             # Note: This is a simple implementation to complete the interview,
             # not quite sure best way to handle this
-            interview.status = 'inactive'
+            interview.status = "inactive"
             interview.save()
-            logger.info(f"Interview completed. ID: {interview_id}")
+            logger.info("Interview completed. ID: %s", interview_id)
             return Response(
-                {"detail": "Interview completed."},
-                status=status.HTTP_200_OK
+                {"detail": "Interview completed."}, status=status.HTTP_200_OK
             )
         except Interview.DoesNotExist:
-            logger.warning(f"No active interview found to complete. ID: {interview_id}")
+            logger.warning("No active interview found to complete. ID: %s", interview_id)
             return Response(
                 {"detail": "No active interview found."},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
+
 
 class MemberInterviewsView(generics.ListAPIView):
     serializer_class = InterviewSerializer
@@ -301,82 +345,314 @@ class MemberInterviewsView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        logger.debug(f"Retrieving interviews for user: {user.username}")
-        return Interview.objects.filter(interviewer=user) | Interview.objects.filter(interviewee=user)
+        logger.debug("Retrieving interviews for user: %s", user.username)
+        return Interview.objects.filter(interviewer=user) | Interview.objects.filter(
+            interviewee=user
+        )
+
 
 class InterviewerInterviewsView(generics.ListAPIView):
     serializer_class = InterviewSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        logger.debug(f"Retrieving interviews where user is interviewer: {self.request.user.username}")
+        logger.debug(
+            "Retrieving interviews where user is interviewer: %s",
+            self.request.user.username
+        )
         return Interview.objects.filter(interviewer=self.request.user)
+
 
 class IntervieweeInterviewsView(generics.ListAPIView):
     serializer_class = InterviewSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        logger.debug(f"Retrieving interviews where user is interviewee: {self.request.user.username}")
+        logger.debug(
+            f"Retrieving interviews where user is interviewee: {self.request.user.username}"
+        )
         return Interview.objects.filter(interviewee=self.request.user)
+
 
 class InterviewDetailView(generics.RetrieveAPIView):
     queryset = Interview.objects.all()
     serializer_class = InterviewSerializer
     permission_classes = [IsAuthenticated, IsInterviewParticipant]
-    lookup_field = 'interview_id'
+    lookup_field = "interview_id"
 
     def get_queryset(self):
         user = self.request.user
-        logger.debug(f"Retrieving interview details for user: {user.username}")
-        return Interview.objects.filter(interviewer=user) | Interview.objects.filter(interviewee=user)
+        logger.debug("Retrieving interview details for user: %s", user.username)
+        return Interview.objects.filter(interviewer=user) | Interview.objects.filter(
+            interviewee=user
+        )
+
 
 class InterviewAvailabilityView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        logger.debug(f"GET request received for InterviewAvailabilityView. User: {request.user.username}")
+        logger.debug(
+            f"GET request received for InterviewAvailabilityView. User: {request.user.username}"
+        )
         try:
-            interview_availability = InterviewAvailability.objects.get(member=request.user)
-            logger.info(f"Retrieved interview availability for user: {request.user.username}")
+            interview_availability = InterviewAvailability.objects.get(
+                member=request.user
+            )
+            logger.info(
+                f"Retrieved interview availability for user: {request.user.username}"
+            )
             return Response(
                 {
                     "id": request.user.id,
-                    "availability": interview_availability.interview_availability_slots
+                    "availability": interview_availability.interview_availability_slots,
                 },
-                status=status.HTTP_200_OK
+                status=status.HTTP_200_OK,
             )
         except InterviewAvailability.DoesNotExist:
-            logger.warning(f"Interview availability not found for user: {request.user.username}")
+            logger.warning(
+                f"Interview availability not found for user: {request.user.username}"
+            )
             return Response(
                 {"detail": "Interview availability not found."},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
 
     def post(self, request):
-        logger.debug(f"POST request received for InterviewAvailabilityView. User: {request.user.username}")
+        logger.debug(
+            f"POST request received for InterviewAvailabilityView. User: {request.user.username}"
+        )
         try:
-            interview_availability = InterviewAvailability.objects.get(member=request.user)
-            availability = request.data.get('availability')
+            interview_availability = InterviewAvailability.objects.get(
+                member=request.user
+            )
+            availability = request.data.get("availability")
 
             if not is_valid_availability(availability):
-                logger.error(f"Invalid availability format provided by user: {request.user.username}")
+                logger.error(
+                    f"Invalid availability format provided by user: {request.user.username}"
+                )
                 return Response(
                     {"detail": "Invalid availability format."},
-                    status=status.HTTP_400_BAD_REQUEST
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
             interview_availability.set_interview_availability(availability)
             interview_availability.save()
 
-            logger.info(f"Interview availability updated for user: {request.user.username}")
+            logger.info(
+                f"Interview availability updated for user: {request.user.username}"
+            )
             return Response(
-                {"detail": "Interview availability updated."},
-                status=status.HTTP_200_OK
+                {"detail": "Interview availability updated."}, status=status.HTTP_200_OK
             )
         except InterviewAvailability.DoesNotExist:
-            logger.warning(f"Interview availability not found for user: {request.user.username}")
+            logger.warning(
+                f"Interview availability not found for user: {request.user.username}"
+            )
             return Response(
                 {"detail": "Interview availability not found."},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
+
+
+class ProposeView(APIView):
+    permission_classes = [IsAuthenticated, IsInterviewParticipant]
+
+    @transaction.atomic
+    def post(self, request, interview_id):
+        logger.debug(
+            f"POST request received for ProposeView. Interview ID: {interview_id}"
+        )
+        try:
+            interview = Interview.objects.get(interview_id=interview_id)
+
+            if interview.status not in ["pending", "active"]:
+                logger.warning(
+                    f"Invalid interview status for proposal. Status: {interview.status}"
+                )
+                return Response(
+                    {"detail": "Cannot propose time for this interview. Status: {interview.status}"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            proposed_time = request.data.get("time")
+            if not proposed_time:
+                logger.warning("No time provided in the request")
+                return Response(
+                    {"detail": "Time must be provided."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if isinstance(proposed_time, str):
+                try:
+                    proposed_time = parse_date(proposed_time)
+                except ValueError:
+                    logger.warning("Invalid time format provided: %s", proposed_time)
+                    return Response(
+                        {"detail": "Invalid time format. Please use ISO format."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            interview.proposed_time = proposed_time
+            interview.proposed_by = request.user
+            interview.status = "pending"
+            interview.committed_time = None
+            interview.save()
+
+            updated_interview_serialized = InterviewSerializer(interview).data
+            logger.info("Interview proposal updated. ID: %s", interview_id)
+            return Response(
+                {"detail": "Interview time proposed successfully.", "interview": updated_interview_serialized},
+                status=status.HTTP_200_OK,
+            )
+
+        except Interview.DoesNotExist:
+            logger.error("Interview not found. ID: %s", interview_id)
+            return Response(
+                {"detail": "Interview not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+        except ValidationError as e:
+            logger.error("Validation error: %s", str(e))
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CommitView(APIView):
+    permission_classes = [IsAuthenticated, IsInterviewParticipant]
+
+    @transaction.atomic
+    def post(self, request, interview_id):
+        logger.debug(
+            f"POST request received for CommitView. Interview ID: {interview_id}"
+        )
+        try:
+            interview = Interview.objects.get(interview_id=interview_id)
+
+            if interview.status != "pending":
+                logger.warning(
+                    f"Invalid interview status for commit. Status: {interview.status}"
+                )
+                return Response(
+                    {"detail": "Cannot commit to this interview."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if interview.proposed_by == request.user:
+                logger.warning("User attempting to commit to their own proposal")
+                return Response(
+                    {"detail": "Cannot commit to your own proposal."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            commit_time = request.data.get("time")
+            if not commit_time:
+                logger.warning("No time provided in the request")
+                return Response(
+                    {"detail": "Time must be provided."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if isinstance(commit_time, str):
+                try:
+                    commit_time = parse_date(commit_time)
+                except ValueError:
+                    logger.warning("Invalid time format provided")
+                    return Response(
+                        {"detail": "Invalid time format. Please use ISO format."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            if commit_time != interview.proposed_time:
+                logger.warning("Commit time does not match proposed time, proposed: %s, commit: %s", interview.proposed_time, commit_time)
+                return Response(
+                    {"detail": "Commit time must match the proposed time."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            interview.status = "active"
+            interview.committed_time = commit_time
+            interview.date_effective = timezone.now()
+            interview.proposed_time = None
+            interview.proposed_by = None
+            interview.save()
+
+            updated_interview_serialized = InterviewSerializer(interview).data
+
+            logger.info("Interview committed successfully. ID: %s", interview_id)
+            return Response(
+                {"detail": "Interview committed successfully.", "interview": updated_interview_serialized},
+                status=status.HTTP_200_OK,
+            )
+
+        except Interview.DoesNotExist:
+            logger.error("Interview not found. ID: %s", interview_id)
+            return Response(
+                {"detail": "Interview not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+        except ValidationError as e:
+            logger.error("Validation error: %s", str(e))
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CompleteView(APIView):
+    permission_classes = [IsAuthenticated, IsInterviewParticipant]
+
+    @transaction.atomic
+    def post(self, request, interview_id):
+        logger.debug(
+            f"POST request received for CompleteView. Interview ID: {interview_id}"
+        )
+        try:
+            interview = Interview.objects.get(interview_id=interview_id)
+
+            if interview.status != "active":
+                logger.warning(
+                    f"Invalid interview status for completion. Status: {interview.status}"
+                )
+                return Response(
+                    {"detail": "Cannot complete this interview."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            completion_time = request.data.get("time")
+            if completion_time:
+                if isinstance(completion_time, str):
+                    try:
+                        completion_time = parse_date(
+                            completion_time
+                        )
+                    except ValueError:
+                        logger.warning("Invalid time format provided")
+                        return Response(
+                            {"detail": "Invalid time format. Please use ISO format."},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                interview.status = "inactive_completed"
+                interview.date_completed = completion_time
+            else:
+                interview.status = "inactive_incomplete"
+                interview.date_completed = timezone.now()
+
+            interview.save()
+
+            updated_interview_serialized = InterviewSerializer(interview).data
+
+            logger.info(
+                f"Interview marked as {'completed' if completion_time else 'incomplete'}. ID: {interview_id}"
+            )
+            return Response(
+                {
+                    "detail": f"Interview marked as {'completed' if completion_time else 'incomplete'}.",
+                    "interview": updated_interview_serialized
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except Interview.DoesNotExist:
+            logger.error("Interview not found. ID: %s", interview_id)
+            return Response(
+                {"detail": "Interview not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+        except ValidationError as e:
+            logger.error("Validation error: %s", str(e))
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)

@@ -30,5 +30,41 @@ export DB_PASSWORD=password
 | run server locally (requires prod.venv) | `python server/manage.py runserver` |
 | run server in docker (requires dev.venv) | `docker compose up --build` |
 
+```bash
+curl -X PUT -H "Authorization: Api-Key $VERIFICATION_KEY" -H "Content-Type: application/json" -d '{"username": "elimelt", "discord_username": "elimelt", "discord_id": 1234}' http://localhost:8000/members/verify-discord/
+```
+
 ## Runbook
+
+### Creating and verifying an account locally
+
+1. Start the application
+```bash
+docker compose -f docker-compose.local.yml up --build
+```
+
+2. Run the migrations
+```bash
+docker exec -it swecc-server-web-1 python server/manage.py migrate
+```
+
+3. Create a regular user on the frontend
+
+4. Create a superuser
+```bash
+docker exec -it swecc-server-web-1 python server/manage.py createsuperuser
+```
+
+5. Access the admin panel at `http://localhost:8000/admin/`, and login with the superuser credentials you created.
+
+6. In the admin panel, create a new API key. Doesn't matter what you name it, but make sure to **copy the key somewhere safe**. I recommend putting it in your `dev.venv/bin/activate` file, e.g. `export VERIFICATION_KEY=your_key_here`.
+
+7. Verify your discord account, using the API key you just created, and the **non-superuser** credentials you created in step 3.
+```bash
+curl -X PUT \
+-H "Authorization: Api-Key <VERIFICATION_KEY>" \
+-H "Content-Type: application/json" \
+-d '{"username": <YOUR_USER>, "discord_username": <YOUR_DISCORD>, "discord_id": <SOME_INT>}' \
+http://localhost:8000/members/verify-discord/
+```
 

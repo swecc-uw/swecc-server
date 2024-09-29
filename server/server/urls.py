@@ -21,3 +21,8 @@ def health_check(request):
     return Response({'status': 'ok'})
 
 urlpatterns.append(path('health/', health_check))
+
+# from django.contrib import admin
+# admin.autodiscover()
+
+# urlpatterns.append(path('admin/', admin.site.urls))
