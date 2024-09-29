@@ -3,8 +3,7 @@ from datetime import datetime
 from email.policy import default
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
-
-from server.custom_auth.permissions import IsAdmin
+from custom_auth.permissions import IsAdmin
 from .algorithm import CommonAvailabilityStableMatching
 from .notification import interview_paired_notification_html, interview_unpaired_notification_html, send_email
 from .models import Interview
@@ -52,7 +51,7 @@ class AuthenticatedMemberSignupForInterview(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        logger.debug(
+        logger.info(
             f"GET request received for AuthenticatedMemberSignupForInterview by user {request.user.username}"
         )
         try:
@@ -82,7 +81,7 @@ class AuthenticatedMemberSignupForInterview(APIView):
             )
 
     def post(self, request):
-        logger.debug(
+        logger.info(
             f"POST request received for AuthenticatedMemberSignupForInterview by user {request.user.username}"
         )
         # Get or create InterviewAvailability for the user
@@ -126,7 +125,7 @@ class AuthenticatedMemberSignupForInterview(APIView):
             )
 
     def delete(self, request):
-        logger.debug(
+        logger.info(
             f"DELETE request received for AuthenticatedMemberSignupForInterview by user {request.user.username}"
         )
         try:
@@ -151,7 +150,7 @@ class GetInterviewPoolStatus(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        logger.debug("GET request received for GetInterviewPoolStatus")
+        logger.info("GET request received for GetInterviewPoolStatus")
         try:
             interview_pool = InterviewPool.objects.all()
             logger.info("Interview pool status: %d members signed up", len(interview_pool))
@@ -175,7 +174,7 @@ class PairInterview(APIView):
 
     @transaction.atomic
     def post(self, request):
-        logger.debug("POST request received for PairInterview")
+        logger.info("POST request received for PairInterview")
         pool_members = list(InterviewPool.objects.all())
 
         if len(pool_members) < 2:
@@ -317,14 +316,14 @@ class PairInterview(APIView):
         )
 
     def get(self, request):
-        logger.debug("GET request received for PairInterview")
+        logger.info("GET request received for PairInterview")
         return Response({"detail": "This endpoint is for pairing interviews. Use POST to pair interviews."})
 
 # class NotifyInterview(APIView):
 #     permission_classes = [IsAdmin]
 
 #     def post(self, request):
-#         logger.debug("POST request received for NotifyInterview")
+#         logger.info("POST request received for NotifyInterview")
 #         # TODO: Implement the notification service
 #         logger.info("Notification sent (placeholder)")
 #         return Response({"detail": "Notification sent."})
@@ -334,7 +333,7 @@ class InterviewQuestions(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request, interview_id):
-        logger.debug(
+        logger.info(
             f"GET request received for InterviewQuestions. Interview ID: {interview_id}"
         )
         try:
@@ -361,7 +360,7 @@ class InterviewRunningStatus(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, interview_id):
-        logger.debug(
+        logger.info(
             f"GET request received for InterviewRunningStatus. Interview ID: {interview_id}"
         )
         try:
@@ -386,7 +385,7 @@ class InterviewRunningStatus(APIView):
             )
 
     def put(self, request, interview_id):
-        logger.debug(
+        logger.info(
             f"PUT request received for InterviewRunningStatus. Interview ID: {interview_id}"
         )
         try:
@@ -415,7 +414,7 @@ class MemberInterviewsView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        logger.debug("Retrieving interviews for user: %s", user.username)
+        logger.info("Retrieving interviews for user: %s", user.username)
         return Interview.objects.filter(interviewer=user) | Interview.objects.filter(
             interviewee=user
         )
@@ -426,7 +425,7 @@ class InterviewerInterviewsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        logger.debug(
+        logger.info(
             "Retrieving interviews where user is interviewer: %s",
             self.request.user.username
         )
@@ -438,7 +437,7 @@ class IntervieweeInterviewsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        logger.debug(
+        logger.info(
             f"Retrieving interviews where user is interviewee: {self.request.user.username}"
         )
         return Interview.objects.filter(interviewee=self.request.user)
@@ -452,7 +451,7 @@ class InterviewDetailView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        logger.debug("Retrieving interview details for user: %s", user.username)
+        logger.info("Retrieving interview details for user: %s", user.username)
         return Interview.objects.filter(interviewer=user) | Interview.objects.filter(
             interviewee=user
         )
@@ -462,7 +461,7 @@ class InterviewAvailabilityView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        logger.debug(
+        logger.info(
             f"GET request received for InterviewAvailabilityView. User: {request.user.username}"
         )
         try:
@@ -489,7 +488,7 @@ class InterviewAvailabilityView(APIView):
             )
 
     def post(self, request):
-        logger.debug(
+        logger.info(
             f"POST request received for InterviewAvailabilityView. User: {request.user.username}"
         )
         try:
@@ -531,7 +530,7 @@ class ProposeView(APIView):
 
     @transaction.atomic
     def post(self, request, interview_id):
-        logger.debug(
+        logger.info(
             f"POST request received for ProposeView. Interview ID: {interview_id}"
         )
         try:
@@ -592,7 +591,7 @@ class CommitView(APIView):
 
     @transaction.atomic
     def post(self, request, interview_id):
-        logger.debug(
+        logger.info(
             f"POST request received for CommitView. Interview ID: {interview_id}"
         )
         try:
@@ -669,7 +668,7 @@ class CompleteView(APIView):
 
     @transaction.atomic
     def post(self, request, interview_id):
-        logger.debug(
+        logger.info(
             f"POST request received for CompleteView. Interview ID: {interview_id}"
         )
         try:
