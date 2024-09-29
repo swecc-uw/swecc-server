@@ -1,7 +1,17 @@
-import Form from "../components/Form"
+import Form from "../components/Form";
+import { useAuth } from "../hooks/useAuth";
 
 function Login() {
-    return <Form route="/api/token/" method="login" />
+  const { login } = useAuth();
+
+  return (
+    <>
+      <button onClick={() => console.log(login("hoangng", "Hohohaha123@"))}>
+        login
+      </button>
+      <Form route="/api/token/" method="login" />
+    </>
+  );
 }
 
-export default Login
+export default Login;

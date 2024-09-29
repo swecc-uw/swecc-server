@@ -5,7 +5,9 @@ from django.db.models import Q
 from members.models import User
 from .serializers import DirectoryMemberSerializer
 from custom_auth.permissions import IsVerified
+import logging
 
+logger = logging.getLogger(__name__)
 
 # TODO: filter fields by isPrivate
 
@@ -13,6 +15,8 @@ class MemberDirectorySearchView(APIView):
     permission_classes = [IsVerified]
     def get(self, request):
         query = request.query_params.get('q', '')
+
+        logger.info('Searching for members with query: %s', query)
 
         members = User.objects.all()
 
@@ -35,4 +39,5 @@ class MemberDirectoryView(APIView):
             serializer = DirectoryMemberSerializer(member)
             return Response(serializer.data)
         except User.DoesNotExist:
+            logger.error('Error retrieving user: user with id %s not found', id)
             return JsonResponse({'detail': 'Member not found.'}, status=404)

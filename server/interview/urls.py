@@ -15,7 +15,7 @@ urlpatterns = [
     path(
         "pool/",
         views.AuthenticatedMemberSignupForInterview.as_view(),
-        name="interview-pool"
+        name="interview-pool",
     ),
     path(
         "status/",
@@ -23,19 +23,44 @@ urlpatterns = [
         name="interview-pool-status"
     ),
     path(
-        'interview/',
-        views.InterviewDetailViewAsUser.as_view(),
-        name='interview-detail-user'
+        "interviews/",
+        views.MemberInterviewsView.as_view(),
+        name="member-interviews"
     ),
     path(
-        '<uuid:interview_id>/',
-        views.InterviewDetailViewAsAdmin.as_view(),
-        name='interview-detail-admin'
+        "interviews/interviewer/",
+        views.InterviewerInterviewsView.as_view(),
+        name="interviewer-interviews",
     ),
     path(
-        'availability/',
+        "interviews/interviewee/",
+        views.IntervieweeInterviewsView.as_view(),
+        name="interviewee-interviews",
+    ),
+    path(
+        "interviews/<uuid:interview_id>/",
+        views.InterviewDetailView.as_view(),
+        name="interview-detail",
+    ),
+    path(
+        "availability/",
         views.InterviewAvailabilityView.as_view(),
-        name='interview-availability'
+        name="interview-availability",
+    ),
+    path(
+        "interviews/<uuid:interview_id>/propose/",
+        views.ProposeView.as_view(),
+        name="interview-propose",
+    ),
+    path(
+        "interviews/<uuid:interview_id>/commit/",
+        views.CommitView.as_view(),
+        name="interview-commit",
+    ),
+    path(
+        "interviews/<uuid:interview_id>/complete/",
+        views.CompleteView.as_view(),
+        name="interview-complete",
     ),
     path(
         "assign/",

@@ -41,5 +41,6 @@ jobs:
           -e DB_PORT=${{ secrets.DB_PORT }} \
           -e DB_USER=${{ secrets.DB_USER }} \
           -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+          -e SENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }} \
           --restart unless-stopped \
           ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest
