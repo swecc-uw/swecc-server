@@ -8,7 +8,7 @@ DB_NAME = os.environ['DB_NAME']
 DB_PORT = os.environ['DB_PORT']
 DB_USER = os.environ['DB_USER']
 DB_PASSWORD = os.environ['DB_PASSWORD']
-
+SENDGRID_API_KEY = os.environ['SENDGRID_API_KEY']
 print({
     "DJANGO_DEBUG": DJANGO_DEBUG,
     "DB_HOST": DB_HOST,
@@ -16,6 +16,7 @@ print({
     "DB_PORT": DB_PORT,
     "DB_USER": DB_USER,
     "DB_PASSWORD": DB_PASSWORD,
+    "SENDGRID_API_KEY": SENDGRID_API_KEY,
 })
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.

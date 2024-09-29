@@ -42,6 +42,7 @@ def login_view(request):
     login(request, user)
 
     logger.info('User %s logged in', username)
+    logger.info('User %s logged in', username)
     return JsonResponse({'detail': 'Successfully logged in.'})
 
 
@@ -49,12 +50,13 @@ def login_view(request):
 def register_view(request):
     data = json.loads(request.body)
     username = data.get('username').strip()
+    email = data.get('email').strip()
     password = data.get('password').strip()
     discord_username = data.get('discord_username')
 
-    if not username or not password or not discord_username:
-        logger.error('Error registering: username, password, or discord username not provided')
-        return JsonResponse({'detail': 'Please provide username, password, and discord username.'}, status=400)
+    if not username or not password or not discord_username or not email:
+        logger.error('Error registering: username, email, password, or discord username not provided')
+        return JsonResponse({'detail': 'Please provide username, email, password, and discord username.'}, status=400)
 
     try:
         with transaction.atomic():
@@ -64,12 +66,16 @@ def register_view(request):
             if User.objects.filter(discord_username__iexact=discord_username).exists():
                 logger.error('Error registering: discord username already exists')
                 return JsonResponse({'detail': 'Discord username already exists.'}, status=400)
-            user = User.objects.create_user(username=username, password=password, discord_username=discord_username)
-
-            logger.info('User %s registered', username)
+            if User.objects.filter(email__iexact=email).exists():
+                logger.error('Error registering: email already exists')
+                return JsonResponse({'detail': 'Email already exists.'}, status=400)
+            user = User.objects.create_user(username=username, email=email, password=password, discord_username=discord_username)
+            
+            logger.info(f'User {username} registered')
             return JsonResponse({'detail': 'Successfully registered.', 'id': user.id}, status=201)
 
     except Exception as e:
+        logger.error('Error registering: %s', str(e))
         logger.error('Error registering: %s', str(e))
         return JsonResponse({'detail': 'An error occurred during registration.', 'error': str(e)}, status=500)
 
@@ -80,6 +86,7 @@ def logout_view(request):
         return JsonResponse({'detail': 'You\'re not logged in.'}, status=400)
 
     logout(request)
+    logger.info('User %s logged out', request.user.username)
     logger.info('User %s logged out', request.user.username)
     return JsonResponse({'detail': 'Successfully logged out.'})
 
