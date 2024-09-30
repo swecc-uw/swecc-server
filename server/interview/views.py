@@ -26,6 +26,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 INTERVIEW_NOTIFICATION_ADDR = "interview@no-reply.swecc.org"
+# number of technical questionp assign per pair
+INTERVIEW_NUM_TECHNICAL_QUESTIONS = 3
 
 def parse_date(x):
     date = datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ")
@@ -332,19 +334,24 @@ class PairInterview(APIView):
 #         logger.info("Notification sent (placeholder)")
 #         return Response({"detail": "Notification sent."})
 
+class InterviewAll(APIView):
+    permission_classes = [IsAdmin]
+    
+    def get(self, request):
         # Check if there are no interviews
-        # if not interviews.exists():
-        #     return Response(
-        #         {"detail": "No interviews found."},
-        #         status=status.HTTP_404_NOT_FOUND
-        #     )
+        interviews = Interview.objects.all()
+        if not interviews.exists():
+            return Response(
+                {"detail": "No interviews found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
         
-        # # Serialize the interview data
-        # serializer = InterviewSerializer(interviews, many=True)
-        # return Response(
-        #     {"interviews": serializer.data},
-        #     status=status.HTTP_200_OK
-        # )
+        # Serialize the interview data
+        serializer = InterviewSerializer(interviews, many=True)
+        return Response(
+            {"interviews": serializer.data},
+            status=status.HTTP_200_OK
+        )
 
 
 class InterviewAssignQuestionRandom(APIView):
@@ -364,16 +371,16 @@ class InterviewAssignQuestionRandom(APIView):
                 )
             
             technicalQ = TechnicalQuestion.objects.order_by("?").first()
-            behavioralQ = BehavioralQuestion.objects.order_by("?")[:3]
+            behavioralQ = BehavioralQuestion.objects.order_by("?")[:INTERVIEW_NUM_TECHNICAL_QUESTIONS]
             
             for interview in interviews:
                 interview.technical_question = technicalQ
                 interview.behavioral_questions.set(behavioralQ)
                 interview.save()
-            # interview = Interview.objects.get(interview_id=interview_id)
+
             return Response(
                 {"detail": "Questions assigned."},
-                status=status.HTTP_200_OK
+                status=status.HTTP_201_OK
             )
         except len(interviews) == 0:
             return Response(
@@ -496,7 +503,7 @@ class MemberInterviewsView(generics.ListAPIView):
 
 class InterviewerInterviewsView(generics.ListAPIView):
     serializer_class = InterviewSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdmin]
     lookup_field = 'interview_id'
 
     def get_queryset(self):
