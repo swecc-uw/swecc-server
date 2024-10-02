@@ -1,12 +1,9 @@
 from datetime import datetime
 from datetime import datetime
-from email.policy import default
-import time
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 
 from questions.models import TechnicalQuestion, BehavioralQuestion
-from members.serializers import User
 from custom_auth.permissions import IsAdmin
 from .algorithm import CommonAvailabilityStableMatching
 from .notification import interview_paired_notification_html, interview_unpaired_notification_html, send_email
@@ -325,14 +322,6 @@ class PairInterview(APIView):
         logger.info("GET request received for PairInterview")
         return Response({"detail": "This endpoint is for pairing interviews. Use POST to pair interviews."})
 
-# class NotifyInterview(APIView):
-#     permission_classes = [IsAdmin]
-
-#     def post(self, request):
-#         logger.info("POST request received for NotifyInterview")
-#         # TODO: Implement the notification service
-#         logger.info("Notification sent (placeholder)")
-#         return Response({"detail": "Notification sent."})
 
 class InterviewAll(APIView):
     permission_classes = [IsAdmin]
