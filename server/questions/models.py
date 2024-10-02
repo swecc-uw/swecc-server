@@ -1,10 +1,11 @@
 from django.db import models
-from django.contrib.auth.models import User
+from members.models import User
 import uuid
 
 class QuestionTopic(models.Model):
     topic_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, related_name='topic_created_by', on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
 
     def __str__(self):
@@ -12,6 +13,7 @@ class QuestionTopic(models.Model):
 
 
 class TechnicalQuestion(models.Model):
+    title = models.CharField(max_length=100)
     question_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, related_name='technical_questions_created', on_delete=models.CASCADE)

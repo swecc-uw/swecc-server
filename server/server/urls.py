@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 urlpatterns = [
     path('auth/', include('custom_auth.urls')),
@@ -8,3 +10,19 @@ urlpatterns = [
     path('interview/', include("interview.urls")),
     path('directory/', include('directory.urls')),
 ]
+
+
+import logging
+logger = logging.getLogger(__name__)
+
+@api_view(['GET'])
+def health_check(request):
+    logger.info("Health check")
+    return Response({'status': 'ok'})
+
+urlpatterns.append(path('health/', health_check))
+
+# from django.contrib import admin
+# admin.autodiscover()
+
+# urlpatterns.append(path('admin/', admin.site.urls))

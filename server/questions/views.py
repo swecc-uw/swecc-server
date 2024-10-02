@@ -4,7 +4,10 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from .models import TechnicalQuestion, QuestionTopic, BehavioralQuestion
 from .serializers import TechnicalQuestionSerializer, QuestionTopicSerializer, BehavioralQuestionSerializer
+from custom_auth.permissions import IsAdmin
+import logging
 
+logger = logging.getLogger(__name__)
 class QuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'question_id'
@@ -22,7 +25,7 @@ class QuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
             return BehavioralQuestion.objects.all()
 
 class QuestionCreateView(generics.CreateAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdmin]
 
     def get_serializer_class(self):
         if self.kwargs['type'] == 'technical':
@@ -34,10 +37,9 @@ class QuestionCreateView(generics.CreateAPIView):
         if serializer.is_valid():
             serializer.save(created_by=self.request.user)
         else:
-            print(serializer.errors)
+            logger.error('Error creating question: %s', serializer.errors)
 
     def get_queryset(self):
-        user = self.request.user
         if self.kwargs['type'] == 'technical':
             return TechnicalQuestion.objects.all()
         elif self.kwargs['type'] == 'behavioral':
@@ -63,7 +65,22 @@ class QuestionListView(generics.ListAPIView):
             queryset = queryset.filter(topic__name=topic)
         return queryset
 
-class QuestionTopicListView(generics.ListCreateAPIView):
+class QuestionTopicListCreateView(generics.ListCreateAPIView):
     queryset = QuestionTopic.objects.all()
     serializer_class = QuestionTopicSerializer
-    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            self.permission_classes = [IsAdmin]
+        else:
+            self.permission_classes = [permissions.IsAuthenticated]
+        return super().get_permissions()
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+class QuestionTopicUpdateView(generics.RetrieveUpdateAPIView):
+    queryset = QuestionTopic.objects.all()
+    serializer_class = QuestionTopicSerializer
+    permission_classes = [IsAdmin]
+    lookup_field = 'topic_id'

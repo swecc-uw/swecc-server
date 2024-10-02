@@ -30,7 +30,7 @@ class CommonAvailabilityStableMatching(PairingAlgorithm):
         for i, prefs in preferences.items():
             preference_indices[i] = {partner: idx for idx, (partner, _) in enumerate(prefs)}
 
-        while free_members:
+        while len(free_members) > 1:
             member = free_members.pop(0)
             member_prefs = preferences[member]
             for partner, _ in member_prefs:
