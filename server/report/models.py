@@ -20,7 +20,7 @@ class Report(models.Model):
     report_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     associated_id = models.ForeignKey('interview.Interview', null=True, blank=True, on_delete=models.CASCADE)
     type = models.CharField(max_length=50, choices=REPORT_TYPE_CHOICES)
-    reporter_member_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    reporter_user_id = models.ForeignKey('members.User', on_delete=models.CASCADE)
     reason = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     updated = models.DateTimeField(auto_now=True)

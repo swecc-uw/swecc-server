@@ -1,7 +1,8 @@
+from math import e
 from rest_framework import serializers
-from models import Report
+from .models import Report
 
-class ReportSerializer(serializers.Serializer):
+class ReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = Report
-        fields = "__all__"
+        fields = "__all__" 
