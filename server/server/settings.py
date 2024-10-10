@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'members.apps.MembersConfig',
     'custom_auth.apps.AuthConfig',
     'interview.apps.InterviewConfig',
+    'report.apps.ReportConfig',
     'corsheaders',
     'rest_framework_api_key',
 ]

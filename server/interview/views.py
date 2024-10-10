@@ -166,7 +166,7 @@ class GetInterviewPoolStatus(APIView):
 
 
 class PairInterview(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -230,62 +230,62 @@ class PairInterview(APIView):
         # Check for any unpaired members
         unpaired_members = [member for i, member in enumerate(pool_members) if matches[i] == -1]
 
-        failed_paired_emails = []
-        # notifications
-        logger.info("Sending notifications to %d paired members", len(paired_interviews))
-        for interview in paired_interviews:
-            try:
-                send_email(
-                    from_email=INTERVIEW_NOTIFICATION_ADDR,
-                    to_email=interview.interviewer.email,
-                    subject="You've been paired for an upcoming mock interview!",
-                    html_content=interview_paired_notification_html(
-                        name=interview.interviewer.first_name,
-                        partner_name=interview.interviewee.first_name,
-                        partner_email=interview.interviewee.email,
-                        partner_discord_id=interview.interviewee.discord_id,
-                        partner_discord_username=interview.interviewee.discord_username,
-                        interview_date=interview.date_effective
-                    )
-                )
-            except Exception as e:
-                failed_paired_emails.append((interview.id, interview.interviewer.email, str(e)))
+        # failed_paired_emails = []
+        # # notifications
+        # logger.info("Sending notifications to %d paired members", len(paired_interviews))
+        # for interview in paired_interviews:
+        #     try:
+        #         send_email(
+        #             from_email=INTERVIEW_NOTIFICATION_ADDR,
+        #             to_email=interview.interviewer.email,
+        #             subject="You've been paired for an upcoming mock interview!",
+        #             html_content=interview_paired_notification_html(
+        #                 name=interview.interviewer.first_name,
+        #                 partner_name=interview.interviewee.first_name,
+        #                 partner_email=interview.interviewee.email,
+        #                 partner_discord_id=interview.interviewee.discord_id,
+        #                 partner_discord_username=interview.interviewee.discord_username,
+        #                 interview_date=interview.date_effective
+        #             )
+        #         )
+        #     except Exception as e:
+        #         failed_paired_emails.append((interview.id, interview.interviewer.email, str(e)))
 
-            try:
-                send_email(
-                    from_email=INTERVIEW_NOTIFICATION_ADDR,
-                    to_email=interview.interviewee.email,
-                    subject="You've been paired for an upcoming mock interview!",
-                    html_content=interview_paired_notification_html(
-                        name=interview.interviewee.first_name,
-                        partner_name=interview.interviewer.first_name,
-                        partner_email=interview.interviewer.email,
-                        partner_discord_id=interview.interviewer.discord_id,
-                        partner_discord_username=interview.interviewer.discord_username,
-                        interview_date=interview.date_effective
-                    )
-                )
-            except Exception as e:
-                failed_paired_emails.append((interview.id, interview.interviewee.email, str(e)))
+        #     try:
+        #         send_email(
+        #             from_email=INTERVIEW_NOTIFICATION_ADDR,
+        #             to_email=interview.interviewee.email,
+        #             subject="You've been paired for an upcoming mock interview!",
+        #             html_content=interview_paired_notification_html(
+        #                 name=interview.interviewee.first_name,
+        #                 partner_name=interview.interviewer.first_name,
+        #                 partner_email=interview.interviewer.email,
+        #                 partner_discord_id=interview.interviewer.discord_id,
+        #                 partner_discord_username=interview.interviewer.discord_username,
+        #                 interview_date=interview.date_effective
+        #             )
+        #         )
+        #     except Exception as e:
+        #         failed_paired_emails.append((interview.id, interview.interviewee.email, str(e)))
 
-        logger.error("Failed to send notifications to %d paired members", len(failed_paired_emails))
-        logger.info("Sending notifications to %d unpaired members", len(unpaired_members))
-        failed_unpaired_emails = []
-        for pool_member in unpaired_members:
-            try:
-                send_email(
-                    from_email=INTERVIEW_NOTIFICATION_ADDR,
-                    to_email=pool_member.member.email,
-                    subject="You have not been paired for an upcoming mock interview",
-                    html_content=interview_unpaired_notification_html(
-                        pool_member.member.first_name,
-                        timezone.now().strftime("%B %d, %Y")
-                    )
-                )
-            except Exception as e:
-                failed_unpaired_emails.append((pool_member.member.email, str(e)))
+        # logger.error("Failed to send notifications to %d paired members", len(failed_paired_emails))
+        # logger.info("Sending notifications to %d unpaired members", len(unpaired_members))
+        # failed_unpaired_emails = []
+        # for pool_member in unpaired_members:
+        #     try:
+        #         send_email(
+        #             from_email=INTERVIEW_NOTIFICATION_ADDR,
+        #             to_email=pool_member.member.email,
+        #             subject="You have not been paired for an upcoming mock interview",
+        #             html_content=interview_unpaired_notification_html(
+        #                 pool_member.member.first_name,
+        #                 timezone.now().strftime("%B %d, %Y")
+        #             )
+        #         )
+        #     except Exception as e:
+        #         failed_unpaired_emails.append((pool_member.member.email, str(e)))
 
-        logger.error("Failed to send notifications to %d unpaired members", len(failed_unpaired_emails))
+        # logger.error("Failed to send notifications to %d unpaired members", len(failed_unpaired_emails))
 
         unpaired_members = [
             member.member.username
@@ -309,8 +309,8 @@ class PairInterview(APIView):
                     for interview in paired_interviews
                 ],
                 "unpaired_members": unpaired_members,
-                "failed_paired_emails": failed_paired_emails,
-                "failed_unpaired_emails": failed_unpaired_emails,
+                # "failed_paired_emails": failed_paired_emails,
+                # "failed_unpaired_emails": failed_unpaired_emails,
             },
             status=status.HTTP_201_CREATED,
         )
