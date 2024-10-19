@@ -1,147 +1,149 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { devPrint } from "../components/utils/Dev";
+import { createContext, useContext, useState, useEffect } from "react";
+// import { getCurrentUser } from "../services/member";
+import { devPrint } from "../RandomUtils";
+import api, { getCSRF } from "../api";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const AuthContext = createContext(undefined);
 
-const AuthContext = createContext();
-
-export const useAuth = () => {
-  return useContext(AuthContext);
+const getCurrentUser = () => {
+  return;
 };
 
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+
+  return context;
+};
+
+// eslint-disable-next-line react/prop-types
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [csrf, setCsrf] = useState("");
   const [error, setError] = useState("");
+  const [member, setMember] = useState();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getSession(); 
+    getSession();
   }, []);
 
-  const getSession = () => {
-    fetch(`${API_URL}/api/user/session/`, {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        devPrint("Session data:", data); 
-        if (data.isAuthenticated) {
-          setIsAuthenticated(true);
-        } else {
-          setIsAuthenticated(false);
-          getCSRF();
-        }
-        setLoading(false); 
-      })
-      .catch((err) => {
-        console.error("Failed to fetch session data:", err);
-        setIsAuthenticated(false);
-        setLoading(false); 
-      });
-  };
+  useEffect(() => {
+    if (isAuthenticated) {
+      getCurrentUser()
+        .then((mem) => setMember(mem))
+        .catch((err) => {
+          devPrint("Failed to get current user:", err);
+          setMember(undefined);
+        });
+    } else {
+      setMember(undefined);
+    }
+  }, [isAuthenticated]);
 
-  const getCSRF = async () => {
+  const getSession = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/user/csrf/`, {
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to fetch CSRF token");
-      }
-
-      const csrfToken = res.headers.get("X-CSRFToken");
-      if (csrfToken) {
-        setCsrf(csrfToken);
-        devPrint("CSRF Token fetched and set:", csrfToken);
-      } else {
-        throw new Error("CSRF token not found in response headers");
-      }
+      await api.get("/auth/session/");
+      setIsAuthenticated(true);
+      setLoading(false);
     } catch (err) {
-      console.error("Failed to fetch CSRF token:", err);
+      setIsAuthenticated(false);
+      setLoading(false);
     }
   };
 
   const login = async (username, password) => {
+    console.log("testing");
     try {
-      const res = await fetch(`${API_URL}/api/user/login/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": csrf, 
-        },
-        credentials: "include",
-        body: JSON.stringify({ username, password }),
-      });
+      const res = await api.post("/auth/login/", { username, password });
 
-      if (res.ok) {
-        const data = await res.json();
-        devPrint("Login successful:", data);
+      if (res.status === 200) {
+        console.log("Login successful");
+        getCSRF();
         setIsAuthenticated(true);
         setError("");
-        return true;
       } else {
-        const errorData = await res.json();
-        console.error("Login failed:", errorData);
-        setError("Invalid credentials. Please try again.");
-        setIsAuthenticated(false);
-        return false;
+        handleLoginError(res.data);
       }
     } catch (err) {
-      console.error("Error during login:", err);
-      setError("An error occurred. Please try again later.");
+      handleLoginError(err.response?.data);
+    }
+  };
+
+  const handleLoginError = (errorData) => {
+    if (
+      errorData?.detail ===
+      "Your account does not have a Discord ID associated with it."
+    ) {
+      setError(
+        `Your discord is not verified. Please type /auth ${errorData.username} in the swecc server`
+      );
+    } else {
+      setError("Invalid credentials. Please try again.");
       setIsAuthenticated(false);
-      return false;
     }
   };
 
   const logout = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/user/logout`, {
-        credentials: "include",
-      });
+      const res = await api.post("/auth/logout/");
 
-      if (res.ok) {
+      if (res.status === 200) {
         devPrint("Logout successful");
+        getCSRF();
         setIsAuthenticated(false);
-        await getCSRF(); 
       } else {
-        console.error("Logout failed");
+        devPrint("Logout failed");
       }
     } catch (err) {
-      console.error("Error during logout:", err);
+      devPrint("Logout failed");
     }
   };
 
-  const register = (username, password) => {
-  fetch(`${API_URL}/api/user/register/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ username, password }),
-  })
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error("Registration failed.");
-      }
-      return res.json();
-    })
-    .then((data) => {
-      devPrint("Registration successful:", data);
-      setError(""); 
-      login(username, password);
-    })
-    .catch((err) => {
-      console.error("Error during registration:", err);
-      setError("Registration failed. Please try again.");
-    });
-};
+  const register = async (username, password, discord_username) => {
+    try {
+      const res = await api.post("/auth/register/", {
+        username,
+        password,
+        discord_username,
+      });
+
+      if (res.status !== 201) throw new Error("Registration failed.");
+
+      const data = res.data;
+      setError("");
+      setError(
+        `Registration successful. Please type /auth ${username} in the swecc server`
+      );
+      getCSRF();
+      return data.id;
+    } catch (err) {
+      devPrint("Registration failed:", err.response?.data);
+      setError(
+        err.response?.data?.detail || "Registration failed. Please try again."
+      );
+      return null;
+    }
+  };
+
+  const clearError = () => {
+    setError("");
+  };
 
   return (
     <AuthContext.Provider
-      value={{ isAuthenticated, csrf, error, loading, login, logout, register }}
+      value={{
+        isAuthenticated,
+        error,
+        loading,
+        member,
+        login,
+        logout,
+        register,
+        clearError,
+      }}
     >
       {children}
     </AuthContext.Provider>
