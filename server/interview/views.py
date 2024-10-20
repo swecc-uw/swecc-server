@@ -166,7 +166,7 @@ class GetInterviewPoolStatus(APIView):
 
 
 class PairInterview(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -309,8 +309,8 @@ class PairInterview(APIView):
                     for interview in paired_interviews
                 ],
                 "unpaired_members": unpaired_members,
-                "failed_paired_emails": failed_paired_emails,
-                "failed_unpaired_emails": failed_unpaired_emails,
+                # "failed_paired_emails": failed_paired_emails,
+                # "failed_unpaired_emails": failed_unpaired_emails,
             },
             status=status.HTTP_201_CREATED,
         )
