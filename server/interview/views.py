@@ -252,7 +252,7 @@ class PairInterview(APIView):
                     )
                 )
             except Exception as e:
-                failed_paired_emails.append((interview.id, interview.interviewer.email, str(e)))
+                failed_paired_emails.append((interview.interview_id, interview.interviewer.email, str(e)))
 
             try:
                 send_email(
@@ -269,7 +269,7 @@ class PairInterview(APIView):
                     )
                 )
             except Exception as e:
-                failed_paired_emails.append((interview.id, interview.interviewee.email, str(e)))
+                failed_paired_emails.append((interview.interview_id, interview.interviewee.email, str(e)))
 
         logger.error("Failed to send notifications to %d paired members", len(failed_paired_emails))
         logger.info("Sending notifications to %d unpaired members", len(unpaired_members))
