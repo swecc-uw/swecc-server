@@ -9,7 +9,7 @@ if "%~1"=="" (
 
 echo Creating %numUsers% users...
 
-for /L %%i in (1, 1, 10) do (
+for /L %%i in (1, 1, %numUsers%) do (
     call "%~dp0userCreate"
 )
 
