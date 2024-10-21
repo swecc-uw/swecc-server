@@ -2,7 +2,7 @@ echo off
 
 setlocal EnableDelayedExpansion
 
-REM Function to generate a random string of specified length
+@REM Function to generate a random string of specified length
 set "charset=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 set "length=10"
 set "randomString="
@@ -12,11 +12,17 @@ for /L %%i in (1,1,%length%) do (
     for %%j in (!index!) do set "randomString=!randomString!!charset:~%%j,1!"
 )
 
+@REM Check if username argument is passed, otherwise generate random username
+if "%~1"=="" (
+    set "test_username=!randomString!"
+) else (
+    set "test_username=%~1"
+)
+
 
 @REM docker exec -it swecc-server-db-1 psql -U root postgres -c  "SELECT * FROM members_user;"
 set "HashedPassword=pbkdf2_sha256$600000$BjdYGzJ9HB5rWVdRnLRr5l$WblHaqgKgjitB2svIbbTKuVe5BGe2p+7boYh0trY3NE="
-set "test_username=!randomString!"
-set "test_firstname=!randomString!"
+set "test_firstname=!test_username!"
 set "test_lastname=EJ"
 set "email=!randomString!@uw.edu"
 set "discord_id=123456789"
@@ -49,4 +55,4 @@ docker exec -it swecc-server-db-1 psql -U root postgres -c  "%SQL_QUERY%"
 docker exec -it swecc-server-db-1 psql -U root postgres -c  "%SQL_QUERY_INSERT_INTO_VERIFIED_TABLE%"
 docker exec -it swecc-server-db-1 psql -U root postgres -c  "%SQL_QUERY_INSERT_INTO_USER_GROUP_TABLE%"
 
-echo "User created successfully. Username: !test_username!, Email: !email!"
+echo User created successfully. Username: !test_username!, Email: !email!
