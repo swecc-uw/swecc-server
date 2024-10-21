@@ -68,3 +68,16 @@ curl -X PUT \
 http://localhost:8000/members/verify-discord/
 ```
 
+### Creating user with script
+1. Windows
+
+**Warning**: Before running the script make sure to setup dev env first and migrate the db.
+
+- Run `script/userCreate.bat <username>` to create a new verified user. Default password for each created user 
+when using the script is `123456`.
+- Run `script/makeAdmin.bat <username>` to make an existing user admin
+- Run `script/populateUser.bat <num users>` to add `<num user>` verfied users dev db.
+
+2. Unix
+- To be developed
+
