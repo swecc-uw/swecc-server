@@ -24,7 +24,8 @@ logger = logging.getLogger(__name__)
 
 INTERVIEW_NOTIFICATION_ADDR = "interview@no-reply.swecc.org"
 # number of technical questionp assign per pair
-INTERVIEW_NUM_TECHNICAL_QUESTIONS = 3
+INTERVIEW_NUM_BEHAVIORAL_QUESTIONS = 3
+INTERVIEW_NUM_TECHNICAL_QUESTIONS = 1
 
 def parse_date(x):
     date = datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ")
@@ -350,8 +351,12 @@ class InterviewAssignQuestionRandom(APIView):
             # find all interview within this week (from last monday to next monday)
             today = timezone.now()
             last_monday = today - timezone.timedelta(days=today.weekday())
+            last_monday = last_monday.replace(hour=0, minute=0, second=0, microsecond=0)
             next_next_monday = last_monday + timezone.timedelta(days=14)
             interviews = Interview.objects.filter(date_effective__gte=last_monday, date_effective__lte=next_next_monday)
+
+            logger.info("Assiged period from %s to %s", last_monday, next_next_monday)
+            logger.info("Assigning questions to %d interviews", len(interviews))
 
             if not interviews.exists():
                 return Response(
@@ -359,19 +364,19 @@ class InterviewAssignQuestionRandom(APIView):
                     status=status.HTTP_404_NOT_FOUND
                 )
             
-            technicalQ = TechnicalQuestion.objects.order_by("?").first()
-            behavioralQ = BehavioralQuestion.objects.order_by("?")[:INTERVIEW_NUM_TECHNICAL_QUESTIONS]
+            technicalQ = TechnicalQuestion.objects.order_by("?")[:INTERVIEW_NUM_TECHNICAL_QUESTIONS]
+            behavioralQ = BehavioralQuestion.objects.order_by("?")[:INTERVIEW_NUM_BEHAVIORAL_QUESTIONS]
             
             for interview in interviews:
-                interview.technical_question = technicalQ
+                interview.technical_question.set(technicalQ)
                 interview.behavioral_questions.set(behavioralQ)
                 interview.save()
 
             return Response(
                 {"detail": "Questions assigned."},
-                status=status.HTTP_201_OK
+                status=status.HTTP_201_CREATED
             )
-        except len(interviews) == 0:
+        except not interviews:
             return Response(
                 {"detail": "Interview not found."},
                 status=status.HTTP_404_NOT_FOUND
@@ -383,9 +388,9 @@ class InterviewAssignQuestionRandomIndividual(APIView):
     def post(self, request, interview_id):
         try:
             interview = Interview.objects.get(interview_id=interview_id)
-            technicalQ = TechnicalQuestion.objects.order_by("?").first()
-            behavioralQ = BehavioralQuestion.objects.order_by("?")[:3]
-            interview.technical_question = technicalQ
+            technicalQ = TechnicalQuestion.objects.order_by("?")[:INTERVIEW_NUM_TECHNICAL_QUESTIONS]
+            behavioralQ = BehavioralQuestion.objects.order_by("?")[:INTERVIEW_NUM_BEHAVIORAL_QUESTIONS]
+            interview.technical_question.set(technicalQ)
             interview.behavioral_questions.set(behavioralQ)
             interview.save()
             return Response(
