@@ -312,8 +312,8 @@ class PairInterview(APIView):
                     for interview in paired_interviews
                 ],
                 "unpaired_members": unpaired_members,
-                "failed_paired_emails": failed_paired_emails,
-                "failed_unpaired_emails": failed_unpaired_emails,
+                # "failed_paired_emails": failed_paired_emails,
+                # "failed_unpaired_emails": failed_unpaired_emails,
             },
             status=status.HTTP_201_CREATED,
         )
