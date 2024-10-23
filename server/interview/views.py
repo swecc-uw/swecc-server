@@ -177,6 +177,14 @@ class PairInterview(APIView):
         logger.info("POST request received for PairInterview")
         pool_members = list(InterviewPool.objects.all())
 
+        if len(pool_members) % 2 != 0:
+            rip = pool_members.pop()
+            logger.warning(
+                "Number of members in the pool must be even. Removing one member: %s, id: %s",
+                rip.member.username, rip.member.id
+            )
+
+
         if len(pool_members) < 2:
             logger.warning("Not enough members in the pool to pair interviews")
             return Response(
