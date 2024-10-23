@@ -1,5 +1,7 @@
+from ast import In
 from datetime import datetime
 from datetime import datetime
+from numpy import delete
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 
@@ -190,10 +192,11 @@ class PairInterview(APIView):
 
         # Get availabilities for all members
         availabilities = {
-            member.member.id: InterviewAvailability.objects.get(
-                member=member.member
-            ).interview_availability_slots
-            or [[False] * 48 for _ in range(7)]
+            member.member.id: (
+            InterviewAvailability.objects.get(member=member.member).interview_availability_slots
+            if InterviewAvailability.objects.filter(member=member.member).exists()
+            else [[False] * 48 for _ in range(7)]
+            )
             for member in pool_members
         }
 
@@ -203,8 +206,22 @@ class PairInterview(APIView):
         # Perform pairing using the CommonAvailabilityStableMatching algorithm
         matches = self.pairing_algorithm.pair(pool_member_ids)
 
+
         # Create interviews based on matches
+
+         # find all interview within this week (from last monday to next monday)
+        today = timezone.now()
+        last_monday = today - timezone.timedelta(days=today.weekday())
+        last_monday = last_monday.replace(hour=0, minute=0, second=0, microsecond=0)
+        next_next_monday = last_monday + timezone.timedelta(days=14)
+        
+
         paired_interviews = []
+
+        Interview.objects.filter(date_effective__gte=last_monday,
+                            date_effective__lte=next_next_monday).delete()
+
+
         for i, j in enumerate(matches):
             if i < j:  # Avoid creating duplicate interviews
                 p1 = pool_members[i].member
@@ -232,7 +249,7 @@ class PairInterview(APIView):
 
         logger.info("Paired %d interviews", len(paired_interviews))
         # Check for any unpaired members
-        unpaired_members = [member for i, member in enumerate(pool_members) if matches[i] == -1]
+        unpaired_members = InterviewPool.objects.all()
 
         failed_paired_emails = []
         # notifications
@@ -313,8 +330,8 @@ class PairInterview(APIView):
                     for interview in paired_interviews
                 ],
                 "unpaired_members": unpaired_members,
-                # "failed_paired_emails": failed_paired_emails,
-                # "failed_unpaired_emails": failed_unpaired_emails,
+                "failed_paired_emails": failed_paired_emails,
+                "failed_unpaired_emails": failed_unpaired_emails,
             },
             status=status.HTTP_201_CREATED,
         )
