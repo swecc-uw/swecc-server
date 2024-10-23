@@ -308,10 +308,8 @@ class PairInterview(APIView):
 
         logger.error("Failed to send notifications to %d unpaired members", len(failed_unpaired_emails))
 
-        unpaired_members = [
-            member.member.username
-            for i, member in enumerate(pool_members)
-            if matches[i] == -1
+        unpaired_members_username = [
+            member.member.username for member in unpaired_members
         ]
 
         logger.info(
@@ -329,7 +327,7 @@ class PairInterview(APIView):
                     }
                     for interview in paired_interviews
                 ],
-                "unpaired_members": unpaired_members,
+                "unpaired_members": unpaired_members_username,
                 "failed_paired_emails": failed_paired_emails,
                 "failed_unpaired_emails": failed_unpaired_emails,
             },
