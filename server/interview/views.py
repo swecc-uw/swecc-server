@@ -1,6 +1,8 @@
 from datetime import datetime
 from datetime import datetime
 from email.policy import default
+import math
+import random
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from custom_auth.permissions import IsAdmin
@@ -176,6 +178,15 @@ class PairInterview(APIView):
     def post(self, request):
         logger.info("POST request received for PairInterview")
         pool_members = list(InterviewPool.objects.all())
+
+        if len(pool_members) % 2 != 0:
+            random_idx_of_death = random.randint(0, len(pool_members) - 1)
+            rip = pool_members.pop(random_idx_of_death)
+            logger.warning(
+                "Number of members in the pool must be even. Removing one member: %s, id: %s",
+                rip.member.username, rip.member.id
+            )
+
 
         if len(pool_members) < 2:
             logger.warning("Not enough members in the pool to pair interviews")
