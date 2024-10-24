@@ -6,8 +6,11 @@ class PairingAlgorithm(ABC):
     @abstractmethod
     def pair(self, pool_member_ids: List[int]) -> List[int]:
         pass
-
 class CommonAvailabilityStableMatching(PairingAlgorithm):
+    """
+    number of people MUST be even...
+    """
+
     def set_availabilities(self, availabilities: Dict[int, List[List[bool]]]):
         self.availabilities = availabilities
 
@@ -21,8 +24,13 @@ class CommonAvailabilityStableMatching(PairingAlgorithm):
 
     def stable_matching(self, preferences: Dict[int, List[Tuple[int, int]]]) -> List[int]:
         n = len(preferences)
+
+        if n % 2 != 0:
+            raise ValueError("Number of members must be even")
         if n < 2:
             raise ValueError("At least two members are required for matching")
+        if n == 2:
+            return [1, 0]
 
         free_members = list(range(n))
         paired = [-1] * n
@@ -30,7 +38,7 @@ class CommonAvailabilityStableMatching(PairingAlgorithm):
         for i, prefs in preferences.items():
             preference_indices[i] = {partner: idx for idx, (partner, _) in enumerate(prefs)}
 
-        while len(free_members) > 1:
+        while free_members:
             member = free_members.pop(0)
             member_prefs = preferences[member]
             for partner, _ in member_prefs:
