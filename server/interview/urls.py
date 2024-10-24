@@ -3,6 +3,11 @@ from . import views
 
 urlpatterns = [
     path(
+        "all/",
+        views.InterviewAll.as_view(),
+        name="interviewer-list-create"
+    ),
+    path(
         "pair/",
         views.PairInterview.as_view(),
         name="pair-interviews"
@@ -57,4 +62,14 @@ urlpatterns = [
         views.CompleteView.as_view(),
         name="interview-complete",
     ),
+    path(
+        "assign/",
+        views.InterviewAssignQuestionRandom.as_view(),
+        name="assign-interview-question"
+    ),
+    path(
+        "assign/<uuid:interview_id>/",
+        views.InterviewAssignQuestionRandomIndividual.as_view(),
+        name="assign-interview-question"
+    )
 ]
