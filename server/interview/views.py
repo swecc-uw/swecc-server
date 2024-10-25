@@ -1,10 +1,11 @@
+from ast import In
 from datetime import datetime
 from datetime import datetime
-from email.policy import default
-import math
 import random
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
+
+from questions.models import TechnicalQuestion, BehavioralQuestion
 from custom_auth.permissions import IsAdmin
 from .algorithm import CommonAvailabilityStableMatching
 from .notification import interview_paired_notification_html, interview_unpaired_notification_html, send_email
@@ -24,6 +25,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 INTERVIEW_NOTIFICATION_ADDR = "interview@no-reply.swecc.org"
+# number of technical questionp assign per pair
+INTERVIEW_NUM_BEHAVIORAL_QUESTIONS = 3
+INTERVIEW_NUM_TECHNICAL_QUESTIONS = 1
 
 def parse_date(x):
     date = datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ")
@@ -168,7 +172,7 @@ class GetInterviewPoolStatus(APIView):
 
 
 class PairInterview(APIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdmin]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -197,10 +201,11 @@ class PairInterview(APIView):
 
         # Get availabilities for all members
         availabilities = {
-            member.member.id: InterviewAvailability.objects.get(
-                member=member.member
-            ).interview_availability_slots
-            or [[False] * 48 for _ in range(7)]
+            member.member.id: (
+            InterviewAvailability.objects.get(member=member.member).interview_availability_slots
+            if InterviewAvailability.objects.filter(member=member.member).exists()
+            else [[False] * 48 for _ in range(7)]
+            )
             for member in pool_members
         }
 
@@ -210,8 +215,22 @@ class PairInterview(APIView):
         # Perform pairing using the CommonAvailabilityStableMatching algorithm
         matches = self.pairing_algorithm.pair(pool_member_ids)
 
+
         # Create interviews based on matches
+
+         # find all interview within this week (from last monday to next monday)
+        today = timezone.now()
+        last_monday = today - timezone.timedelta(days=today.weekday())
+        last_monday = last_monday.replace(hour=0, minute=0, second=0, microsecond=0)
+        next_next_monday = last_monday + timezone.timedelta(days=14)
+        
+
         paired_interviews = []
+
+        Interview.objects.filter(date_effective__gte=last_monday,
+                            date_effective__lte=next_next_monday).delete()
+
+
         for i, j in enumerate(matches):
             if i < j:  # Avoid creating duplicate interviews
                 p1 = pool_members[i].member
@@ -239,7 +258,7 @@ class PairInterview(APIView):
 
         logger.info("Paired %d interviews", len(paired_interviews))
         # Check for any unpaired members
-        unpaired_members = [member for i, member in enumerate(pool_members) if matches[i] == -1]
+        unpaired_members = InterviewPool.objects.all()
 
         failed_paired_emails = []
         # notifications
@@ -260,7 +279,7 @@ class PairInterview(APIView):
                     )
                 )
             except Exception as e:
-                failed_paired_emails.append((interview.id, interview.interviewer.email, str(e)))
+                failed_paired_emails.append((interview.interview_id, interview.interviewer.email, str(e)))
 
             try:
                 send_email(
@@ -277,7 +296,7 @@ class PairInterview(APIView):
                     )
                 )
             except Exception as e:
-                failed_paired_emails.append((interview.id, interview.interviewee.email, str(e)))
+                failed_paired_emails.append((interview.interview_id, interview.interviewee.email, str(e)))
 
         logger.error("Failed to send notifications to %d paired members", len(failed_paired_emails))
         logger.info("Sending notifications to %d unpaired members", len(unpaired_members))
@@ -298,10 +317,8 @@ class PairInterview(APIView):
 
         logger.error("Failed to send notifications to %d unpaired members", len(failed_unpaired_emails))
 
-        unpaired_members = [
-            member.member.username
-            for i, member in enumerate(pool_members)
-            if matches[i] == -1
+        unpaired_members_username = [
+            member.member.username for member in unpaired_members
         ]
 
         logger.info(
@@ -319,9 +336,9 @@ class PairInterview(APIView):
                     }
                     for interview in paired_interviews
                 ],
-                "unpaired_members": unpaired_members,
-                # "failed_paired_emails": failed_paired_emails,
-                # "failed_unpaired_emails": failed_unpaired_emails,
+                "unpaired_members": unpaired_members_username,
+                "failed_paired_emails": failed_paired_emails,
+                "failed_unpaired_emails": failed_unpaired_emails,
             },
             status=status.HTTP_201_CREATED,
         )
@@ -330,15 +347,86 @@ class PairInterview(APIView):
         logger.info("GET request received for PairInterview")
         return Response({"detail": "This endpoint is for pairing interviews. Use POST to pair interviews."})
 
-# class NotifyInterview(APIView):
-#     permission_classes = [IsAdmin]
 
-#     def post(self, request):
-#         logger.info("POST request received for NotifyInterview")
-#         # TODO: Implement the notification service
-#         logger.info("Notification sent (placeholder)")
-#         return Response({"detail": "Notification sent."})
+class InterviewAll(APIView):
+    permission_classes = [IsAdmin]
+    
+    def get(self, request):
+        # Check if there are no interviews
+        interviews = Interview.objects.all()
+        if not interviews.exists():
+            return Response(
+                {"detail": "No interviews found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Serialize the interview data
+        serializer = InterviewSerializer(interviews, many=True)
+        return Response(
+            {"interviews": serializer.data},
+            status=status.HTTP_200_OK
+        )
 
+
+class InterviewAssignQuestionRandom(APIView):
+    permission_classes = [IsAdmin]
+    def post(self, request):
+        try:
+            # find all interview within this week (from last monday to next monday)
+            today = timezone.now()
+            last_monday = today - timezone.timedelta(days=today.weekday())
+            last_monday = last_monday.replace(hour=0, minute=0, second=0, microsecond=0)
+            next_next_monday = last_monday + timezone.timedelta(days=14)
+            interviews = Interview.objects.filter(date_effective__gte=last_monday, date_effective__lte=next_next_monday)
+
+            logger.info("Assiged period from %s to %s", last_monday, next_next_monday)
+            logger.info("Assigning questions to %d interviews", len(interviews))
+
+            if not interviews.exists():
+                return Response(
+                    {"detail": "No interviews found for this week."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            technicalQ = TechnicalQuestion.objects.order_by("?")[:INTERVIEW_NUM_TECHNICAL_QUESTIONS]
+            behavioralQ = BehavioralQuestion.objects.order_by("?")[:INTERVIEW_NUM_BEHAVIORAL_QUESTIONS]
+            
+            for interview in interviews:
+                interview.technical_question.set(technicalQ)
+                interview.behavioral_questions.set(behavioralQ)
+                interview.save()
+
+            return Response(
+                {"detail": "Questions assigned."},
+                status=status.HTTP_201_CREATED
+            )
+        except not interviews:
+            return Response(
+                {"detail": "Interview not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+class InterviewAssignQuestionRandomIndividual(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request, interview_id):
+        try:
+            interview = Interview.objects.get(interview_id=interview_id)
+            technicalQ = TechnicalQuestion.objects.order_by("?")[:INTERVIEW_NUM_TECHNICAL_QUESTIONS]
+            behavioralQ = BehavioralQuestion.objects.order_by("?")[:INTERVIEW_NUM_BEHAVIORAL_QUESTIONS]
+            interview.technical_question.set(technicalQ)
+            interview.behavioral_questions.set(behavioralQ)
+            interview.save()
+            return Response(
+                {"detail": "Questions assigned."},
+                status=status.HTTP_200_OK
+            )
+        except Interview.DoesNotExist:
+            return Response(
+                {"detail": "Interview not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
 
 class InterviewQuestions(APIView):
     permission_classes = [IsAdmin]
@@ -433,7 +521,8 @@ class MemberInterviewsView(generics.ListAPIView):
 
 class InterviewerInterviewsView(generics.ListAPIView):
     serializer_class = InterviewSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdmin]
+    lookup_field = 'interview_id'
 
     def get_queryset(self):
         logger.info(
@@ -466,6 +555,20 @@ class InterviewDetailView(generics.RetrieveAPIView):
         return Interview.objects.filter(interviewer=user) | Interview.objects.filter(
             interviewee=user
         )
+
+
+    def _format_interview_data(self, interview, user):
+        # Prepare interview data based on user role and interview status
+        serializer = InterviewSerializer(interview)
+
+        interview_data = serializer.data
+
+        # Remove questions if user role and status conditions are met
+        if interview.interviewer != user and interview.status != 'completed':
+            interview_data.pop("technical_question", None)
+            interview_data.pop("behavioral_questions", None)
+
+        return interview_data
 
 
 class InterviewAvailabilityView(APIView):

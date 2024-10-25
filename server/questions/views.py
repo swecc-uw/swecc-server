@@ -1,7 +1,5 @@
-from django.shortcuts import render
 from rest_framework import generics, permissions
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
+
 from .models import TechnicalQuestion, QuestionTopic, BehavioralQuestion
 from .serializers import TechnicalQuestionSerializer, QuestionTopicSerializer, BehavioralQuestionSerializer
 from custom_auth.permissions import IsAdmin
@@ -59,7 +57,7 @@ class QuestionListView(generics.ListAPIView):
             queryset = TechnicalQuestion.objects.all()
         elif self.kwargs['type'] == 'behavioral':
             queryset = BehavioralQuestion.objects.all()
-    
+
         topic = self.request.query_params.get('topic', None)
         if topic is not None:
             queryset = queryset.filter(topic__name=topic)
