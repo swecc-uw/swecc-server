@@ -81,9 +81,6 @@ when using the script is `123456`.
 2. Unix
 - To be developed
 
-
-## Runbook
-
 ### Out of space
 
 Everything is run in EC2. A common problem seems to be running out of space, probably because of our log files. If you're ever in what seems to be an unrecoverable state (e.g. can't remove or clean because writes fail due to no more space), try this:
