@@ -80,3 +80,47 @@ when using the script is `123456`.
 
 2. Unix
 - To be developed
+
+
+## Runbook
+
+### Out of space
+
+Everything is run in EC2. A common problem seems to be running out of space, probably because of our log files. If you're ever in what seems to be an unrecoverable state (e.g. can't remove or clean because writes fail due to no more space), try this:
+
+After sshing in, kill all docker
+
+```bash
+sudo systemctl stop docker
+sudo rm -rf /var/lib/docker
+```
+Then, reboot
+
+```bash
+sudo reboot
+```
+
+Cleanup
+
+```bash
+sudo apt autoclean
+```
+
+Restart docker 
+
+```bash
+sudo systemctl start docker
+sudo docker network create swag-network # this is what we named it in the action 😭
+```
+
+Finally, restart containers by triggering a deploy. 
+
+
+### Deploy not working
+
+Just ssh and remove the current `actions-runner` directory and follow [these docs](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/configuring-the-self-hosted-runner-application-as-a-service) to add a new actions runner, which should pick up the job shortly after. You should start the runner as a service
+
+```bash
+sudo ./svc.sh install
+sudo ./svc.sh start
+```
