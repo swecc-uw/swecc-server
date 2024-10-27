@@ -107,7 +107,8 @@ Restart docker
 
 ```bash
 sudo systemctl start docker
-sudo docker network create swag-network # this is what we named it in the action 😭
+sudo docker network create swag-network
+pushd ~/swag; docker-compose up -d; popd
 ```
 
 Finally, restart containers by triggering a deploy. 
@@ -120,4 +121,18 @@ Just ssh and remove the current `actions-runner` directory and follow [these doc
 ```bash
 sudo ./svc.sh install
 sudo ./svc.sh start
+```
+
+### HTTPS not working
+
+If you see this in the logs
+
+```
+You're accessing the development server over HTTPS, but it only supports HTTP.
+```
+
+and in network tab you get status `(failed)net::ERR_CONNECTION_REFUSED`, you might need to start the swag container.
+
+```
+cd ~/swag; docker-compose up -d
 ```
