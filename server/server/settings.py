@@ -32,7 +32,7 @@ print(PROJECT_ROOT)
 SECRET_KEY = 'django-insecure-ehylqtrwm(8+eq!m#*3fq3(m6j9jfvm6bzb8=f-uz=l@4$l&^g'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = False
+# DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -151,30 +151,36 @@ STATIC_URL = 'static/'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
+devclient = 'http://localhost:5173'
+prodclient = 'https://interview.swecc.org'
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'members.User'
-CORS_ALLOWED_ORIGINS = ['https://interview.swecc.org']
-CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
-CORS_ALLOW_CREDENTIALS = True
-
-
-CSRF_COOKIE_SAMESITE = 'None' if not DJANGO_DEBUG else 'Lax'
-SESSION_COOKIE_SAMESITE = 'None' if not DJANGO_DEBUG else 'Lax'
-CSRF_COOKIE_HTTPONLY = not DJANGO_DEBUG
-SESSION_COOKIE_HTTPONLY = not DJANGO_DEBUG
-CSRF_TRUSTED_ORIGINS = ['https://interview.swecc.org']
-
-devclient = 'http://localhost:5173'
 
 if DJANGO_DEBUG:
-    CORS_ALLOWED_ORIGINS.append(devclient)
-    CSRF_TRUSTED_ORIGINS.append(devclient)
+    CORS_ALLOWED_ORIGINS = [devclient]
+    CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
+    CORS_ALLOW_CREDENTIALS = True
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_HTTPONLY = True
+    CSRF_TRUSTED_ORIGINS = [devclient]
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
+else:
+    CORS_ALLOWED_ORIGINS = [prodclient]
+    CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
+    CORS_ALLOW_CREDENTIALS = True
+    CSRF_COOKIE_SAMESITE = 'None'
+    SESSION_COOKIE_SAMESITE = 'None'
+    CSRF_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_HTTPONLY = True
+    CSRF_TRUSTED_ORIGINS = [prodclient]
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
 
-
-# PROD ONLY
-CSRF_COOKIE_SECURE = not DJANGO_DEBUG
-SESSION_COOKIE_SECURE = not DJANGO_DEBUG
 
 LOGGING = {
     'version': 1,
