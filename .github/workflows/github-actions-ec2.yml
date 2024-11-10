@@ -42,5 +42,7 @@ jobs:
           -e DB_USER=${{ secrets.DB_USER }} \
           -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
           -e SENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }} \
+          -e SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+          -e SUPABASE_KEY=${{ secrets.SUPABASE_KEY }} \
           --restart unless-stopped \
           ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest

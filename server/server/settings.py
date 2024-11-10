@@ -9,6 +9,9 @@ DB_PORT = os.environ['DB_PORT']
 DB_USER = os.environ['DB_USER']
 DB_PASSWORD = os.environ['DB_PASSWORD']
 SENDGRID_API_KEY = os.environ['SENDGRID_API_KEY']
+# use for storage client only
+SUPABASE_URL = os.environ['SUPABASE_URL']
+SUPABASE_KEY = os.environ['SUPABASE_KEY']
 print({
     "DJANGO_DEBUG": DJANGO_DEBUG,
     "DB_HOST": DB_HOST,
@@ -17,6 +20,8 @@ print({
     "DB_USER": DB_USER,
     "DB_PASSWORD": DB_PASSWORD,
     "SENDGRID_API_KEY": SENDGRID_API_KEY,
+    "SUPABASE_URL": SUPABASE_URL,
+    "SUPABASE_KEY": SUPABASE_KEY,
 })
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -74,6 +79,11 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+FILE_UPLOAD_HANDLERS = [
+    'django.core.files.uploadhandler.MemoryFileUploadHandler',
+    'django.core.files.uploadhandler.TemporaryFileUploadHandler',
 ]
 
 ROOT_URLCONF = 'server.urls'

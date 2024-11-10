@@ -11,3 +11,4 @@ djangorestframework-api-key==2.*
 gunicorn
 numpy
 sendgrid
+supabase
