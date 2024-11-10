@@ -36,6 +36,7 @@ class User(AbstractUser):
     local = models.CharField(max_length=100, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     discord_id = models.BigIntegerField(null=True, blank=True)
+    profile_picture_url=models.URLField(blank=True, null=True)
     
     objects = CustomUserManager()
 

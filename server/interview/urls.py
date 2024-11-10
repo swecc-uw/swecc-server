@@ -8,6 +8,11 @@ urlpatterns = [
         name="interviewer-list-create"
     ),
     path(
+        "all/details/",
+        views.UserInterviewsDetailView.as_view(),
+        name="interview-details"
+    ),
+    path(
         "pair/",
         views.PairInterview.as_view(),
         name="pair-interviews"

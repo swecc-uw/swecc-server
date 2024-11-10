@@ -1,8 +1,14 @@
+import os
+import uuid
+from django.http import JsonResponse
 from django.shortcuts import render
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from supabase import Client, create_client
+
+from server import settings
 from .models import User
 from .serializers import UserSerializer
 from .permissions import IsAuthenticatedOrReadOnlyWithAPIKey
@@ -93,3 +99,99 @@ class UpdateDiscordID(APIView):
         serializer = UserSerializer(member)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ProfilePictureUploadView(APIView):
+    def post(self, request, *args, **kwargs):
+        # try:
+        # Check if file was uploaded
+        if 'profile_picture' not in request.FILES:
+            return JsonResponse({
+                'error': 'No file was uploaded'
+            }, status=400)
+
+        # get the user
+        user = request.user
+
+        file = request.FILES['profile_picture']
+
+        # Validate file type
+        allowed_types = ['image/jpeg', 'image/png', 'image/gif']
+        if file.content_type not in allowed_types:
+            return JsonResponse({
+                'error': 'Invalid file type. Only JPEG, PNG and GIF files are allowed.'
+            }, status=400)
+
+        # Validate file size (max 5MB)
+        if file.size > 5 * 1024 * 1024:
+            return JsonResponse({
+                'error': 'File too large. Maximum size is 5MB.'
+            }, status=400)
+
+        # Generate unique filename
+        file_extension = os.path.splitext(file.name)[1]
+        upload_name = f"{user.username}_profile_picture"
+
+        # Initialize Supabase client
+        supabase: Client = create_client(
+            settings.SUPABASE_URL,
+            settings.SUPABASE_KEY
+        )
+
+
+        # Upload to Supabase storage
+        # The bucket should be public and already created in Supabase
+        bucket_name = "assets"
+        file_path = f"profile_pictures/{upload_name}{file_extension}"
+
+        try:
+            # Remove existing file if it exists
+            supabase.storage \
+                .from_(bucket_name) \
+                .remove([file_path])
+
+            # Upload the file to Supabase storage
+            supabase.storage \
+                .from_(bucket_name) \
+                .upload(
+                    path=file_path,
+                    file=file.read(),
+                    file_options={"content-type": file.content_type}
+                )
+
+            # Get the public URL
+            public_url = supabase.storage \
+                .from_(bucket_name) \
+                .get_public_url(file_path)
+
+            member = User.objects.get(username=user.username)
+            # Delete old profile picture if it exists
+            if member.profile_picture_url:
+                try:
+                    old_file_path = request.user.profile_picture_url.split(f"{bucket_name}/")[1]
+                    supabase.storage \
+                        .from_(bucket_name) \
+                        .remove([old_file_path])
+                except Exception as e:
+                    logger.warning(f"Failed to delete old profile picture: {str(e)}")
+
+            # Update user's profile picture URL
+            request.user.profile_picture_url = public_url
+            request.user.save()
+
+            return JsonResponse({
+                'message': 'Profile picture updated successfully',
+                'url': public_url
+            })
+
+        except Exception as e:
+            logger.error(f"Supabase storage error: {str(e)}")
+            return JsonResponse({
+                'error': 'Failed to upload file to storage'
+            }, status=500)
+
+        # except Exception as e:
+        #     logger.error(f"Profile picture upload error: {str(e)}")
+        #     return JsonResponse({
+        #         'error': 'An unexpected error occurred'
+        #     }, status=500)

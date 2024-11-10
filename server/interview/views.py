@@ -7,6 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 
 from questions.models import TechnicalQuestion, BehavioralQuestion
 from custom_auth.permissions import IsAdmin
+from members.serializers import UserSerializer
+from members.models import User
 from .algorithm import CommonAvailabilityStableMatching
 from .notification import interview_paired_notification_html, interview_unpaired_notification_html, send_email
 from .models import Interview
@@ -20,6 +22,7 @@ from django.core.exceptions import ValidationError
 from rest_framework import permissions
 from django.db import transaction
 from django.utils import timezone
+from django.db.models import Q
 import logging
 
 logger = logging.getLogger(__name__)
@@ -839,3 +842,52 @@ class CompleteView(APIView):
         except ValidationError as e:
             logger.error("Validation error: %s", str(e))
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class UserInterviewsDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """
+        Fetch all interviews for the authenticated user with hydrated fields.
+        Questions are only visible to the interviewer before interview completion.
+        """
+        logger.info(f"GET request received for UserInterviewsDetailView by user {request.user.username}")
+
+        try:
+            # all interviews where user is interviewer or interviewee
+            interviews = Interview.objects.filter(
+                Q(interviewer=request.user) | Q(interviewee=request.user)
+            ).select_related('interviewer', 'interviewee')
+
+            # hydrate
+            processed_interviews = []
+            for interview in interviews:
+                interview_data = InterviewSerializer(interview).data
+
+                er = User.objects.get(username=interview.interviewer)
+                ee = User.objects.get(username=interview.interviewee)
+
+                # interviewer interviewee
+                interview_data['interviewer'] = UserSerializer(er).data
+                interview_data['interviewee'] = UserSerializer(ee).data
+
+                # question visibility
+                is_interviewer = interview.interviewer == request.user
+                is_completed = interview.status in ['inactive_completed', 'inactive_incomplete']
+
+                if not is_interviewer and not is_completed:
+                    interview_data.pop('technical_question', None)
+                    interview_data.pop('behavioral_questions', None)
+
+                processed_interviews.append(interview_data)
+
+            logger.info(f"Retrieved {len(processed_interviews)} interviews for user {request.user.username}")
+            return Response({
+                'interviews': processed_interviews
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Error fetching interviews for user {request.user.username}: {str(e)}")
+            return Response({
+                'detail': 'An error occurred while fetching interviews.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
