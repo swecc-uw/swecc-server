@@ -168,6 +168,30 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'members.User'
 
+"""
+CORS_ALLOWED_ORIGINS = ['https://interview.swecc.org']
+CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
+CORS_ALLOW_CREDENTIALS = True
+
+
+CSRF_COOKIE_SAMESITE = 'None' if not DJANGO_DEBUG else 'Lax'
+SESSION_COOKIE_SAMESITE = 'None' if not DJANGO_DEBUG else 'Lax'
+CSRF_COOKIE_HTTPONLY = not DJANGO_DEBUG
+SESSION_COOKIE_HTTPONLY = not DJANGO_DEBUG
+CSRF_TRUSTED_ORIGINS = ['https://interview.swecc.org']
+
+devclient = 'http://localhost:5173'
+
+if DJANGO_DEBUG:
+    CORS_ALLOWED_ORIGINS.append(devclient)
+    CSRF_TRUSTED_ORIGINS.append(devclient)
+
+
+# PROD ONLY
+CSRF_COOKIE_SECURE = not DJANGO_DEBUG
+SESSION_COOKIE_SECURE = not DJANGO_DEBUG
+"""
+
 if DJANGO_DEBUG:
     CORS_ALLOWED_ORIGINS = [devclient]
     CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
@@ -191,6 +215,26 @@ else:
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
 
+    CORS_ALLOW_METHODS = [
+        'DELETE',
+        'GET',
+        'OPTIONS',
+        'PATCH',
+        'POST',
+        'PUT',
+    ]
+
+    CORS_ALLOW_HEADERS = [
+        'accept',
+        'accept-encoding',
+        'authorization',
+        'content-type',
+        'dnt',
+        'origin',
+        'user-agent',
+        'x-csrftoken',
+        'x-requested-with',
+    ]
 
 LOGGING = {
     'version': 1,
