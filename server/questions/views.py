@@ -103,7 +103,6 @@ class QuestionTopicUpdateView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAdmin]
     lookup_field = "topic_id"
 
-
 class QuestionQueueUpdateView(generics.GenericAPIView):
     permission_classes = [IsAdmin]
 
