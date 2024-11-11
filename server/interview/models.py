@@ -64,7 +64,7 @@ class Interview(models.Model):
 
     interview_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     interviewer = models.ForeignKey('members.User', on_delete=models.CASCADE, related_name='interviews_as_interviewer')
-    technical_question = models.ManyToManyField('questions.TechnicalQuestion')
+    technical_questions = models.ManyToManyField('questions.TechnicalQuestion')
     behavioral_questions = models.ManyToManyField('questions.BehavioralQuestion')
     interviewee = models.ForeignKey('members.User', on_delete=models.CASCADE, related_name='interviews_as_interviewee')
     status = models.CharField(max_length=64, choices=STATUS_CHOICES, default='pending')
