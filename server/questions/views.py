@@ -151,7 +151,8 @@ class QuestionQueueUpdateView(generics.GenericAPIView):
             logger.error("Invalid queue update data: %s", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        question_ids = serializer.validated_data["question_queue"]
+        question_ids = serializer.validated_data
+        logger.info("Updating queue with questions: %s", question_ids)
         QueueModel = self.get_queue_model()
         QuestionModel = self.get_question_model()
 

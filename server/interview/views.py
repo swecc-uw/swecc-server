@@ -249,6 +249,7 @@ class PairInterview(APIView):
         tqs = TechnicalQuestionQueue.objects.all().order_by("position")
 
         if len(tqs) < 2:
+            logger.warning("Not enough questions in the queue to assign interviews")
             return Response(
                 {"detail": "Not enough questions in the queue to assign interviews."},
                 status=status.HTTP_400_BAD_REQUEST,
