@@ -9,8 +9,13 @@ from questions.models import TechnicalQuestion, BehavioralQuestion
 from custom_auth.permissions import IsAdmin
 from members.serializers import UserSerializer
 from members.models import User
+from questions.serializers import BehavioralQuestionSerializer, TechnicalQuestionSerializer
 from .algorithm import CommonAvailabilityStableMatching
-from .notification import interview_paired_notification_html, interview_unpaired_notification_html, send_email
+from .notification import (
+    interview_paired_notification_html,
+    interview_unpaired_notification_html,
+    send_email,
+)
 from .models import Interview
 from .serializers import InterviewSerializer
 from .models import InterviewAvailability, InterviewPool, Interview
@@ -32,12 +37,14 @@ INTERVIEW_NOTIFICATION_ADDR = "interview@no-reply.swecc.org"
 INTERVIEW_NUM_BEHAVIORAL_QUESTIONS = 3
 INTERVIEW_NUM_TECHNICAL_QUESTIONS = 1
 
+
 def parse_date(x):
     date = datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ")
 
     if timezone.is_aware(date):
         return date
     return timezone.make_aware(date)
+
 
 # custom permission to only allow participants of an interview to view it.
 class IsInterviewParticipant(permissions.BasePermission):
@@ -147,7 +154,7 @@ class AuthenticatedMemberSignupForInterview(APIView):
         except InterviewPool.DoesNotExist:
             logger.warning(
                 "User %s attempted to cancel a non-existent interview",
-                request.user.username
+                request.user.username,
             )
             return Response(
                 {"detail": "You are not signed up for an interview."},
@@ -162,7 +169,9 @@ class GetInterviewPoolStatus(APIView):
         logger.info("GET request received for GetInterviewPoolStatus")
         try:
             interview_pool = InterviewPool.objects.all()
-            logger.info("Interview pool status: %d members signed up", len(interview_pool))
+            logger.info(
+                "Interview pool status: %d members signed up", len(interview_pool)
+            )
             return Response(
                 {
                     "number_sign_up": len(interview_pool),
@@ -191,9 +200,9 @@ class PairInterview(APIView):
             rip = pool_members.pop(random_idx_of_death)
             logger.warning(
                 "Number of members in the pool must be even. Removing one member: %s, id: %s",
-                rip.member.username, rip.member.id
+                rip.member.username,
+                rip.member.id,
             )
-
 
         if len(pool_members) < 2:
             logger.warning("Not enough members in the pool to pair interviews")
@@ -205,9 +214,11 @@ class PairInterview(APIView):
         # Get availabilities for all members
         availabilities = {
             member.member.id: (
-            InterviewAvailability.objects.get(member=member.member).interview_availability_slots
-            if InterviewAvailability.objects.filter(member=member.member).exists()
-            else [[False] * 48 for _ in range(7)]
+                InterviewAvailability.objects.get(
+                    member=member.member
+                ).interview_availability_slots
+                if InterviewAvailability.objects.filter(member=member.member).exists()
+                else [[False] * 48 for _ in range(7)]
             )
             for member in pool_members
         }
@@ -218,21 +229,19 @@ class PairInterview(APIView):
         # Perform pairing using the CommonAvailabilityStableMatching algorithm
         matches = self.pairing_algorithm.pair(pool_member_ids)
 
-
         # Create interviews based on matches
 
-         # find all interview within this week (from last monday to next monday)
+        # find all interview within this week (from last monday to next monday)
         today = timezone.now()
         last_monday = today - timezone.timedelta(days=today.weekday())
         last_monday = last_monday.replace(hour=0, minute=0, second=0, microsecond=0)
         next_next_monday = last_monday + timezone.timedelta(days=14)
-        
 
         paired_interviews = []
 
-        Interview.objects.filter(date_effective__gte=last_monday,
-                            date_effective__lte=next_next_monday).delete()
-
+        Interview.objects.filter(
+            date_effective__gte=last_monday, date_effective__lte=next_next_monday
+        ).delete()
 
         for i, j in enumerate(matches):
             if i < j:  # Avoid creating duplicate interviews
@@ -265,7 +274,9 @@ class PairInterview(APIView):
 
         failed_paired_emails = []
         # notifications
-        logger.info("Sending notifications to %d paired members", len(paired_interviews))
+        logger.info(
+            "Sending notifications to %d paired members", len(paired_interviews)
+        )
         for interview in paired_interviews:
             try:
                 send_email(
@@ -278,11 +289,13 @@ class PairInterview(APIView):
                         partner_email=interview.interviewee.email,
                         partner_discord_id=interview.interviewee.discord_id,
                         partner_discord_username=interview.interviewee.discord_username,
-                        interview_date=interview.date_effective
-                    )
+                        interview_date=interview.date_effective,
+                    ),
                 )
             except Exception as e:
-                failed_paired_emails.append((interview.interview_id, interview.interviewer.email, str(e)))
+                failed_paired_emails.append(
+                    (interview.interview_id, interview.interviewer.email, str(e))
+                )
 
             try:
                 send_email(
@@ -295,14 +308,21 @@ class PairInterview(APIView):
                         partner_email=interview.interviewer.email,
                         partner_discord_id=interview.interviewer.discord_id,
                         partner_discord_username=interview.interviewer.discord_username,
-                        interview_date=interview.date_effective
-                    )
+                        interview_date=interview.date_effective,
+                    ),
                 )
             except Exception as e:
-                failed_paired_emails.append((interview.interview_id, interview.interviewee.email, str(e)))
+                failed_paired_emails.append(
+                    (interview.interview_id, interview.interviewee.email, str(e))
+                )
 
-        logger.error("Failed to send notifications to %d paired members", len(failed_paired_emails))
-        logger.info("Sending notifications to %d unpaired members", len(unpaired_members))
+        logger.error(
+            "Failed to send notifications to %d paired members",
+            len(failed_paired_emails),
+        )
+        logger.info(
+            "Sending notifications to %d unpaired members", len(unpaired_members)
+        )
         failed_unpaired_emails = []
         for pool_member in unpaired_members:
             try:
@@ -312,13 +332,16 @@ class PairInterview(APIView):
                     subject="You have not been paired for an upcoming mock interview",
                     html_content=interview_unpaired_notification_html(
                         pool_member.member.first_name,
-                        timezone.now().strftime("%B %d, %Y")
-                    )
+                        timezone.now().strftime("%B %d, %Y"),
+                    ),
                 )
             except Exception as e:
                 failed_unpaired_emails.append((pool_member.member.email, str(e)))
 
-        logger.error("Failed to send notifications to %d unpaired members", len(failed_unpaired_emails))
+        logger.error(
+            "Failed to send notifications to %d unpaired members",
+            len(failed_unpaired_emails),
+        )
 
         unpaired_members_username = [
             member.member.username for member in unpaired_members
@@ -326,7 +349,7 @@ class PairInterview(APIView):
 
         logger.info(
             "Successfully paired %d interviews. Unpaired members: {len(unpaired_members)}",
-            len(paired_interviews)
+            len(paired_interviews),
         )
         return Response(
             {
@@ -348,31 +371,32 @@ class PairInterview(APIView):
 
     def get(self, request):
         logger.info("GET request received for PairInterview")
-        return Response({"detail": "This endpoint is for pairing interviews. Use POST to pair interviews."})
+        return Response(
+            {
+                "detail": "This endpoint is for pairing interviews. Use POST to pair interviews."
+            }
+        )
 
 
 class InterviewAll(APIView):
     permission_classes = [IsAdmin]
-    
+
     def get(self, request):
         # Check if there are no interviews
         interviews = Interview.objects.all()
         if not interviews.exists():
             return Response(
-                {"detail": "No interviews found."},
-                status=status.HTTP_404_NOT_FOUND
+                {"detail": "No interviews found."}, status=status.HTTP_404_NOT_FOUND
             )
-        
+
         # Serialize the interview data
         serializer = InterviewSerializer(interviews, many=True)
-        return Response(
-            {"interviews": serializer.data},
-            status=status.HTTP_200_OK
-        )
+        return Response({"interviews": serializer.data}, status=status.HTTP_200_OK)
 
 
 class InterviewAssignQuestionRandom(APIView):
     permission_classes = [IsAdmin]
+
     def post(self, request):
         try:
             # find all interview within this week (from last monday to next monday)
@@ -380,7 +404,9 @@ class InterviewAssignQuestionRandom(APIView):
             last_monday = today - timezone.timedelta(days=today.weekday())
             last_monday = last_monday.replace(hour=0, minute=0, second=0, microsecond=0)
             next_next_monday = last_monday + timezone.timedelta(days=14)
-            interviews = Interview.objects.filter(date_effective__gte=last_monday, date_effective__lte=next_next_monday)
+            interviews = Interview.objects.filter(
+                date_effective__gte=last_monday, date_effective__lte=next_next_monday
+            )
 
             logger.info("Assiged period from %s to %s", last_monday, next_next_monday)
             logger.info("Assigning questions to %d interviews", len(interviews))
@@ -388,26 +414,29 @@ class InterviewAssignQuestionRandom(APIView):
             if not interviews.exists():
                 return Response(
                     {"detail": "No interviews found for this week."},
-                    status=status.HTTP_404_NOT_FOUND
+                    status=status.HTTP_404_NOT_FOUND,
                 )
-            
-            technicalQ = TechnicalQuestion.objects.order_by("?")[:INTERVIEW_NUM_TECHNICAL_QUESTIONS]
-            behavioralQ = BehavioralQuestion.objects.order_by("?")[:INTERVIEW_NUM_BEHAVIORAL_QUESTIONS]
-            
+
+            technicalQ = TechnicalQuestion.objects.order_by("?")[
+                :INTERVIEW_NUM_TECHNICAL_QUESTIONS
+            ]
+            behavioralQ = BehavioralQuestion.objects.order_by("?")[
+                :INTERVIEW_NUM_BEHAVIORAL_QUESTIONS
+            ]
+
             for interview in interviews:
-                interview.technical_questions.set(technicalQ)
-                interview.behavioral_questions.set(behavioralQ)
+                interview.technical_questions.add(*technicalQ)
+                interview.behavioral_questions.add(*behavioralQ)
                 interview.save()
 
             return Response(
-                {"detail": "Questions assigned."},
-                status=status.HTTP_201_CREATED
+                {"detail": "Questions assigned."}, status=status.HTTP_201_CREATED
             )
         except not interviews:
             return Response(
-                {"detail": "Interview not found."},
-                status=status.HTTP_404_NOT_FOUND
+                {"detail": "Interview not found."}, status=status.HTTP_404_NOT_FOUND
             )
+
 
 class InterviewAssignQuestionRandomIndividual(APIView):
     permission_classes = [IsAdmin]
@@ -415,21 +444,23 @@ class InterviewAssignQuestionRandomIndividual(APIView):
     def post(self, request, interview_id):
         try:
             interview = Interview.objects.get(interview_id=interview_id)
-            technicalQ = TechnicalQuestion.objects.order_by("?")[:INTERVIEW_NUM_TECHNICAL_QUESTIONS]
-            behavioralQ = BehavioralQuestion.objects.order_by("?")[:INTERVIEW_NUM_BEHAVIORAL_QUESTIONS]
+            technicalQ = TechnicalQuestion.objects.order_by("?")[
+                :INTERVIEW_NUM_TECHNICAL_QUESTIONS
+            ]
+            behavioralQ = BehavioralQuestion.objects.order_by("?")[
+                :INTERVIEW_NUM_BEHAVIORAL_QUESTIONS
+            ]
             interview.technical_questions.set(technicalQ)
             interview.behavioral_questions.set(behavioralQ)
             interview.save()
             return Response(
-                {"detail": "Questions assigned."},
-                status=status.HTTP_200_OK
+                {"detail": "Questions assigned."}, status=status.HTTP_200_OK
             )
         except Interview.DoesNotExist:
             return Response(
-                {"detail": "Interview not found."},
-                status=status.HTTP_404_NOT_FOUND
+                {"detail": "Interview not found."}, status=status.HTTP_404_NOT_FOUND
             )
-        
+
 
 class InterviewQuestions(APIView):
     permission_classes = [IsAdmin]
@@ -444,9 +475,12 @@ class InterviewQuestions(APIView):
             return Response(
                 {
                     "interview_id": interview.interview_id,
-                    "technical_questions": (interview.technical_questions.question),
+                    "technical_questions": [
+                        question
+                        for question in interview.technical_questions.all()
+                    ],
                     "behavioral_questions": [
-                        question.question
+                        question
                         for question in interview.behavioral_questions.all()
                     ],
                 }
@@ -503,7 +537,9 @@ class InterviewRunningStatus(APIView):
                 {"detail": "Interview completed."}, status=status.HTTP_200_OK
             )
         except Interview.DoesNotExist:
-            logger.warning("No active interview found to complete. ID: %s", interview_id)
+            logger.warning(
+                "No active interview found to complete. ID: %s", interview_id
+            )
             return Response(
                 {"detail": "No active interview found."},
                 status=status.HTTP_404_NOT_FOUND,
@@ -525,12 +561,12 @@ class MemberInterviewsView(generics.ListAPIView):
 class InterviewerInterviewsView(generics.ListAPIView):
     serializer_class = InterviewSerializer
     permission_classes = [IsAdmin]
-    lookup_field = 'interview_id'
+    lookup_field = "interview_id"
 
     def get_queryset(self):
         logger.info(
             "Retrieving interviews where user is interviewer: %s",
-            self.request.user.username
+            self.request.user.username,
         )
         return Interview.objects.filter(interviewer=self.request.user)
 
@@ -559,7 +595,6 @@ class InterviewDetailView(generics.RetrieveAPIView):
             interviewee=user
         )
 
-
     def _format_interview_data(self, interview, user):
         # Prepare interview data based on user role and interview status
         serializer = InterviewSerializer(interview)
@@ -567,9 +602,16 @@ class InterviewDetailView(generics.RetrieveAPIView):
         interview_data = serializer.data
 
         # Remove questions if user role and status conditions are met
-        if interview.interviewer != user and interview.status != 'completed':
+        if interview.interviewer != user and interview.status != "completed":
             interview_data.pop("technical_questions", None)
             interview_data.pop("behavioral_questions", None)
+        else:
+            interview_data["technical_questions"] = [
+                question for question in interview.technical_questions.all()
+            ]
+            interview_data["behavioral_questions"] = [
+                question for question in interview.behavioral_questions.all()
+            ]
 
         return interview_data
 
@@ -658,7 +700,9 @@ class ProposeView(APIView):
                     f"Invalid interview status for proposal. Status: {interview.status}"
                 )
                 return Response(
-                    {"detail": "Cannot propose time for this interview. Status: {interview.status}"},
+                    {
+                        "detail": "Cannot propose time for this interview. Status: {interview.status}"
+                    },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -689,7 +733,10 @@ class ProposeView(APIView):
             updated_interview_serialized = InterviewSerializer(interview).data
             logger.info("Interview proposal updated. ID: %s", interview_id)
             return Response(
-                {"detail": "Interview time proposed successfully.", "interview": updated_interview_serialized},
+                {
+                    "detail": "Interview time proposed successfully.",
+                    "interview": updated_interview_serialized,
+                },
                 status=status.HTTP_200_OK,
             )
 
@@ -749,7 +796,11 @@ class CommitView(APIView):
                     )
 
             if commit_time != interview.proposed_time:
-                logger.warning("Commit time does not match proposed time, proposed: %s, commit: %s", interview.proposed_time, commit_time)
+                logger.warning(
+                    "Commit time does not match proposed time, proposed: %s, commit: %s",
+                    interview.proposed_time,
+                    commit_time,
+                )
                 return Response(
                     {"detail": "Commit time must match the proposed time."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -766,7 +817,10 @@ class CommitView(APIView):
 
             logger.info("Interview committed successfully. ID: %s", interview_id)
             return Response(
-                {"detail": "Interview committed successfully.", "interview": updated_interview_serialized},
+                {
+                    "detail": "Interview committed successfully.",
+                    "interview": updated_interview_serialized,
+                },
                 status=status.HTTP_200_OK,
             )
 
@@ -804,9 +858,7 @@ class CompleteView(APIView):
             if completion_time:
                 if isinstance(completion_time, str):
                     try:
-                        completion_time = parse_date(
-                            completion_time
-                        )
+                        completion_time = parse_date(completion_time)
                     except ValueError:
                         logger.warning("Invalid time format provided")
                         return Response(
@@ -829,7 +881,7 @@ class CompleteView(APIView):
             return Response(
                 {
                     "detail": f"Interview marked as {'completed' if completion_time else 'incomplete'}.",
-                    "interview": updated_interview_serialized
+                    "interview": updated_interview_serialized,
                 },
                 status=status.HTTP_200_OK,
             )
@@ -843,6 +895,7 @@ class CompleteView(APIView):
             logger.error("Validation error: %s", str(e))
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
 class UserInterviewsDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -851,13 +904,15 @@ class UserInterviewsDetailView(APIView):
         Fetch all interviews for the authenticated user with hydrated fields.
         Questions are only visible to the interviewer before interview completion.
         """
-        logger.info(f"GET request received for UserInterviewsDetailView by user {request.user.username}")
+        logger.info(
+            f"GET request received for UserInterviewsDetailView by user {request.user.username}"
+        )
 
         try:
             # all interviews where user is interviewer or interviewee
             interviews = Interview.objects.filter(
                 Q(interviewer=request.user) | Q(interviewee=request.user)
-            ).select_related('interviewer', 'interviewee')
+            ).select_related("interviewer", "interviewee")
 
             # hydrate
             processed_interviews = []
@@ -868,26 +923,43 @@ class UserInterviewsDetailView(APIView):
                 ee = User.objects.get(username=interview.interviewee)
 
                 # interviewer interviewee
-                interview_data['interviewer'] = UserSerializer(er).data
-                interview_data['interviewee'] = UserSerializer(ee).data
+                interview_data["interviewer"] = UserSerializer(er).data
+                interview_data["interviewee"] = UserSerializer(ee).data
 
                 # question visibility
                 is_interviewer = interview.interviewer == request.user
-                is_completed = interview.status in ['inactive_completed', 'inactive_incomplete']
+                is_completed = interview.status in [
+                    "inactive_completed",
+                    "inactive_incomplete",
+                ]
 
                 if not is_interviewer and not is_completed:
-                    interview_data.pop('technical_questions', None)
-                    interview_data.pop('behavioral_questions', None)
+                    interview_data.pop("technical_questions", None)
+                    interview_data.pop("behavioral_questions", None)
+                else:
+                    interview_data["technical_questions"] = [
+                        TechnicalQuestionSerializer(question).data
+                        for question in interview.technical_questions.all()
+                    ]
+                    interview_data["behavioral_questions"] = [
+                        BehavioralQuestionSerializer(question).data
+                        for question in interview.behavioral_questions.all()
+                    ]
 
                 processed_interviews.append(interview_data)
 
-            logger.info(f"Retrieved {len(processed_interviews)} interviews for user {request.user.username}")
-            return Response({
-                'interviews': processed_interviews
-            }, status=status.HTTP_200_OK)
+            logger.info(
+                f"Retrieved {len(processed_interviews)} interviews for user {request.user.username}"
+            )
+            return Response(
+                {"interviews": processed_interviews}, status=status.HTTP_200_OK
+            )
 
         except Exception as e:
-            logger.error(f"Error fetching interviews for user {request.user.username}: {str(e)}")
-            return Response({
-                'detail': 'An error occurred while fetching interviews.'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error(
+                f"Error fetching interviews for user {request.user.username}: {str(e)}"
+            )
+            return Response(
+                {"detail": "An error occurred while fetching interviews."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

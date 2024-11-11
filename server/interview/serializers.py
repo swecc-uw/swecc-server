@@ -22,7 +22,7 @@ class InterviewPoolSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 class InterviewAndQuestionSerializer(serializers.ModelSerializer):
-    technical_questions = TechnicalQuestionSerializer(read_only=True)
+    technical_questions = TechnicalQuestionSerializer(many=True, read_only=True, source='technical_questions.all')
     behavioral_questions = BehavioralQuestionSerializer(many=True, read_only=True, source='behavioral_questions.all')
 
     class Meta:
