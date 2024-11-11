@@ -395,7 +395,7 @@ class InterviewAssignQuestionRandom(APIView):
             behavioralQ = BehavioralQuestion.objects.order_by("?")[:INTERVIEW_NUM_BEHAVIORAL_QUESTIONS]
             
             for interview in interviews:
-                interview.technical_question.set(technicalQ)
+                interview.technical_questions.set(technicalQ)
                 interview.behavioral_questions.set(behavioralQ)
                 interview.save()
 
@@ -417,7 +417,7 @@ class InterviewAssignQuestionRandomIndividual(APIView):
             interview = Interview.objects.get(interview_id=interview_id)
             technicalQ = TechnicalQuestion.objects.order_by("?")[:INTERVIEW_NUM_TECHNICAL_QUESTIONS]
             behavioralQ = BehavioralQuestion.objects.order_by("?")[:INTERVIEW_NUM_BEHAVIORAL_QUESTIONS]
-            interview.technical_question.set(technicalQ)
+            interview.technical_questions.set(technicalQ)
             interview.behavioral_questions.set(behavioralQ)
             interview.save()
             return Response(
@@ -444,7 +444,7 @@ class InterviewQuestions(APIView):
             return Response(
                 {
                     "interview_id": interview.interview_id,
-                    "technical_question": (interview.technical_question.question),
+                    "technical_questions": (interview.technical_questions.question),
                     "behavioral_questions": [
                         question.question
                         for question in interview.behavioral_questions.all()
@@ -568,7 +568,7 @@ class InterviewDetailView(generics.RetrieveAPIView):
 
         # Remove questions if user role and status conditions are met
         if interview.interviewer != user and interview.status != 'completed':
-            interview_data.pop("technical_question", None)
+            interview_data.pop("technical_questions", None)
             interview_data.pop("behavioral_questions", None)
 
         return interview_data
@@ -876,7 +876,7 @@ class UserInterviewsDetailView(APIView):
                 is_completed = interview.status in ['inactive_completed', 'inactive_incomplete']
 
                 if not is_interviewer and not is_completed:
-                    interview_data.pop('technical_question', None)
+                    interview_data.pop('technical_questions', None)
                     interview_data.pop('behavioral_questions', None)
 
                 processed_interviews.append(interview_data)

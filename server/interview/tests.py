@@ -116,7 +116,7 @@ class InterviewLifecycleTestCase(TestCase):
         self.client = APIClient()
         self.interviewer = User.objects.create_user(username='interviewer', password='password')
         self.interviewee = User.objects.create_user(username='interviewee', password='password')
-        self.technical_question = TechnicalQuestion.objects.create(
+        self.technical_questions = TechnicalQuestion.objects.create(
             created_by=self.interviewer,
             prompt='Prompt',
             solution='Solution',
@@ -133,7 +133,7 @@ class InterviewLifecycleTestCase(TestCase):
             date_effective=timezone.now()
         )
         self.interview.behavioral_questions.add(self.behavioral_question)
-        self.interview.technical_question = self.technical_question
+        self.interview.technical_questions = self.technical_questions
 
     def test_propose_view(self):
         self.client.force_authenticate(user=self.interviewer)
