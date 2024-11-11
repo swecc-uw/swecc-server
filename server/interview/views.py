@@ -4,11 +4,13 @@ from datetime import datetime
 import random
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
-
+from django.db.models import Max
+import server.settings as settings
 from questions.models import TechnicalQuestion, BehavioralQuestion
 from custom_auth.permissions import IsAdmin
 from members.serializers import UserSerializer
 from members.models import User
+from questions.models import TechnicalQuestion, BehavioralQuestion, TechnicalQuestionQueue
 from questions.serializers import BehavioralQuestionSerializer, TechnicalQuestionSerializer
 from .algorithm import CommonAvailabilityStableMatching
 from .notification import (
@@ -243,33 +245,66 @@ class PairInterview(APIView):
             date_effective__gte=last_monday, date_effective__lte=next_next_monday
         ).delete()
 
+        # Get questions from queue
+        tqs = TechnicalQuestionQueue.objects.all().order_by("position")
+
+        if len(tqs) < 2:
+            return Response(
+                {"detail": "Not enough questions in the queue to assign interviews."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Get the lowest position to ensure we get consecutive questions
+        low = tqs.first().position
+
+        # Get the two questions at consecutive positions
+        question_queues = [tqs.filter(position=low + i).first() for i in range(2)]
+        technical_questions = [tq.question for tq in question_queues if tq]
+        logger.info("Paired interviews will have questions: %s", technical_questions)
+        if len(technical_questions) < 2:
+            return Response(
+                {"detail": "Could not find consecutive questions in the queue."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Create interviews with questions
         for i, j in enumerate(matches):
             if i < j:  # Avoid creating duplicate interviews
                 p1 = pool_members[i].member
                 p2 = pool_members[j].member
 
+                # Create first interview
                 interview1 = Interview.objects.create(
                     interviewer=p1,
                     interviewee=p2,
                     status="pending",
                     date_effective=timezone.now(),
                 )
+                interview1.technical_questions.add(technical_questions[0])
 
+                # Create second interview
                 interview2 = Interview.objects.create(
                     interviewer=p2,
                     interviewee=p1,
                     status="pending",
                     date_effective=timezone.now(),
                 )
+                interview2.technical_questions.add(technical_questions[1])
 
                 paired_interviews.append(interview1)
                 paired_interviews.append(interview2)
 
-                # Remove paired users from the pool
+                # remove paired users from the pool
                 InterviewPool.objects.filter(member__in=[p1, p2]).delete()
 
+        # update question positions in queue
+        new_position = TechnicalQuestionQueue.objects.aggregate(Max('position'))['position__max'] + 1
+        for tq in question_queues:
+            tq.position = new_position
+            tq.save()
+            new_position += 1
         logger.info("Paired %d interviews", len(paired_interviews))
-        # Check for any unpaired members
+        # check for any unpaired members
         unpaired_members = InterviewPool.objects.all()
 
         failed_paired_emails = []
@@ -277,44 +312,48 @@ class PairInterview(APIView):
         logger.info(
             "Sending notifications to %d paired members", len(paired_interviews)
         )
-        for interview in paired_interviews:
-            try:
-                send_email(
-                    from_email=INTERVIEW_NOTIFICATION_ADDR,
-                    to_email=interview.interviewer.email,
-                    subject="You've been paired for an upcoming mock interview!",
-                    html_content=interview_paired_notification_html(
-                        name=interview.interviewer.first_name,
-                        partner_name=interview.interviewee.first_name,
-                        partner_email=interview.interviewee.email,
-                        partner_discord_id=interview.interviewee.discord_id,
-                        partner_discord_username=interview.interviewee.discord_username,
-                        interview_date=interview.date_effective,
-                    ),
-                )
-            except Exception as e:
-                failed_paired_emails.append(
-                    (interview.interview_id, interview.interviewer.email, str(e))
-                )
+        if not settings.DJANGO_DEBUG:
+            logger.info("DEBUG is off, sending emails")
+            for interview in paired_interviews:
+                try:
+                    send_email(
+                        from_email=INTERVIEW_NOTIFICATION_ADDR,
+                        to_email=interview.interviewer.email,
+                        subject="You've been paired for an upcoming mock interview!",
+                        html_content=interview_paired_notification_html(
+                            name=interview.interviewer.first_name,
+                            partner_name=interview.interviewee.first_name,
+                            partner_email=interview.interviewee.email,
+                            partner_discord_id=interview.interviewee.discord_id,
+                            partner_discord_username=interview.interviewee.discord_username,
+                            interview_date=interview.date_effective,
+                        ),
+                    )
+                except Exception as e:
+                    failed_paired_emails.append(
+                        (interview.interview_id, interview.interviewer.email, str(e))
+                    )
 
-            try:
-                send_email(
-                    from_email=INTERVIEW_NOTIFICATION_ADDR,
-                    to_email=interview.interviewee.email,
-                    subject="You've been paired for an upcoming mock interview!",
-                    html_content=interview_paired_notification_html(
-                        name=interview.interviewee.first_name,
-                        partner_name=interview.interviewer.first_name,
-                        partner_email=interview.interviewer.email,
-                        partner_discord_id=interview.interviewer.discord_id,
-                        partner_discord_username=interview.interviewer.discord_username,
-                        interview_date=interview.date_effective,
-                    ),
-                )
-            except Exception as e:
-                failed_paired_emails.append(
-                    (interview.interview_id, interview.interviewee.email, str(e))
-                )
+                try:
+                    send_email(
+                        from_email=INTERVIEW_NOTIFICATION_ADDR,
+                        to_email=interview.interviewee.email,
+                        subject="You've been paired for an upcoming mock interview!",
+                        html_content=interview_paired_notification_html(
+                            name=interview.interviewee.first_name,
+                            partner_name=interview.interviewer.first_name,
+                            partner_email=interview.interviewer.email,
+                            partner_discord_id=interview.interviewer.discord_id,
+                            partner_discord_username=interview.interviewer.discord_username,
+                            interview_date=interview.date_effective,
+                        ),
+                    )
+                except Exception as e:
+                    failed_paired_emails.append(
+                        (interview.interview_id, interview.interviewee.email, str(e))
+                    )
+        else:
+            logger.info("DEBUG is on, not sending emails")
 
         logger.error(
             "Failed to send notifications to %d paired members",
@@ -324,20 +363,23 @@ class PairInterview(APIView):
             "Sending notifications to %d unpaired members", len(unpaired_members)
         )
         failed_unpaired_emails = []
-        for pool_member in unpaired_members:
-            try:
-                send_email(
-                    from_email=INTERVIEW_NOTIFICATION_ADDR,
-                    to_email=pool_member.member.email,
-                    subject="You have not been paired for an upcoming mock interview",
-                    html_content=interview_unpaired_notification_html(
-                        pool_member.member.first_name,
-                        timezone.now().strftime("%B %d, %Y"),
-                    ),
-                )
-            except Exception as e:
-                failed_unpaired_emails.append((pool_member.member.email, str(e)))
-
+        if not settings.DJANGO_DEBUG:
+            logger.info("DEBUG is off, sending emails")
+            for pool_member in unpaired_members:
+                try:
+                    send_email(
+                        from_email=INTERVIEW_NOTIFICATION_ADDR,
+                        to_email=pool_member.member.email,
+                        subject="You have not been paired for an upcoming mock interview",
+                        html_content=interview_unpaired_notification_html(
+                            pool_member.member.first_name,
+                            timezone.now().strftime("%B %d, %Y"),
+                        ),
+                    )
+                except Exception as e:
+                    failed_unpaired_emails.append((pool_member.member.email, str(e)))
+        else:
+            logger.info("DEBUG is on, not sending emails")
         logger.error(
             "Failed to send notifications to %d unpaired members",
             len(failed_unpaired_emails),
