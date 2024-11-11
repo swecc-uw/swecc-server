@@ -12,6 +12,7 @@ SENDGRID_API_KEY = os.environ['SENDGRID_API_KEY']
 # use for storage client only
 SUPABASE_URL = os.environ['SUPABASE_URL']
 SUPABASE_KEY = os.environ['SUPABASE_KEY']
+
 print({
     "DJANGO_DEBUG": DJANGO_DEBUG,
     "DB_HOST": DB_HOST,
@@ -20,8 +21,6 @@ print({
     "DB_USER": DB_USER,
     "DB_PASSWORD": DB_PASSWORD,
     "SENDGRID_API_KEY": SENDGRID_API_KEY,
-    "SUPABASE_URL": SUPABASE_URL,
-    "SUPABASE_KEY": SUPABASE_KEY,
 })
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -37,7 +36,7 @@ print(PROJECT_ROOT)
 SECRET_KEY = 'django-insecure-ehylqtrwm(8+eq!m#*3fq3(m6j9jfvm6bzb8=f-uz=l@4$l&^g'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True
+# DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -70,6 +69,11 @@ INSTALLED_APPS = [
     'rest_framework_api_key',
 ]
 
+FILE_UPLOAD_HANDLERS = [
+    'django.core.files.uploadhandler.MemoryFileUploadHandler',
+    'django.core.files.uploadhandler.TemporaryFileUploadHandler',
+]
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -79,11 +83,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
-
-FILE_UPLOAD_HANDLERS = [
-    'django.core.files.uploadhandler.MemoryFileUploadHandler',
-    'django.core.files.uploadhandler.TemporaryFileUploadHandler',
 ]
 
 ROOT_URLCONF = 'server.urls'
@@ -161,57 +160,30 @@ STATIC_URL = 'static/'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
-devclient = 'http://localhost:5173'
-prodclient = 'https://interview.swecc.org'
-api = 'https://api.swecc.org'
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'members.User'
+CORS_ALLOWED_ORIGINS = ['https://interview.swecc.org']
+CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
+CORS_ALLOW_CREDENTIALS = True
+
+
+CSRF_COOKIE_SAMESITE = 'None' if not DJANGO_DEBUG else 'Lax'
+SESSION_COOKIE_SAMESITE = 'None' if not DJANGO_DEBUG else 'Lax'
+CSRF_COOKIE_HTTPONLY = not DJANGO_DEBUG
+SESSION_COOKIE_HTTPONLY = not DJANGO_DEBUG
+CSRF_TRUSTED_ORIGINS = ['https://interview.swecc.org']
+
+devclient = 'http://localhost:5173'
 
 if DJANGO_DEBUG:
-    CORS_ALLOWED_ORIGINS = [devclient]
-    CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
-    CORS_ALLOW_CREDENTIALS = True
-    CSRF_COOKIE_SAMESITE = 'Lax'
-    SESSION_COOKIE_SAMESITE = 'Lax'
-    CSRF_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_HTTPONLY = True
-    CSRF_TRUSTED_ORIGINS = [devclient]
-    CSRF_COOKIE_SECURE = False
-    SESSION_COOKIE_SECURE = False
-else:
-    CORS_ALLOWED_ORIGINS = [prodclient, api]
-    CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
-    CORS_ALLOW_CREDENTIALS = True
-    CSRF_COOKIE_SAMESITE = 'None'
-    SESSION_COOKIE_SAMESITE = 'None'
-    CSRF_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_HTTPONLY = True
-    CSRF_TRUSTED_ORIGINS = [prodclient, api]
-    CSRF_COOKIE_SECURE = True
-    SESSION_COOKIE_SECURE = True
+    CORS_ALLOWED_ORIGINS.append(devclient)
+    CSRF_TRUSTED_ORIGINS.append(devclient)
 
-    CORS_ALLOW_METHODS = [
-        'DELETE',
-        'GET',
-        'OPTIONS',
-        'PATCH',
-        'POST',
-        'PUT',
-    ]
 
-    CORS_ALLOW_HEADERS = [
-        'accept',
-        'accept-encoding',
-        'authorization',
-        'content-type',
-        'dnt',
-        'origin',
-        'user-agent',
-        'x-csrftoken',
-        'x-requested-with',
-    ]
+# PROD ONLY
+CSRF_COOKIE_SECURE = not DJANGO_DEBUG
+SESSION_COOKIE_SECURE = not DJANGO_DEBUG
 
 LOGGING = {
     'version': 1,
