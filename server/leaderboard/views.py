@@ -1,5 +1,6 @@
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from members.permissions import IsAuthenticatedOrReadOnlyWithAPIKey
 from .models import LeetcodeStats
 from .serializers import LeetcodeStatsSerializer
 from django.db.models import F, ExpressionWrapper, FloatField
@@ -14,10 +15,12 @@ logger = logging.getLogger(__name__)
 
 class LeetcodeLeaderboardView(generics.ListAPIView):
     serializer_class = LeetcodeStatsSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnlyWithAPIKey]
 
     def get_queryset(self):
         latest_stat = LeetcodeStats.objects.order_by("-last_updated").first()
+
+        # TODO: move to async background process
         if not latest_stat or timezone.now() - latest_stat.last_updated > timedelta(
             hours=1
         ):
