@@ -9,6 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from supabase import Client, create_client
 
 from server import settings
+from custom_auth.permissions import IsVerified
 from .models import User
 from .serializers import UserSerializer
 from .permissions import IsAuthenticatedOrReadOnlyWithAPIKey
@@ -119,6 +120,7 @@ class UpdateDiscordID(APIView):
 
 
 class ProfilePictureUploadView(APIView):
+    permission_classes = [IsAuthenticated, IsVerified]
     def post(self, request, *args, **kwargs):
         # Check if file was uploaded
         if "profile_picture" not in request.FILES:

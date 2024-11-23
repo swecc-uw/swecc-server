@@ -3,7 +3,7 @@ from django.shortcuts import render
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from custom_auth.permissions import IsAdmin
+from custom_auth.permissions import IsAdmin, IsVerified
 from rest_framework.permissions import IsAuthenticated
 
 from interview.models import Interview
@@ -22,7 +22,7 @@ class ReportOwnerPermission(permissions.BasePermission):
 
 # Create your views here.
 class GetReportByUserID(APIView):
-    permission_classes = [IsAuthenticated, ReportOwnerPermission]
+    permission_classes = [IsAuthenticated, ReportOwnerPermission, IsVerified]
     def get(self, request, user_id):
         reports = Report.objects.filter(reporter_user_id=user_id)
         serializer = ReportSerializer(reports, many=True)
@@ -50,7 +50,8 @@ class GetAllReports(APIView):
 
 
 class GetReportByID(APIView):
-    permission_classes = [IsAuthenticated]
+    # should change this to admin only @hoang
+    permission_classes = [IsAuthenticated, IsVerified]
     def get(self, _, report_id):
         
         report = Report.objects.filter(report_id=report_id)
@@ -126,7 +127,7 @@ class AssignReportToAdmin(APIView):
 
 
 class CreateReport(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsVerified]
     def post(self, _):
         # check if all fields are present
         required_fields = ['reporter_user_id', 'type', 'associated_id']
