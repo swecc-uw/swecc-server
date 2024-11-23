@@ -12,3 +12,4 @@ gunicorn
 numpy
 sendgrid
 supabase
+requests

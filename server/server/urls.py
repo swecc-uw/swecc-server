@@ -10,6 +10,7 @@ urlpatterns = [
     path('interview/', include("interview.urls")),
     path('directory/', include('directory.urls')),
     path('reports/', include('report.urls')),
+    path('leaderboard/', include('leaderboard.urls')),
 ]
 
 

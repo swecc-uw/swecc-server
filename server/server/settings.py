@@ -26,8 +26,6 @@ print({
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-print(PROJECT_ROOT)
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -65,6 +63,7 @@ INSTALLED_APPS = [
     'custom_auth.apps.AuthConfig',
     'interview.apps.InterviewConfig',
     'report.apps.ReportConfig',
+    'leaderboard.apps.LeaderboardConfig',
     'corsheaders',
     'rest_framework_api_key',
 ]
