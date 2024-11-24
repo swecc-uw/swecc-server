@@ -7,4 +7,5 @@ urlpatterns = [
         views.LeetcodeLeaderboardView.as_view(),
         name="leetcode-leaderboard",
     ),
+    path("github/", views.GitHubLeaderboardView.as_view(), name="github-leaderboard"),
 ]
