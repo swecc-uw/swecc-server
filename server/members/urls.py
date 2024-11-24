@@ -11,4 +11,5 @@ urlpatterns = [
     path('profile/', views.AuthenticatedMemberProfile.as_view(), name='authenticated-profile'),
     path('verify-discord/', views.UpdateDiscordID.as_view(), name='update-discord-id'),
     path('profile/picture/upload/', views.ProfilePictureUploadView.as_view(), name='upload_profile_picture'),
+    path('reset-password/', views.PasswordResetRequest.as_view(), name='reset-password'),
 ]
