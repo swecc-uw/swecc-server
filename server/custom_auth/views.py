@@ -51,29 +51,6 @@ def login_view(request):
     return JsonResponse({'detail': 'Successfully logged in.'})
 
 @require_POST
-def password_reset_request(request):
-    data = json.loads(request.body)
-    email = data.get('email', '').strip()
-
-    try:
-        user = User.objects.get(email=email)
-        token = default_token_generator.make_token(user)
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        reset_url = f"https://interview.swecc.org/password-reset/{uid}/{token}/"
-
-        send_email(
-            from_email="password-reset@no-reply.swecc.org", 
-            to_email=email, subject="Password Reset", 
-            message=f"Click the following link to reset your password: {reset_url}"
-            )
-        
-        return JsonResponse({'detail': 'Password reset email sent.'}, status=200)
-
-    except User.DoesNotExist:
-        return JsonResponse({'detail': 'Password reset email sent.'}, status=200)
-    
-
-@require_POST
 def password_reset_confirm(request, uidb64, token):
     data = json.loads(request.body)
     new_password = data.get('new_password', '').strip()
