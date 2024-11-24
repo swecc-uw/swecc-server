@@ -8,7 +8,7 @@ class DirectoryMemberSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'major', 'grad_date', 'linkedin', 'github', 'leetcode']
+        fields = ['id', 'username', 'first_name', 'last_name', 'major', 'grad_date', 'email', 'discord_username', 'linkedin', 'github', 'leetcode', 'created']
 
     def get_social_field(self, obj, field_name):
         field = getattr(obj, field_name)
