@@ -10,8 +10,8 @@ DB_USER = os.environ['DB_USER']
 DB_PASSWORD = os.environ['DB_PASSWORD']
 SENDGRID_API_KEY = os.environ['SENDGRID_API_KEY']
 # use for storage client only
-SUPABASE_URL = "aa"
-SUPABASE_KEY = "aa"
+SUPABASE_URL = os.environ['SUPABASE_URL']
+SUPABASE_KEY = os.environ['SUPABASE_KEY']
 
 print({
     "DJANGO_DEBUG": DJANGO_DEBUG,
