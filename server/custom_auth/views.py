@@ -58,7 +58,6 @@ def password_reset_confirm(request, uidb64, token):
     try:
         uid = urlsafe_base64_decode(uidb64).decode()
         user = User.objects.get(pk=uid)
-        print("TEST")
 
         if default_token_generator.check_token(user, token):
             user.set_password(new_password)
