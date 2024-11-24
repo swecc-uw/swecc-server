@@ -4,7 +4,7 @@ from members.serializers import UsernameSerializer
 
 
 class LeetcodeStatsSerializer(serializers.ModelSerializer):
-    user = UsernameSerializer(read_only=True)
+    user = serializers.SerializerMethodField()
 
     class Meta:
         model = LeetcodeStats
@@ -16,3 +16,6 @@ class LeetcodeStatsSerializer(serializers.ModelSerializer):
             "hard_solved",
             "last_updated",
         ]
+
+    def get_user(self, obj):
+        return {"username": obj.user.leetcode["username"]}
