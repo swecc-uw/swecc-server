@@ -209,6 +209,4 @@ class PasswordResetRequest(APIView):
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-        reset_url = f"https://interview.swecc.org/password-reset-confirm/{uid}/{token}/"
-
-        return Response({"reset_url": reset_url}, status=200)
+        return Response({"uid": uid, "token": token}, status=200)
