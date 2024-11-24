@@ -52,6 +52,7 @@ class RegularDirectoryMemberSerializer(BaseDirectoryMemberSerializer):
             "linkedin",
             "github",
             "leetcode",
+            "created",
         ]
 
 

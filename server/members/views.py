@@ -11,10 +11,13 @@ from supabase import Client, create_client
 from server import settings
 from .models import User
 from .serializers import UserSerializer
-from .permissions import IsAuthenticatedOrReadOnlyWithAPIKey
+from .permissions import IsApiKey
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import Group
 import logging
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +77,7 @@ class AuthenticatedMemberProfile(APIView):
 
 
 class UpdateDiscordID(APIView):
-    permission_classes = [IsAuthenticatedOrReadOnlyWithAPIKey]
+    permission_classes = [IsApiKey]
 
     def put(self, request, *args, **kwargs):
         username = request.data.get("username")
@@ -195,3 +198,15 @@ class ProfilePictureUploadView(APIView):
             return JsonResponse(
                 {"error": "Failed to upload file to storage"}, status=500
             )
+    
+class PasswordResetRequest(APIView):
+    permission_classes = [IsApiKey]
+
+    def post(self, request, *args, **kwargs):
+        discord_id = request.data.get("discord_id")
+        user = get_object_or_404(User, discord_id=discord_id)
+
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+        return Response({"uid": uid, "token": token}, status=200)
