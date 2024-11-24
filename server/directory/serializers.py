@@ -58,4 +58,4 @@ class RegularDirectoryMemberSerializer(BaseDirectoryMemberSerializer):
 class AdminDirectoryMemberSerializer(BaseDirectoryMemberSerializer):
     class Meta:
         model = User
-        fields = "__all__"
+        exclude = ("password",)
