@@ -110,6 +110,8 @@ class Command(BaseCommand):
         users = User.objects.filter(username=username) if username else User.objects.all()
 
         for user in users:
+            if not user.github or not user.github.get("username"):
+                continue
             try:
                 if update_user_stats(user):
                     self.stdout.write(
