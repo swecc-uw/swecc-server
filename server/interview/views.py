@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.db.models import Max
 import server.settings as settings
 from questions.models import TechnicalQuestion, BehavioralQuestion
-from custom_auth.permissions import IsAdmin
+from custom_auth.permissions import IsAdmin, IsVerified
 from members.serializers import UserSerializer
 from members.models import User
 from questions.models import TechnicalQuestion, BehavioralQuestion, TechnicalQuestionQueue
@@ -24,7 +24,6 @@ from .models import InterviewAvailability, InterviewPool, Interview
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import ValidationError
 from rest_framework import permissions
 from django.db import transaction
@@ -66,7 +65,7 @@ def is_valid_availability(availability):
 
 # Create your views here.
 class AuthenticatedMemberSignupForInterview(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsVerified]
 
     def get(self, request):
         logger.info(
@@ -536,7 +535,7 @@ class InterviewQuestions(APIView):
 
 
 class InterviewRunningStatus(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsVerified]
 
     def get(self, request, interview_id):
         logger.info(
@@ -591,7 +590,7 @@ class InterviewRunningStatus(APIView):
 
 class MemberInterviewsView(generics.ListAPIView):
     serializer_class = InterviewSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsVerified]
 
     def get_queryset(self):
         user = self.request.user
@@ -616,7 +615,7 @@ class InterviewerInterviewsView(generics.ListAPIView):
 
 class IntervieweeInterviewsView(generics.ListAPIView):
     serializer_class = InterviewSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsVerified]
 
     def get_queryset(self):
         logger.info(
@@ -628,7 +627,7 @@ class IntervieweeInterviewsView(generics.ListAPIView):
 class InterviewDetailView(generics.RetrieveAPIView):
     queryset = Interview.objects.all()
     serializer_class = InterviewSerializer
-    permission_classes = [IsAuthenticated, IsInterviewParticipant]
+    permission_classes = [IsAuthenticated, IsInterviewParticipant, IsVerified]
     lookup_field = "interview_id"
 
     def get_queryset(self):
@@ -660,7 +659,7 @@ class InterviewDetailView(generics.RetrieveAPIView):
 
 
 class InterviewAvailabilityView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsVerified]
 
     def get(self, request):
         logger.info(
@@ -728,7 +727,7 @@ class InterviewAvailabilityView(APIView):
 
 
 class ProposeView(APIView):
-    permission_classes = [IsAuthenticated, IsInterviewParticipant]
+    permission_classes = [IsAuthenticated, IsInterviewParticipant, IsVerified]
 
     @transaction.atomic
     def post(self, request, interview_id):
@@ -794,7 +793,7 @@ class ProposeView(APIView):
 
 
 class CommitView(APIView):
-    permission_classes = [IsAuthenticated, IsInterviewParticipant]
+    permission_classes = [IsAuthenticated, IsInterviewParticipant, IsVerified]
 
     @transaction.atomic
     def post(self, request, interview_id):
@@ -878,7 +877,7 @@ class CommitView(APIView):
 
 
 class CompleteView(APIView):
-    permission_classes = [IsAuthenticated, IsInterviewParticipant]
+    permission_classes = [IsAuthenticated, IsInterviewParticipant, IsVerified]
 
     @transaction.atomic
     def post(self, request, interview_id):
@@ -940,7 +939,7 @@ class CompleteView(APIView):
 
 
 class UserInterviewsDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsVerified]
 
     def get(self, request):
         """

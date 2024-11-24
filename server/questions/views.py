@@ -13,7 +13,7 @@ from .serializers import (
     BehavioralQuestionSerializer,
     UpdateQueueSerializer,
 )
-from custom_auth.permissions import IsAdmin
+from custom_auth.permissions import IsAdmin, IsVerified
 import logging
 from rest_framework.response import Response
 from rest_framework import status
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 class QuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerified]
     lookup_field = "question_id"
 
     def get_serializer_class(self):
@@ -62,7 +62,7 @@ class QuestionCreateView(generics.CreateAPIView):
 
 
 class QuestionListView(generics.ListAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdmin]
 
     def get_serializer_class(self):
         if self.kwargs["type"] == "technical":
@@ -90,7 +90,7 @@ class QuestionTopicListCreateView(generics.ListCreateAPIView):
         if self.request.method == "POST":
             self.permission_classes = [IsAdmin]
         else:
-            self.permission_classes = [permissions.IsAuthenticated]
+            self.permission_classes = [permissions.IsAuthenticated, IsVerified]
         return super().get_permissions()
 
     def perform_create(self, serializer):
