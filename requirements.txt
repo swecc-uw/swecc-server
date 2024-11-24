@@ -13,3 +13,4 @@ numpy
 sendgrid
 supabase
 requests
+beautifulsoup4

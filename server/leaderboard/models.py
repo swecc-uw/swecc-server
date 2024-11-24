@@ -19,3 +19,20 @@ class LeetcodeStats(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Leetcode Stats"
+
+
+class GitHubStats(models.Model):
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="github_stats"
+    )
+    total_prs = models.IntegerField(default=0)
+    total_commits = models.IntegerField(default=0)
+    followers = models.IntegerField(default=0)
+    last_updated = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-total_commits", "-total_prs"]
+        verbose_name_plural = "GitHub Stats"
+
+    def __str__(self):
+        return f"{self.user.username}'s GitHub Stats"
