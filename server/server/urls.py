@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from .views import ManagementCommandView
 
 urlpatterns = [
     path('auth/', include('custom_auth.urls')),
@@ -11,6 +12,7 @@ urlpatterns = [
     path('directory/', include('directory.urls')),
     path('reports/', include('report.urls')),
     path('leaderboard/', include('leaderboard.urls')),
+    path('admin/command/', ManagementCommandView.as_view()),
 ]
 
 
