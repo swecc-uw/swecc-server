@@ -1,6 +1,7 @@
 from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
 from members.models import User
 from .serializers import (
@@ -15,10 +16,14 @@ import random
 logger = logging.getLogger(__name__)
 
 
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
 class BaseMemberDirectoryView:
-
     def get_serializer_class(self, request):
-
         if IsAdmin.has_permission(self, request, None):
             return AdminDirectoryMemberSerializer
         return RegularDirectoryMemberSerializer
@@ -26,22 +31,34 @@ class BaseMemberDirectoryView:
 
 class MemberDirectorySearchView(APIView, BaseMemberDirectoryView):
     permission_classes = [IsVerified]
+    pagination_class = StandardResultsSetPagination
 
     def get(self, request):
         query = request.query_params.get("q", "")
         logger.info("Searching for members with query: %s", query)
 
-        members = User.objects.all()
+        members = User.objects.all().order_by('username')
+
         if query:
-            members = members.filter(
-                Q(username__icontains=query)
-                | Q(first_name__icontains=query)
-                | Q(last_name__icontains=query)
-            )
+            terms = query.split()
+            q_objects = Q()
+
+            for term in terms:
+                q_objects |= (
+                    Q(username__icontains=term) |
+                    Q(first_name__icontains=term) |
+                    Q(last_name__icontains=term)
+                )
+
+            members = members.filter(q_objects).distinct()
+
+        paginator = self.pagination_class()
+        paginated_members = paginator.paginate_queryset(members, request)
 
         serializer_class = self.get_serializer_class(request)
-        serializer = serializer_class(members, many=True)
-        return Response(serializer.data)
+        serializer = serializer_class(paginated_members, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
 
 
 class MemberDirectoryView(APIView, BaseMemberDirectoryView):
