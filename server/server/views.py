@@ -9,7 +9,7 @@ from typing import List, Dict
 
 
 class ManagementCommandView(APIView):
-    permission_classes = [IsAdmin, IsApiKey]
+    permission_classes = (IsAdmin|IsApiKey,)
 
     ALLOWED_COMMANDS: List[Dict] = [
         {
