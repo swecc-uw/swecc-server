@@ -1,18 +1,16 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from custom_auth.permissions import IsAdmin
-<<<<<<< Updated upstream
-=======
 from members.permissions import IsApiKey
->>>>>>> Stashed changes
 from django.core.management import call_command
 import io
 import sys
 from typing import List, Dict
 
+
 class ManagementCommandView(APIView):
-    permission_classes = [IsAdmin]
-    
+    permission_classes = [IsAdmin, IsApiKey]
+
     ALLOWED_COMMANDS: List[Dict] = [
         {
             'name': 'list_users',
