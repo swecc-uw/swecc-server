@@ -970,12 +970,14 @@ class UserInterviewsDetailView(APIView):
 
                 # question visibility
                 is_interviewer = interview.interviewer == request.user
+                interview_has_passed = interview.date_effective + timezone.timedelta(days=7) < timezone.now()
                 is_completed = interview.status in [
                     "inactive_completed",
                     "inactive_incomplete",
                 ]
 
-                if not is_interviewer and not is_completed:
+
+                if not (is_interviewer or is_completed or interview_has_passed):
                     interview_data.pop("technical_questions", None)
                     interview_data.pop("behavioral_questions", None)
                 else:
