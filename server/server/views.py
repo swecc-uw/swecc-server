@@ -6,8 +6,10 @@ import io
 import sys
 from typing import List, Dict
 
+from server.members.permissions import IsApiKey
+
 class ManagementCommandView(APIView):
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin, IsApiKey]
     
     ALLOWED_COMMANDS: List[Dict] = [
         {
