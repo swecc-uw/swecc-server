@@ -59,5 +59,4 @@ class User(AbstractUser):
             models.Index(fields=["username"]),
             models.Index(fields=["first_name"]),
             models.Index(fields=["last_name"]),
-            models.Index(fields=["first_name", "last_name"], name="name_search_idx"),
         ]
