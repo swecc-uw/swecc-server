@@ -45,7 +45,7 @@ class GetAllReports(APIView):
 
 
 class GetReportByID(APIView):
-    permission_classes = [IsAuthenticated, IsVerified, IsAdmin]
+    permission_classes = [IsAdmin]
 
     def get(self, _, report_id):
 
@@ -98,7 +98,7 @@ class AssignReportToAdmin(APIView):
 
 
 class CreateReport(APIView):
-    permission_classes = [IsAuthenticated, IsVerified]
+    permission_classes = [IsVerified]
 
     def post(self, request):
         required_fields = ["reporter_user_id", "type", "associated_id"]
