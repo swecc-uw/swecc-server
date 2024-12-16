@@ -10,6 +10,8 @@ from interview.models import Interview
 from members.models import User
 from rest_framework import permissions
 
+from questions.models import TechnicalQuestion
+
 from .serializers import ReportSerializer
 from .models import Report
 
@@ -20,204 +22,173 @@ class ReportOwnerPermission(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         return obj.reporter_user_id == request.user.id
 
+
 # Create your views here.
 class GetReportByUserID(APIView):
     permission_classes = [IsAuthenticated, ReportOwnerPermission, IsVerified]
+
     def get(self, request, user_id):
         reports = Report.objects.filter(reporter_user_id=user_id)
         serializer = ReportSerializer(reports, many=True)
 
-        return Response(
-            {
-                "reports": serializer.data
-            },
-            status=status.HTTP_200_OK
-        )
+        return Response({"reports": serializer.data}, status=status.HTTP_200_OK)
 
 
 class GetAllReports(APIView):
     permission_classes = [IsAdmin]
+
     def get(self, _):
         reports = Report.objects.all()
         serializer = ReportSerializer(reports, many=True)
 
-        return Response(
-            {
-                "reports": serializer.data
-            },
-            status=status.HTTP_200_OK
-        )
+        return Response({"reports": serializer.data}, status=status.HTTP_200_OK)
 
 
 class GetReportByID(APIView):
-    # should change this to admin only @hoang
-    permission_classes = [IsAuthenticated, IsVerified]
+    permission_classes = [IsAdmin]
+
     def get(self, _, report_id):
-        
+
         report = Report.objects.filter(report_id=report_id)
         if not report:
             return Response(
-                {
-                    "error": "Report not found"
-                },
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "Report not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        
+
         serializer = ReportSerializer(report[0])
-        return Response(
-            {
-                "report": serializer.data
-            },
-            status=status.HTTP_200_OK
-        )
+        return Response({"report": serializer.data}, status=status.HTTP_200_OK)
 
 
 class AssignReportToAdmin(APIView):
     permission_classes = [IsAdmin]
+
     def patch(self, _, report_id):
-        
+
         report = Report.objects.filter(report_id=report_id)
         if not report:
             return Response(
-                {
-                    "error": "Report not found"
-                },
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "Report not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        if 'admin_id' not in self.request.data:
+        if "admin_id" not in self.request.data:
             return Response(
-                {
-                    "error": "admin_id is required"
-                },
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "admin_id is required"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         report = report[0]
 
         # check if admin exists
-        member = User.objects.filter(id=self.request.data['admin_id'])
+        member = User.objects.filter(id=self.request.data["admin_id"])
         if not member:
             return Response(
-                {
-                    "error": "Admin not found"
-                },
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "Admin not found"}, status=status.HTTP_400_BAD_REQUEST
             )
-        
-        
+
         if not member[0].is_staff:
             return Response(
-                {
-                    "error": "User is not an admin"
-                },
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "User is not an admin"}, status=status.HTTP_400_BAD_REQUEST
             )
-        
 
-        report.admin_id = self.request.data['admin_id']
+        report.admin_id = self.request.data["admin_id"]
         report.save()
 
         return Response(
-            {
-                "report": ReportSerializer(report).data
-            },
-            status=status.HTTP_200_OK
+            {"report": ReportSerializer(report).data}, status=status.HTTP_200_OK
         )
 
 
 class CreateReport(APIView):
-    permission_classes = [IsAuthenticated, IsVerified]
-    def post(self, _):
-        # check if all fields are present
-        required_fields = ['reporter_user_id', 'type', 'associated_id']
+    permission_classes = [IsVerified]
+
+    def post(self, request):
+        required_fields = ["reporter_user_id", "type", "associated_id"]
         for field in required_fields:
-            if field not in self.request.data:
+            if field not in request.data:
                 return Response(
-                    {
-                        "error": f"{field} is required"
-                    },
-                    status=status.HTTP_400_BAD_REQUEST
+                    {"error": f"{field} is required"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
-        self.request.data['created'] = time.time()
-        self.request.data['updated'] = time.time()
-        self.request.data['status'] = 'pending'
+        try:
+            reporter = User.objects.get(id=request.data["reporter_user_id"])
 
-        if 'reason' not in self.request.data:
-            self.request.data['reason'] = 'No reason provided'
-        
-        type = self.request.data['type']
-        if type == 'interview':
-            # check if they have interview
-            find_interview = Interview.objects.filter(
-                interview_id=self.request.data['associated_id']
-            )
+            report_data = {
+                "reporter_user_id": reporter,
+                "type": request.data["type"],
+                "reason": request.data.get("reason", "No reason provided"),
+                "status": "pending",
+            }
 
-            if not find_interview:
-                return Response(
-                    {
-                        "error": "Interview not found"
-                    },
-                    status=status.HTTP_400_BAD_REQUEST
+            if report_data["type"] == "interview":
+                interview = Interview.objects.get(
+                    interview_id=request.data["associated_id"]
                 )
-            
-            # check user is in the interview
-            interview = find_interview[0]
-            if not (interview.interviewer.id == self.request.data['reporter_user_id'] or interview.interviewee.id == self.request.data['reporter_user_id']):
+                if not (
+                    interview.interviewer.id == reporter.id
+                    or interview.interviewee.id == reporter.id
+                ):
+                    return Response(
+                        {"error": "User not in interview"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                report_data["associated_interview"] = interview
+
+            elif report_data["type"] == "question":
+                question = TechnicalQuestion.objects.get(
+                    question_id=request.data["associated_id"]
+                )
+                report_data["associated_question"] = question
+
+            elif report_data["type"] == "member":
+                member = User.objects.get(id=request.data["associated_id"])
+                if member.id == reporter.id:
+                    return Response(
+                        {"error": "Cannot report yourself"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                report_data["associated_member"] = member
+
+            else:
                 return Response(
-                    {
-                        "error": "User not in interview"
-                    },
-                    status=status.HTTP_400_BAD_REQUEST
-                ) 
-        
-        serializer = ReportSerializer(data=self.request.data)
-        if serializer.is_valid():
-            serializer.save()
+                    {"error": "Invalid report type"}, status=status.HTTP_400_BAD_REQUEST
+                )
+            report = Report.objects.create(**report_data)
+            serializer = ReportSerializer(report)
+            return Response({"report": serializer.data}, status=status.HTTP_201_CREATED)
+
+        except User.DoesNotExist:
             return Response(
-                {
-                    "report": serializer.data
-                },
-                status=status.HTTP_201_CREATED
+                {"error": "Reporter user not found"}, status=status.HTTP_404_NOT_FOUND
             )
-        
-        return Response(
-            {
-                "error": serializer.errors
-            },
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        except (Interview.DoesNotExist, TechnicalQuestion.DoesNotExist):
+            return Response(
+                {"error": f"{report_data['type'].capitalize()} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UpdateReportStatus(APIView):
     permission_classes = [IsAdmin]
+
     def patch(self, request, report_id):
-        
+
         report = Report.objects.filter(report_id=report_id)
         if not report:
             return Response(
-                {
-                    "error": "Report not found"
-                },
-                status=status.HTTP_404_NOT_FOUND
+                {"error": "Report not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        if 'status' not in request.data:
+        if "status" not in request.data:
             return Response(
-                {
-                    "error": "status is required"
-                },
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "status is required"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         report = report[0]
-        report.status = request.data['status']
+        report.status = request.data["status"]
         report.save()
 
         return Response(
-            {
-                "report": ReportSerializer(report).data
-            },
-            status=status.HTTP_200_OK
+            {"report": ReportSerializer(report).data}, status=status.HTTP_200_OK
         )
