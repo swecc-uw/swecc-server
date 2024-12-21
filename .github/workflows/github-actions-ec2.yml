@@ -5,7 +5,9 @@ on:
       - main
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on:
+      group: EC2
+      labels: [self-hosted, deploy]
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v2
