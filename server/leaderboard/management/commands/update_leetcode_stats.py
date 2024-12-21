@@ -5,8 +5,9 @@ from django.core.management.base import BaseCommand
 from members.models import User
 from leaderboard.models import LeetcodeStats
 from django.db import transaction
+import logging
 
-
+logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = "Updates leetcode statistics for all users"
 
@@ -14,7 +15,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--timeout",
             type=int,
-            default=2,
+            default=10,
             help="Timeout between API requests in seconds",
         )
         parser.add_argument(
@@ -31,11 +32,43 @@ class Command(BaseCommand):
 
         def get_leetcode_profile(username):
             try:
-                response = requests.get(
-                    f"https://alfa-leetcode-api.onrender.com/{username}/solved",
+                query = """
+                    query getUserProfile($username: String!) {
+                        matchedUser(username: $username) {
+                            submitStats {
+                                acSubmissionNum {
+                                    difficulty
+                                    count
+                                }
+                            }
+                        }
+                    }
+                """
+                response = requests.post(
+                    "https://leetcode.com/graphql",
+                    headers={
+                        "Content-Type": "application/json",
+                        "Referer": "https://leetcode.com",
+                    },
+                    json={"query": query, "variables": {"username": username}},
                     timeout=10,
                 )
-                return response.json() if response.status_code == 200 else None
+                if response.status_code == 200:
+                    data = response.json()
+                    if "errors" in data:
+                        return None
+                    stats = data["data"]["matchedUser"]["submitStats"]["acSubmissionNum"]
+                    return {
+                        "solvedProblem": next((item["count"] for item in stats if item["difficulty"] == "All"), 0),
+                        "easySolved": next((item["count"] for item in stats if item["difficulty"] == "Easy"), 0),
+                        "mediumSolved": next((item["count"] for item in stats if item["difficulty"] == "Medium"), 0),
+                        "hardSolved": next((item["count"] for item in stats if item["difficulty"] == "Hard"), 0),
+                    }
+                else:
+                    self.stdout.write(
+                        self.style.ERROR(f"Error fetching data for {username}: {response.text}")
+                    )
+                return None
             except Exception as e:
                 self.stdout.write(
                     self.style.ERROR(f"Error fetching data for {username}: {str(e)}")
