@@ -17,7 +17,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--timeout",
             type=int,
-            default=60,  # high default timeout for rate limits
+            default=10,  # high default timeout for rate limits
             help="Timeout between API requests in seconds",
         )
         parser.add_argument(
