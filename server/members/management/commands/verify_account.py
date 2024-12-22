@@ -11,7 +11,7 @@ class Command(BaseCommand):
         parser.add_argument("--discord_id", type=str, help="User's Discord ID")
 
     def handle(self, *args, **options):
-        DJANGO_DEBUG = os.environ['DJANGO_DEBUG']
+        DJANGO_DEBUG = environ['DJANGO_DEBUG']
         if not DJANGO_DEBUG:
             self.stdout.write(self.style.ERROR(f'This command is ONLY allowed in development mode.'))
             return
