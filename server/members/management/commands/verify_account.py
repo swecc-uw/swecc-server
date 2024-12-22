@@ -12,9 +12,11 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         DJANGO_DEBUG = environ['DJANGO_DEBUG']
-        if not DJANGO_DEBUG:
+
+        if DJANGO_DEBUG.lower() != 'true':
             self.stdout.write(self.style.ERROR(f'This command is ONLY allowed in development mode.'))
             return
+
         username = options['username']
         new_discord_id = options['discord_id']
 
