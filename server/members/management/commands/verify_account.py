@@ -10,8 +10,6 @@ class Command(BaseCommand):
         parser.add_argument("--discord_id", type=str, help="User's Discord ID")
 
     def handle(self, *args, **options):
-        pp = lambda user: f"Username: {user['username']}, Discord ID: {user['discord_id']}"
-
         username = options['username']
         new_discord_id = options['discord_id']
 
