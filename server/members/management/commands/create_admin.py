@@ -12,7 +12,10 @@ class Command(BaseCommand):
 
         username = options['username']
 
-        member = User.objects.get(username=username)
+        member = User.objects.filter(username=username).first()
+        if member is None:
+            self.stdout.write(self.style.ERROR(f'Username {username} was not found!'))
+            return
 
         is_verified_groups, _ = Group.objects.get_or_create(name="is_admin")
         member.groups.add(is_verified_groups)
