@@ -39,6 +39,10 @@ class ManagementCommandView(APIView):
         {
           'name': 'add_user_to_pool',
           'description': 'Add a user to the interview pool for this week'
+        },
+        {
+           'name': 'verify_account',
+           'description': 'Verify a user\'s SWECC account with their Discord'
         }
     ]
 
