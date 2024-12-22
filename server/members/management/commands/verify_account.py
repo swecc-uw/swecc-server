@@ -15,7 +15,11 @@ class Command(BaseCommand):
         username = options['username']
         new_discord_id = options['discord_id']
 
-        member = User.objects.get(username=username)
+        member = User.objects.filter(username=username).first()
+        if member is None:
+            self.stdout.write(self.style.ERROR(f'Username {username} was not found!'))
+            return
+
         member.discord_id = new_discord_id
         member.save()
 
