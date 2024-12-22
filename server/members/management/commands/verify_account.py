@@ -1,6 +1,7 @@
 from members.models import User
 from django.contrib.auth.models import Group
 from django.core.management.base import BaseCommand
+from os import environ
 
 class Command(BaseCommand):
     verify_account = 'Verify User account'
@@ -10,6 +11,12 @@ class Command(BaseCommand):
         parser.add_argument("--discord_id", type=str, help="User's Discord ID")
 
     def handle(self, *args, **options):
+        DJANGO_DEBUG = environ['DJANGO_DEBUG']
+
+        if not DJANGO_DEBUG or DJANGO_DEBUG.lower() != 'true':
+            self.stdout.write(self.style.ERROR(f'This command is ONLY allowed in development mode.'))
+            return
+
         username = options['username']
         new_discord_id = options['discord_id']
 
