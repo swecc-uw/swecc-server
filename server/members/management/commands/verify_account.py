@@ -24,6 +24,3 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f'Verified Username: {username} Discord ID: {new_discord_id}'))
 
-        #for user in User.objects.all().values('username', 'email', 'discord_id'):
-        #    self.stdout.write(self.style.SUCCESS(pp(user)))
-
