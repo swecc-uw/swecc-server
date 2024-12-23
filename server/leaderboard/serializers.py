@@ -1,5 +1,10 @@
 from rest_framework import serializers
-from .models import GitHubStats, LeetcodeStats
+from .models import (
+    GitHubStats,
+    InternshipApplicationStats,
+    LeetcodeStats,
+    NewGradApplicationStats,
+)
 from members.serializers import UsernameSerializer
 
 
@@ -36,3 +41,25 @@ class GitHubStatsSerializer(serializers.ModelSerializer):
 
     def get_user(self, obj):
         return {"username": obj.user.github["username"]}
+
+
+class InternshipApplicationStatsSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
+    class Meta:
+        model = InternshipApplicationStats
+        fields = ["user", "applied"]
+
+    def get_user(self, obj):
+        return {"username": obj.user.username}
+
+
+class NewGradApplicationStatsSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
+    class Meta:
+        model = NewGradApplicationStats
+        fields = ["user", "applied"]
+
+    def get_user(self, obj):
+        return {"username": obj.user.username}

@@ -36,3 +36,31 @@ class GitHubStats(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s GitHub Stats"
+
+
+class InternshipApplicationStats(models.Model):
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="internship_stats"
+    )
+    applied = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ["-applied"]
+        verbose_name_plural = "Internship Application Stats"
+
+    def __str__(self):
+        return f"{self.user.username}'s Internship Application Stats"
+
+class NewGradApplicationStats(models.Model):
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="new_grad_stats"
+    )
+    applied = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ["-applied"]
+        verbose_name_plural = "New Grad Application Stats"
+
+    def __str__(self):
+        return f"{self.user.username}'s New Grad Application Stats"
+
