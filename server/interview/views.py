@@ -63,6 +63,35 @@ def is_valid_availability(availability):
     )
 
 
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAdminUser
+from django.utils import timezone
+from datetime import timedelta
+
+@api_view(['GET'])
+@permission_classes([])
+def get_signup_data(request):
+    days = int(request.query_params.get('days', 14))
+    end_date = timezone.now()
+    start_date = end_date - timedelta(days=days)
+
+    signups = InterviewPool.objects.filter(
+        timestamp__isnull=False,
+        timestamp__gte=start_date,
+        timestamp__lte=end_date
+    ).values('member__username', 'member_id', 'timestamp')
+
+    signup_data = [
+        {
+            'username': signup['member__username'],
+            'user_id': signup['member_id'],
+            'timestamp': int(signup['timestamp'].timestamp() * 1000)
+        }
+        for signup in signups
+    ]
+
+    return Response(signup_data)
+
 # Create your views here.
 class AuthenticatedMemberSignupForInterview(APIView):
     permission_classes = [IsAuthenticated, IsVerified]
@@ -119,16 +148,19 @@ class AuthenticatedMemberSignupForInterview(APIView):
 
         # Check if user is already in InterviewPool
         try:
-            InterviewPool.objects.get(member=request.user)
+
+            ent = InterviewPool.objects.get(member=request.user)
+            ent.timestamp = timezone.now()
+            ent.save()
             interview_availability.save()
             logger.info(
-                f"User {request.user.username} updated their interview availability"
+                "User %s signed up for an interview at %s",
+                request.user.username,
+                ent.timestamp.isoformat()
             )
             return Response(
-                {
-                    "detail": "You have successfully updated your interview availability."
-                },
-                status=status.HTTP_200_OK,
+                {"detail": "You have successfully signed up for an interview."},
+                status=status.HTTP_201_CREATED,
             )
 
         except InterviewPool.DoesNotExist:

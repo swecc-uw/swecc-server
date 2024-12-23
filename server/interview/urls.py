@@ -76,5 +76,10 @@ urlpatterns = [
         "assign/<uuid:interview_id>/",
         views.InterviewAssignQuestionRandomIndividual.as_view(),
         name="assign-interview-question"
+    ),
+    path(
+        "signups/",
+        views.get_signup_data,
+        name="get-signup-data"
     )
 ]
