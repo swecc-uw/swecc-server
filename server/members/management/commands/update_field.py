@@ -26,7 +26,7 @@ class Command(BaseCommand):
     }
 
     def output_info(field_name):
-        return "`" + field_name + "`"
+        return "`" + str(field_name) + "`"
 
     help = f"Command to set a particular field of a user to a given value. Disallowed fields include: {', '.join(map(output_info, disallowed_fields))}."
 
