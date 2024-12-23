@@ -107,8 +107,7 @@ class TestCommonAvailabilityStableMatching(TestCase):
             calculated_rankings = [other_member for other_member, _ in prefs[member]]
             self.assertEqual(calculated_rankings, expected_rankings)
 
-    def test_large_input_calculate_preferences(self):
-        num_members = 100
+    def _pair_large_input_calculate_preferences(self, num_members=200):
         pool_member_ids = list(range(num_members))
         availabilities = {
             i: [[random.choice([True, False]) for __ in range(48)] for _ in range(7)]
@@ -116,8 +115,14 @@ class TestCommonAvailabilityStableMatching(TestCase):
         }
         start_time = timezone.now()
         prefs = self.algorithm.calculate_preferences(pool_member_ids, availabilities)
+        pairs = self.algorithm.pair(pool_member_ids)
         end_time = timezone.now()
         duration = (end_time - start_time).total_seconds() * 1000
-        print(f"Time taken for calculate_preferences with {num_members} members: {duration:.2f} ms")
-
+        print(f"Time taken for pairing {num_members} members: {duration:.2f} ms")
         self.assertEqual(len(prefs), num_members)
+        self.assertEqual(len(pairs.pairs), num_members)
+
+    def test_trend_in_clock_time(self):
+
+        for num_members in [10, 20, 50, 100, 200, 500, 1000, 2000]:
+            self._pair_large_input_calculate_preferences(num_members)

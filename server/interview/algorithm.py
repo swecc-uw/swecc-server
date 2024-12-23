@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Tuple, Optional
 import numpy as np
 from numpy.typing import NDArray
+from collections import deque
 
 # to run tests, exec into docker container and run:
 # `python server/manage.py test interview`
@@ -158,10 +159,8 @@ class CommonAvailabilityStableMatching(PairingAlgorithm):
         Gale-Shapley algorithm for stable matching.
         """
         n = len(preferences)
-        if n < 2:
-            raise ValueError("At least two members are required for matching")
 
-        free_members = list(range(n))
+        free_members = deque(range(n))
         paired = [-1] * n
 
         preference_indices = {
@@ -170,7 +169,7 @@ class CommonAvailabilityStableMatching(PairingAlgorithm):
         }
 
         while free_members:
-            member = free_members.pop(0)
+            member = free_members.popleft()
             if not preferences[member]:
                 free_members.append(member)
                 continue
