@@ -162,7 +162,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'members.User'
-CORS_ALLOWED_ORIGINS = ['https://interview.swecc.org']
+CORS_ALLOWED_ORIGINS = ['https://interview.swecc.org', 'https://leaderboard.swecc.org']
 CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
 CORS_ALLOW_CREDENTIALS = True
 
@@ -171,7 +171,7 @@ CSRF_COOKIE_SAMESITE = 'None' if not DJANGO_DEBUG else 'Lax'
 SESSION_COOKIE_SAMESITE = 'None' if not DJANGO_DEBUG else 'Lax'
 CSRF_COOKIE_HTTPONLY = not DJANGO_DEBUG
 SESSION_COOKIE_HTTPONLY = not DJANGO_DEBUG
-CSRF_TRUSTED_ORIGINS = ['https://interview.swecc.org']
+CSRF_TRUSTED_ORIGINS = ['https://interview.swecc.org', 'https://leaderboard.swecc.org']
 
 devclient = 'http://localhost:5173'
 
