@@ -1,6 +1,4 @@
 from rest_framework import generics
-from members.permissions import IsApiKey
-from custom_auth.permissions import IsVerified
 from .models import GitHubStats, LeetcodeStats
 from .serializers import GitHubStatsSerializer, LeetcodeStatsSerializer
 from django.db.models import F, ExpressionWrapper, FloatField
@@ -15,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 class LeetcodeLeaderboardView(generics.ListAPIView):
     serializer_class = LeetcodeStatsSerializer
-    permission_classes = [IsVerified|IsApiKey]
+    # allow any permission for now
+    permission_classes = []
 
     def get_queryset(self):
         latest_stat = LeetcodeStats.objects.order_by("-last_updated").first()
@@ -59,7 +58,7 @@ class LeetcodeLeaderboardView(generics.ListAPIView):
 
 class GitHubLeaderboardView(generics.ListAPIView):
     serializer_class = GitHubStatsSerializer
-    permission_classes = [IsVerified|IsApiKey]
+    permission_classes = []
 
     def get_queryset(self):
         order_by = self.request.query_params.get("order_by", "commits")
