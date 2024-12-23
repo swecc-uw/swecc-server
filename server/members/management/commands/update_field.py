@@ -82,6 +82,7 @@ class Command(BaseCommand):
 
             user_to_update.__setattr__(field, value)
 
+            # Ensure integrity regarding fields and types to prevent type mismatches and other related issues
             user_to_update.full_clean()
             user_to_update.save()
 
