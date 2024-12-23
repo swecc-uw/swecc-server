@@ -227,11 +227,9 @@ class PairInterview(APIView):
         pool_member_ids = [m.member.id for m in pool_members]
         logger.info("Pairing interviews for %d members", len(pool_member_ids))
         self.pairing_algorithm.set_availabilities(availabilities)
-        # Perform pairing using the CommonAvailabilityStableMatching algorithm
-        matches = self.pairing_algorithm.pair(pool_member_ids)
+        matching_result = self.pairing_algorithm.pair(pool_member_ids)
 
         # Create interviews based on matches
-
         # find all interview within this week (from last monday to next monday)
         today = timezone.now()
         last_monday = today - timezone.timedelta(days=today.weekday())
@@ -267,13 +265,23 @@ class PairInterview(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Create interviews with questions
+        matches = matching_result.pairs
+        logger.info("Common slots matrix shape: %s", matching_result.common_slots.shape)
+        logger.info("Number of preference scores: %d", len(matching_result.preference_scores))
+
         for i, j in enumerate(matches):
             if i < j:  # Avoid creating duplicate interviews
                 p1 = pool_members[i].member
                 p2 = pool_members[j].member
 
-                # Create first interview
+                common_slots_count = matching_result.common_slots[i, j]
+                logger.info(
+                    "Creating interview pair with %d common slots: %s and %s",
+                    common_slots_count,
+                    p1.username,
+                    p2.username
+                )
+
                 interview1 = Interview.objects.create(
                     interviewer=p1,
                     interviewee=p2,
@@ -282,7 +290,6 @@ class PairInterview(APIView):
                 )
                 interview1.technical_questions.add(technical_questions[0])
 
-                # Create second interview
                 interview2 = Interview.objects.create(
                     interviewer=p2,
                     interviewee=p1,
@@ -303,6 +310,7 @@ class PairInterview(APIView):
             tq.position = new_position
             tq.save()
             new_position += 1
+
         logger.info("Paired %d interviews", len(paired_interviews))
         # check for any unpaired members
         unpaired_members = InterviewPool.objects.all()
@@ -390,8 +398,9 @@ class PairInterview(APIView):
         ]
 
         logger.info(
-            "Successfully paired %d interviews. Unpaired members: {len(unpaired_members)}",
+            "Successfully paired %d interviews. Unpaired members: %d",
             len(paired_interviews),
+            len(unpaired_members),
         )
         return Response(
             {
@@ -401,6 +410,10 @@ class PairInterview(APIView):
                         "interview_id": str(interview.interview_id),
                         "interviewer": interview.interviewer.username,
                         "interviewee": interview.interviewee.username,
+                        "common_slots": matching_result.common_slots[
+                            pool_member_ids.index(interview.interviewer.id),
+                            pool_member_ids.index(interview.interviewee.id)
+                        ]
                     }
                     for interview in paired_interviews
                 ],
