@@ -48,6 +48,7 @@ class InterviewPool(models.Model):
         on_delete=models.CASCADE,
         primary_key=True
     )
+    timestamp = models.DateTimeField(auto_now_add=True, null=True)
 
     def __str__(self):
         return f"Interview Pool: {self.member}"
