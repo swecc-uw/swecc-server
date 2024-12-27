@@ -50,8 +50,8 @@ class InterviewAndQuestionSerializer(serializers.ModelSerializer):
 
 class InterviewMemberSerializer(serializers.ModelSerializer):
 
-    interviewer_info = serializers.SerializerMethodField()
-    interviewee_info = serializers.SerializerMethodField()
+    interviewer = serializers.SerializerMethodField()
+    interviewee = serializers.SerializerMethodField()
     technical_questions = TechnicalQuestionSerializer(
         many=True, read_only=True, source="technical_questions.all"
     )
@@ -63,8 +63,8 @@ class InterviewMemberSerializer(serializers.ModelSerializer):
         model = Interview
         fields = [
             "interview_id",
-            "interviewer_info",
-            "interviewee_info",
+            "interviewer",
+            "interviewee",
             "technical_questions",
             "behavioral_questions",
             "status",
@@ -72,8 +72,8 @@ class InterviewMemberSerializer(serializers.ModelSerializer):
             "date_completed",
         ]
 
-    def get_interviewer_info(self, obj):
+    def get_interviewer(self, obj):
         return UserSerializer(obj.interviewer).data
 
-    def get_interviewee_info(self, obj):
+    def get_interviewee(self, obj):
         return UserSerializer(obj.interviewee).data
