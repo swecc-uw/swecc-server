@@ -12,7 +12,7 @@ from questions.serializers import TechnicalQuestionSerializer
 class ReportSerializer(serializers.ModelSerializer):
     associated_id = serializers.SerializerMethodField()
     associated_object = serializers.SerializerMethodField()
-    reporter_user_id = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    reporter = serializers.SerializerMethodField()
     associated_interview = serializers.PrimaryKeyRelatedField(
         queryset=Interview.objects.all(), required=False, allow_null=True
     )
@@ -33,13 +33,13 @@ class ReportSerializer(serializers.ModelSerializer):
             "associated_id",
             "associated_object",
             "type",
-            "reporter_user_id",
             "reason",
             "status",
             "updated",
             "created",
             "admin_id",
             "admin_notes",
+            "reporter",
         ]
         read_only_fields = ["report_id", "created", "updated"]
 
@@ -54,6 +54,9 @@ class ReportSerializer(serializers.ModelSerializer):
         elif obj.type == "member" and obj.associated_member:
             return UserSerializer(obj.associated_member).data
         return None
+
+    def get_reporter(self, obj):
+        return UserSerializer(obj.reporter_user_id).data
 
     def validate(self, data):
         report_type = data.get("type")
