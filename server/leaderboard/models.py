@@ -43,6 +43,7 @@ class InternshipApplicationStats(models.Model):
         User, on_delete=models.CASCADE, related_name="internship_stats"
     )
     applied = models.IntegerField(default=0)
+    last_updated = models.DateTimeField(default=timezone.now)
 
     class Meta:
         ordering = ["-applied"]
@@ -56,6 +57,7 @@ class NewGradApplicationStats(models.Model):
         User, on_delete=models.CASCADE, related_name="new_grad_stats"
     )
     applied = models.IntegerField(default=0)
+    last_updated = models.DateTimeField(default=timezone.now)
 
     class Meta:
         ordering = ["-applied"]
