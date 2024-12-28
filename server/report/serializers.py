@@ -5,7 +5,7 @@ from interview.models import Interview
 from questions.models import TechnicalQuestion
 from .models import Report
 from members.serializers import UserSerializer
-from interview.serializers import InterviewSerializer
+from interview.serializers import InterviewMemberSerializer
 from questions.serializers import TechnicalQuestionSerializer
 
 
@@ -48,7 +48,7 @@ class ReportSerializer(serializers.ModelSerializer):
 
     def get_associated_object(self, obj):
         if obj.type == "interview" and obj.associated_interview:
-            return InterviewSerializer(obj.associated_interview).data
+            return InterviewMemberSerializer(obj.associated_interview).data
         elif obj.type == "question" and obj.associated_question:
             return TechnicalQuestionSerializer(obj.associated_question).data
         elif obj.type == "member" and obj.associated_member:
