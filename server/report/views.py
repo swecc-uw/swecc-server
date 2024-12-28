@@ -70,15 +70,15 @@ class AssignReportToAdmin(APIView):
                 {"error": "Report not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        if "admin_id" not in request.data:
+        if "assignee" not in request.data:
             return Response(
-                {"error": "admin_id is required"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "assignee is required"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         report = report[0]
 
         # check if admin exists
-        member = User.objects.filter(id=request.data["admin_id"])
+        member = User.objects.get(id=request.data["assignee"])
         if not member:
             return Response(
                 {"error": "Admin not found"}, status=status.HTTP_400_BAD_REQUEST
@@ -89,7 +89,8 @@ class AssignReportToAdmin(APIView):
                 {"error": "User is not an admin"}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        report.admin_id = request.data["admin_id"]
+        report.assignee = member
+        report.status = "resolving"
         report.save()
 
         return Response(
