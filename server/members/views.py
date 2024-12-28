@@ -223,5 +223,4 @@ class AdminList(generics.ListAPIView):
     serializer_class = UserSerializer
 
     def get_queryset(self):
-        logger.info("called")
         return Group.objects.get(name="is_admin").user_set.all()
