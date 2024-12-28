@@ -20,6 +20,8 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 
+from custom_auth.permissions import IsAdmin
+
 logger = logging.getLogger(__name__)
 
 
@@ -124,6 +126,7 @@ class UpdateDiscordID(APIView):
 
 class ProfilePictureUploadView(APIView):
     permission_classes = [IsAuthenticated, IsVerified]
+
     def post(self, request, *args, **kwargs):
         # Check if file was uploaded
         if "profile_picture" not in request.FILES:
@@ -200,7 +203,8 @@ class ProfilePictureUploadView(APIView):
             return JsonResponse(
                 {"error": "Failed to upload file to storage"}, status=500
             )
-    
+
+
 class PasswordResetRequest(APIView):
     permission_classes = [IsApiKey]
 
@@ -212,3 +216,12 @@ class PasswordResetRequest(APIView):
         uid = urlsafe_base64_encode(force_bytes(user.pk))
 
         return Response({"uid": uid, "token": token}, status=200)
+
+
+class AdminList(generics.ListAPIView):
+    permission_classes = [IsAdmin]
+    serializer_class = UserSerializer
+
+    def get_queryset(self):
+        logger.info("called")
+        return Group.objects.get(name="is_admin").user_set.all()
