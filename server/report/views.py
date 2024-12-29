@@ -62,7 +62,7 @@ class GetReportByID(APIView):
 class AssignReportToAdmin(APIView):
     permission_classes = [IsAdmin]
 
-    def patch(self, _, report_id):
+    def patch(self, request, report_id):
 
         report = Report.objects.filter(report_id=report_id)
         if not report:
@@ -70,26 +70,27 @@ class AssignReportToAdmin(APIView):
                 {"error": "Report not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        if "admin_id" not in self.request.data:
+        if "assignee" not in request.data:
             return Response(
-                {"error": "admin_id is required"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "assignee is required"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         report = report[0]
 
         # check if admin exists
-        member = User.objects.filter(id=self.request.data["admin_id"])
+        member = User.objects.get(id=request.data["assignee"])
         if not member:
             return Response(
                 {"error": "Admin not found"}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        if not member[0].is_staff:
+        if not member.groups.filter(name="is_admin").exists():
             return Response(
                 {"error": "User is not an admin"}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        report.admin_id = self.request.data["admin_id"]
+        report.assignee = member
+        report.status = "resolving"
         report.save()
 
         return Response(

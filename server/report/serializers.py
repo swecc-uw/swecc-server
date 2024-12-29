@@ -37,7 +37,7 @@ class ReportSerializer(serializers.ModelSerializer):
             "status",
             "updated",
             "created",
-            "admin_id",
+            "assignee",
             "admin_notes",
             "reporter",
         ]
