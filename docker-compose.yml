@@ -4,6 +4,8 @@ services:
   web:
     tty: true
     build: .
+    networks:
+      - swecc-default
     volumes:
       - .:/app
     ports:
@@ -21,4 +23,7 @@ services:
       - INTERNSHIP_CHANNEL_ID=${INTERNSHIP_CHANNEL_ID}
       - NEW_GRAD_CHANNEL_ID=${NEW_GRAD_CHANNEL_ID}
 
-
+networks:
+  swecc-default:
+    external: true
+    name: swecc-default
