@@ -2,11 +2,14 @@ from django.db import models
 from members.models import User
 
 class AttendanceSession(models.Model):
-    id = models.AutoField(primary_key=True)
-    key = models.CharField(max_length=10) # session keys don't have to be unique
+    session_id = models.AutoField(primary_key=True)
+    key = models.CharField(max_length=10) # only active session keys have to be unique
     title = models.CharField(max_length=100)
     expires = models.DateTimeField()
     attendees = models.ManyToManyField(User, related_name='attendance_sessions')
+
+    class Meta:
+        indexes = [models.Index(fields=['-expires'])]
 
     def is_active(self):
         """Returns true if the session is still active"""
