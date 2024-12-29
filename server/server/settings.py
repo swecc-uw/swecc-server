@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'interview.apps.InterviewConfig',
     'report.apps.ReportConfig',
     'leaderboard.apps.LeaderboardConfig',
+    'engagement.apps.EngagementConfig',
     'corsheaders',
     'rest_framework_api_key',
 ]
