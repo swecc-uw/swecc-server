@@ -14,6 +14,7 @@ urlpatterns = [
     path('leaderboard/', include('leaderboard.urls')),
     path('engagement/', include('engagement.urls')),
     path('admin/command/', ManagementCommandView.as_view()),
+    path('engagement/', include('engagement.urls')),
 ]
 
 
