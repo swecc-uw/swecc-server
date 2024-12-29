@@ -79,7 +79,7 @@ urlpatterns = [
     ),
     path(
         "signups/",
-        views.get_signup_data,
+        views.GetSignupData.as_view(),
         name="get-signup-data"
     )
 ]

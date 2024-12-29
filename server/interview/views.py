@@ -1,35 +1,36 @@
-from ast import In
-from datetime import datetime
-from datetime import datetime
+from datetime import datetime, timedelta
+from django.utils import timezone
 import random
-from rest_framework import generics
+from rest_framework import generics, status, permissions
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Max
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from django.db.models import Max, Q
+from django.core.exceptions import ValidationError
+from django.db import transaction
+import logging
+
 import server.settings as settings
-from questions.models import TechnicalQuestion, BehavioralQuestion
+from questions.models import (
+    TechnicalQuestion,
+    BehavioralQuestion,
+    TechnicalQuestionQueue,
+)
 from custom_auth.permissions import IsAdmin, IsVerified
 from members.serializers import UserSerializer
 from members.models import User
-from questions.models import TechnicalQuestion, BehavioralQuestion, TechnicalQuestionQueue
-from questions.serializers import BehavioralQuestionSerializer, TechnicalQuestionSerializer
+from questions.serializers import (
+    BehavioralQuestionSerializer,
+    TechnicalQuestionSerializer,
+)
 from .algorithm import CommonAvailabilityStableMatching
 from .notification import (
     interview_paired_notification_html,
     interview_unpaired_notification_html,
     send_email,
 )
-from .models import Interview
+from .models import Interview, InterviewAvailability, InterviewPool
 from .serializers import InterviewSerializer
-from .models import InterviewAvailability, InterviewPool, Interview
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from django.core.exceptions import ValidationError
-from rest_framework import permissions
-from django.db import transaction
-from django.utils import timezone
-from django.db.models import Q
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -63,34 +64,29 @@ def is_valid_availability(availability):
     )
 
 
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAdminUser
-from django.utils import timezone
-from datetime import timedelta
+class GetSignupData(APIView):
+    permission_classes = [IsAdmin]
 
-@api_view(['GET'])
-@permission_classes([])
-def get_signup_data(request):
-    days = int(request.query_params.get('days', 14))
-    end_date = timezone.now()
-    start_date = end_date - timedelta(days=days)
+    def get(self, request):
+        days = int(request.query_params.get("days", 14))
+        end_date = timezone.now()
+        start_date = end_date - timedelta(days=days)
 
-    signups = InterviewPool.objects.filter(
-        timestamp__isnull=False,
-        timestamp__gte=start_date,
-        timestamp__lte=end_date
-    ).values('member__username', 'member_id', 'timestamp')
+        signups = InterviewPool.objects.filter(
+            timestamp__isnull=False, timestamp__gte=start_date, timestamp__lte=end_date
+        ).values("member__username", "member_id", "timestamp")
 
-    signup_data = [
-        {
-            'username': signup['member__username'],
-            'user_id': signup['member_id'],
-            'timestamp': int(signup['timestamp'].timestamp() * 1000)
-        }
-        for signup in signups
-    ]
+        signup_data = [
+            {
+                "username": signup["member__username"],
+                "user_id": signup["member_id"],
+                "timestamp": int(signup["timestamp"].timestamp() * 1000),
+            }
+            for signup in signups
+        ]
 
-    return Response(signup_data)
+        return Response(signup_data)
+
 
 # Create your views here.
 class AuthenticatedMemberSignupForInterview(APIView):
@@ -156,7 +152,7 @@ class AuthenticatedMemberSignupForInterview(APIView):
             logger.info(
                 "User %s signed up for an interview at %s",
                 request.user.username,
-                ent.timestamp.isoformat()
+                ent.timestamp.isoformat(),
             )
             return Response(
                 {"detail": "You have successfully signed up for an interview."},
@@ -330,7 +326,10 @@ class PairInterview(APIView):
                 InterviewPool.objects.filter(member__in=[p1, p2]).delete()
 
         # update question positions in queue
-        new_position = TechnicalQuestionQueue.objects.aggregate(Max('position'))['position__max'] + 1
+        new_position = (
+            TechnicalQuestionQueue.objects.aggregate(Max("position"))["position__max"]
+            + 1
+        )
         for tq in question_queues:
             tq.position = new_position
             tq.save()
@@ -550,12 +549,10 @@ class InterviewQuestions(APIView):
                 {
                     "interview_id": interview.interview_id,
                     "technical_questions": [
-                        question
-                        for question in interview.technical_questions.all()
+                        question for question in interview.technical_questions.all()
                     ],
                     "behavioral_questions": [
-                        question
-                        for question in interview.behavioral_questions.all()
+                        question for question in interview.behavioral_questions.all()
                     ],
                 }
             )
@@ -1002,12 +999,14 @@ class UserInterviewsDetailView(APIView):
 
                 # question visibility
                 is_interviewer = interview.interviewer == request.user
-                interview_has_passed = interview.date_effective + timezone.timedelta(days=7) < timezone.now()
+                interview_has_passed = (
+                    interview.date_effective + timezone.timedelta(days=7)
+                    < timezone.now()
+                )
                 is_completed = interview.status in [
                     "inactive_completed",
                     "inactive_incomplete",
                 ]
-
 
                 if not (is_interviewer or is_completed or interview_has_passed):
                     interview_data.pop("technical_questions", None)
