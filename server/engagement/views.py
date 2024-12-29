@@ -142,4 +142,5 @@ class AttendSession(generics.CreateAPIView):
             return Response(
                 {'error': 'Session not found'},
                 status=status.HTTP_404_NOT_FOUND
-            ) 
+            )
+

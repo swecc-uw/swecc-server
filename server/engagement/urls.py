@@ -7,4 +7,4 @@ urlpatterns = [
     path('attendance/member/<int:id>/', views.GetMemberAttendanceSessions.as_view(), name='get-member-attendance-sessions'),
     path('attendance/session/<int:id>/', views.GetSessionAttendees.as_view(), name='get-session-attendees'),
     path('attendance/attend', views.AttendSession.as_view(), name='attend-session'),
-] 
+]

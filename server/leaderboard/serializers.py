@@ -48,7 +48,7 @@ class InternshipApplicationStatsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = InternshipApplicationStats
-        fields = ["user", "applied"]
+        fields = ["user", "applied", "last_updated"]
 
     def get_user(self, obj):
         return {"username": obj.user.username}
@@ -59,7 +59,7 @@ class NewGradApplicationStatsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = NewGradApplicationStats
-        fields = ["user", "applied"]
+        fields = ["user", "applied", "last_updated"]
 
     def get_user(self, obj):
         return {"username": obj.user.username}
