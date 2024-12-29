@@ -186,6 +186,11 @@ class UpdateReportStatus(APIView):
                 {"error": "status is required"}, status=status.HTTP_400_BAD_REQUEST
             )
 
+        if request.data["status"] not in Report.STATUS_CHOICES:
+            return Response(
+                {"error": "Invalid status provided"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
         report = report[0]
         report.status = request.data["status"]
         report.save()
