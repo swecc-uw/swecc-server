@@ -5,7 +5,7 @@ from members.models import User
 
 class AttendanceSession(models.Model):
     session_id = models.AutoField(primary_key=True)
-    key = models.CharField(max_length=10) # only active session keys have to be unique
+    key = models.CharField(max_length=20) # only active session keys have to be unique
     title = models.CharField(max_length=100)
     expires = models.DateTimeField()
     attendees = models.ManyToManyField(User, related_name='attendance_sessions')
