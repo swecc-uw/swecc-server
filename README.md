@@ -23,6 +23,14 @@ export DB_USER=root
 export DB_PASSWORD=password
 ```
 
+### Network
+
+Create a docker network to use while testing locally with docker-compose
+
+```bash
+docker network create swecc-default
+```
+
 ## Reference
 
 | task | command | 

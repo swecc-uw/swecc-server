@@ -3,6 +3,8 @@ version: '3.8'
 services:
   db:
     image: postgres:13
+    networks:
+      - swecc-default
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -15,3 +17,8 @@ services:
 
 volumes:
   postgres_data:
+
+networks:
+  swecc-default:
+    external: true
+    name: swecc-default
