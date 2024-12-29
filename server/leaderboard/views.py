@@ -226,7 +226,7 @@ class InjestReactionEventView(generics.CreateAPIView):
                 return Response(status=status.HTTP_304_NOT_MODIFIED)
 
             self._handle_stats(user_id, channel_config, 'increment')
-            return Response(status=status.HTTP_201_CREATED)
+            return Response(status=status.HTTP_202_ACCEPTED)
 
         except Http404:
             logger.error(f"User not found for discord_id: {discord_id}")
