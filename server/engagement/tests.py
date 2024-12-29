@@ -75,6 +75,22 @@ class AttendanceAPITests(AuthenticatedTestCase):
             AttendanceSession.objects.filter(title='New Session').exists(),
             "Session was not created in database"
         )
+    
+    def test_create_duplicate_active_session(self):
+        response = self.client.post('/engagement/attendance/session', {
+            'title': 'New Session',
+            'key': 'test-key',
+            'expires': (timezone.now() + timedelta(hours=1)).isoformat().replace("+00:00", "Z")
+        })
+        self.assertResponse(response, 400)
+    
+    def test_create_duplicate_expired_session(self):
+        response = self.client.post('/engagement/attendance/session', {
+            'title': 'New Session',
+            'key': 'expired-key',
+            'expires': (timezone.now() - timedelta(hours=1)).isoformat().replace("+00:00", "Z")
+        })
+        self.assertResponse(response, 201)
 
     def test_get_all_sessions(self):
         response = self.client.get('/engagement/attendance/')
@@ -94,7 +110,7 @@ class AttendanceAPITests(AuthenticatedTestCase):
     def test_get_session_attendees(self):
         self.session.attendees.add(self.user)
         response = self.client.get(f'/engagement/attendance/session/{self.session.session_id}/')
-        self.assertEqual(response.status_code, 200, f"Response: {response.content}")
+        self.assertResponse(response, 200)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['id'], self.user.id)
 

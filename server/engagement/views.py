@@ -91,7 +91,7 @@ class GetSessionAttendees(generics.ListAPIView):
         return session.attendees.all()
 
 class AttendSession(generics.CreateAPIView):
-    permission_classes = [IsApiKey]
+    permission_classes = [IsAdmin|IsApiKey]
     
     def post(self, request):
         session_key = request.data.get('session_key')
@@ -104,7 +104,15 @@ class AttendSession(generics.CreateAPIView):
             )
             
         try:
-            session = AttendanceSession.objects.get(key=session_key)
+            # Since we sort by expires and active sesions must have a unique key,
+            # the first result is the desired active session.
+            session = AttendanceSession.objects.filter(key=session_key).order_by('-expires').first()
+
+            if not session:
+                return Response(
+                    {'error': 'Session not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
             
             if not session.is_active():
                 return Response(
@@ -114,8 +122,15 @@ class AttendSession(generics.CreateAPIView):
                 
             try:
                 user = User.objects.get(discord_id=discord_id)
-                session.attendees.add(user)
-                return Response(status=status.HTTP_201_CREATED)
+                # Check if user is already in the session
+                if user not in session.attendees.all():
+                    session.attendees.add(user)
+                    return Response(status=status.HTTP_201_CREATED)
+                else:
+                    return Response(
+                        {'error': 'User already in session'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
                 
             except User.DoesNotExist:
                 return Response(

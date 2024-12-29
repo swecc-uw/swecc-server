@@ -36,7 +36,7 @@ class AttendanceSession(models.Model):
         return now() < self.expires
 
     def __str__(self):
-        return f"{self.title} - {self.key}"
+        return f"{self.title} - {self.key} - {self.expires}"
 
 class DiscordMessageStats(models.Model):
     member = models.ForeignKey(User, on_delete=models.CASCADE)
