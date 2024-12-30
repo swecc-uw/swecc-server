@@ -9,7 +9,7 @@ from django.db import transaction
 from django.db.models import F
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from custom_auth.permissions import IsAdmin
+from custom_auth.permissions import IsAdmin, IsVerified
 from members.permissions import IsApiKey
 from members.models import User
 from engagement.models import DiscordMessageStats
@@ -17,6 +17,7 @@ from .models import AttendanceSession
 from .serializers import AttendanceSessionSerializer, MemberSerializer
 
 logger = logging.getLogger(__name__)
+
 
 def parse_date(x):
     date = datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ")
@@ -75,7 +76,7 @@ class CreateAttendanceSession(APIView):
 
 
 class GetAttendanceSessions(generics.ListAPIView):
-    permission_classes = [IsAdmin | IsApiKey]
+    permission_classes = [IsAdmin]
     serializer_class = AttendanceSessionSerializer
 
     def get_queryset(self):
@@ -83,16 +84,17 @@ class GetAttendanceSessions(generics.ListAPIView):
 
 
 class GetMemberAttendanceSessions(generics.ListAPIView):
-    permission_classes = [IsAdmin | IsApiKey]
+    permission_classes = [IsAdmin]
     serializer_class = AttendanceSessionSerializer
 
     def get_queryset(self):
         user = get_object_or_404(User, id=self.kwargs["id"])
+        # return all session that have userid in attendees
         return AttendanceSession.objects.filter(attendees=user)
 
 
 class GetSessionAttendees(generics.ListAPIView):
-    permission_classes = [IsAdmin | IsApiKey]
+    permission_classes = [IsAdmin]
     serializer_class = MemberSerializer
 
     def get_queryset(self):
@@ -101,7 +103,7 @@ class GetSessionAttendees(generics.ListAPIView):
 
 
 class AttendSession(generics.CreateAPIView):
-    permission_classes = [IsAdmin | IsApiKey]
+    permission_classes = [IsVerified | IsAdmin | IsApiKey]
 
     def post(self, request):
         session_key = request.data.get("session_key")
