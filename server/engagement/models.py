@@ -48,5 +48,8 @@ class DiscordMessageStats(models.Model):
     channel_id = models.CharField(max_length=100)
     message_count = models.PositiveIntegerField(default=0)
 
+    class Meta:
+        unique_together = ["member", "channel_id"]
+
     def __str__(self):
         return f"{self.member_id.username} - {self.channel_id} - {self.message_count}"

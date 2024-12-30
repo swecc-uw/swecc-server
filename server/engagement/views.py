@@ -1,23 +1,21 @@
+import pydantic
 from rest_framework import generics
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from datetime import datetime
 import logging
-from django.http import Http404
-from django.db import transaction
 from django.db.models import F
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from custom_auth.permissions import IsAdmin, IsVerified
 from members.permissions import IsApiKey
 from members.models import User
-from engagement.models import DiscordMessageStats
+from .buffer import MessageBuffer, Message
 from .models import AttendanceSession
 from .serializers import AttendanceSessionSerializer, MemberSerializer
 
 logger = logging.getLogger(__name__)
-
 
 def parse_date(x):
     date = datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ")
@@ -158,38 +156,36 @@ class AttendSession(generics.CreateAPIView):
 
 
 class InjestMessageEventView(generics.CreateAPIView):
-    permission_classes = [IsApiKey]
+    permission_classes = [IsAdmin|IsApiKey]
+    _message_buffer = MessageBuffer()
 
-    @transaction.atomic
     def post(self, request, *args, **kwargs):
-        discord_id = request.data.get("discord_id")
-        channel_id = request.data.get("channel_id")
         try:
-            user = get_object_or_404(User, discord_id=discord_id)
+            discord_id = request.data.get("discord_id")
+            channel_id = request.data.get("channel_id")
 
-            (
-                stats,
-                created,
-            ) = DiscordMessageStats.objects.select_for_update().get_or_create(
-                member_id=user.id, channel_id=channel_id, defaults={"message_count": 1}
-            )
+            if not isinstance(discord_id, int) or not isinstance(channel_id, int):
+                return Response(
+                    {"error": "invalid message format"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-            if not created:
-                stats.message_count = F("message_count") + 1
-                stats.save()
-                stats.refresh_from_db()
+            message = Message(discord_id=discord_id, channel_id=channel_id)
+            self._message_buffer.add_message(message)
 
-            logger.info(
-                "member %s has %d messages in channel %s",
-                user.id,
-                stats.message_count,
-                channel_id,
-            )
+            logger.info("Message added to buffer: %s", message)
 
             return Response(status=status.HTTP_202_ACCEPTED)
 
-        except Http404:
-            logger.error("member not found for discord_id: %s", discord_id)
+        except pydantic.ValidationError as e:
+            logger.error("Invalid message format: %s", e)
             return Response(
-                {"error": "member not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": "invalid message format"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.exception("Error processing message: %s", e)
+            return Response(
+                {"error": "internal server error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
