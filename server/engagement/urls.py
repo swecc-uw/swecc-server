@@ -8,6 +8,11 @@ urlpatterns = [
         name="injest-message-event",
     ),
     path(
+        "message/query",
+        views.QueryDiscordMessageStats.as_view(),
+        name="query-discord-message-stats",
+    ),
+    path(
         "attendance/session",
         views.CreateAttendanceSession.as_view(),
         name="create-attendance-session",
