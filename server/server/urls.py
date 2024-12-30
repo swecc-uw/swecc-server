@@ -12,6 +12,7 @@ urlpatterns = [
     path('directory/', include('directory.urls')),
     path('reports/', include('report.urls')),
     path('leaderboard/', include('leaderboard.urls')),
+    path('engagement/', include('engagement.urls')),
     path('admin/command/', ManagementCommandView.as_view()),
     path('engagement/', include('engagement.urls')),
 ]
