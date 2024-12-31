@@ -22,7 +22,6 @@ class DiscordChannelsAntiEntropy(APIView):
     permission_classes = [IsAdmin | IsApiKey]
 
     def _validate_channel_data(self, channel_data: dict) -> bool:
-        logger.info("Validating channel data %s", channel_data)
         required_fields = {
             "channel_id",
             "channel_name",
