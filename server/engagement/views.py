@@ -13,6 +13,7 @@ from django.utils import timezone
 from custom_auth.permissions import IsAdmin, IsVerified
 from members.permissions import IsApiKey
 from members.models import User
+from members.serializers import UserSerializer
 from .buffer import MessageBuffer, Message
 from .models import AttendanceSession, DiscordMessageStats
 from .serializers import AttendanceSessionSerializer, MemberSerializer
@@ -192,6 +193,7 @@ class InjestMessageEventView(generics.CreateAPIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+
 class QueryDiscordMessageStats(generics.ListAPIView):
     permission_classes = [IsAdmin]
 
@@ -225,4 +227,18 @@ class QueryDiscordMessageStats(generics.ListAPIView):
         # will require either an API call or to save in DB. Either is fine, but for now
         # we are just returning the id.
         aggregated = self._aggregate([metric for metric in qs])
-        return Response(aggregated, status=status.HTTP_200_OK)
+
+        members = User.objects.filter(id__in=aggregated.keys())
+        result = [
+            {
+                "member": UserSerializer(members.get(id=member_id)).data,
+                "stats": {
+                    channel_id: count
+                    for channel_id, count in stats.items()
+                    if channel_id in channel_ids or not channel_ids
+                },
+            }
+            for member_id, stats in aggregated.items()
+        ]
+
+        return Response(result, status=status.HTTP_200_OK)
