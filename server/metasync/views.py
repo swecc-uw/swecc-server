@@ -6,6 +6,7 @@ from rest_framework.request import Request
 from custom_auth.permissions import IsAdmin
 from members.permissions import IsApiKey
 from .models import DiscordChannel
+from .serializers import DiscordChannelSerializer
 import logging
 
 logger = logging.getLogger(__name__)
@@ -196,3 +197,26 @@ class DiscordChannelsAntiEntropy(APIView):
                 {"error": f"An unexpected error occurred: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+class DiscordChannelsMetadata(APIView):
+    permission_classes = [IsAdmin]
+
+    def get(self, request: Request) -> Response:
+        channel_id = request.query_params.get("channel_id", None)
+        category_id = request.query_params.get("category_id", None)
+        channel_type = request.query_params.get("type", None)
+        guild_id = request.query_params.get("guild_id", None)
+
+        channels = DiscordChannel.objects.all()
+
+        if channel_type:
+            channels = DiscordChannel.objects.filter(channel_type=channel_type)
+        if channel_id:
+            channels = DiscordChannel.objects.filter(channel_id=channel_id)
+        if category_id:
+            channels = DiscordChannel.objects.filter(category_id=category_id)
+        if guild_id:
+            channels = DiscordChannel.objects.filter(guild_id=guild_id)
+
+        serializer = DiscordChannelSerializer(channels, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
