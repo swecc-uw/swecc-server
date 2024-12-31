@@ -1,4 +1,6 @@
 import pydantic
+from collections import defaultdict
+from typing import Dict, List
 from rest_framework import generics
 from rest_framework import status
 from rest_framework.views import APIView
@@ -11,11 +13,13 @@ from django.utils import timezone
 from custom_auth.permissions import IsAdmin, IsVerified
 from members.permissions import IsApiKey
 from members.models import User
+from members.serializers import UserSerializer
 from .buffer import MessageBuffer, Message
-from .models import AttendanceSession
+from .models import AttendanceSession, DiscordMessageStats
 from .serializers import AttendanceSessionSerializer, MemberSerializer
 
 logger = logging.getLogger(__name__)
+
 
 def parse_date(x):
     date = datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ")
@@ -156,7 +160,7 @@ class AttendSession(generics.CreateAPIView):
 
 
 class InjestMessageEventView(generics.CreateAPIView):
-    permission_classes = [IsAdmin|IsApiKey]
+    permission_classes = [IsAdmin | IsApiKey]
     _message_buffer = MessageBuffer()
 
     def post(self, request, *args, **kwargs):
@@ -167,7 +171,7 @@ class InjestMessageEventView(generics.CreateAPIView):
             if not isinstance(discord_id, int) or not isinstance(channel_id, int):
                 return Response(
                     {"error": "invalid message format"},
-                    status=status.HTTP_400_BAD_REQUEST
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
             message = Message(discord_id=discord_id, channel_id=channel_id)
@@ -180,12 +184,61 @@ class InjestMessageEventView(generics.CreateAPIView):
         except pydantic.ValidationError as e:
             logger.error("Invalid message format: %s", e)
             return Response(
-                {"error": "invalid message format"},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "invalid message format"}, status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
             logger.exception("Error processing message: %s", e)
             return Response(
                 {"error": "internal server error"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class QueryDiscordMessageStats(generics.ListAPIView):
+    permission_classes = [IsAdmin]
+
+    def _aggregate(
+        self, messages: List[DiscordMessageStats]
+    ) -> Dict[int, dict[str, int]]:
+        """member_id -> channel_id (+ total) -> message_count"""
+
+        result = defaultdict(lambda: defaultdict(int))
+        for msg in messages:
+            result[msg.member_id][str(msg.channel_id)] += msg.message_count
+            result[msg.member_id]["total"] += msg.message_count
+        return result
+
+    def get(self, request):
+        member_ids = request.query_params.getlist("member_id")
+        channel_ids = request.query_params.getlist("channel_id")
+        qs = None
+        if not member_ids and not channel_ids:
+            qs = DiscordMessageStats.objects.all()
+        elif member_ids and channel_ids:
+            qs = DiscordMessageStats.objects.filter(
+                member_id__in=member_ids, channel_id__in=channel_ids
+            )
+        elif member_ids:
+            qs = DiscordMessageStats.objects.filter(member_id__in=member_ids)
+        elif channel_ids:
+            qs = DiscordMessageStats.objects.filter(channel_id__in=channel_ids)
+
+        # todo: aggregate should return mapping of user_id -> channel_name -> message_count
+        # will require either an API call or to save in DB. Either is fine, but for now
+        # we are just returning the id.
+        aggregated = self._aggregate([metric for metric in qs])
+
+        members = User.objects.filter(id__in=aggregated.keys())
+        result = [
+            {
+                "member": UserSerializer(members.get(id=member_id)).data,
+                "stats": {
+                    channel_id: count
+                    for channel_id, count in stats.items()
+                    if channel_id in channel_ids or not channel_ids
+                },
+            }
+            for member_id, stats in aggregated.items()
+        ]
+
+        return Response(result, status=status.HTTP_200_OK)
