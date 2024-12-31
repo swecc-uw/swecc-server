@@ -15,6 +15,7 @@ urlpatterns = [
     path('engagement/', include('engagement.urls')),
     path('admin/command/', ManagementCommandView.as_view()),
     path('engagement/', include('engagement.urls')),
+    path('metasync/', include('metasync.urls')),
 ]
 
 
