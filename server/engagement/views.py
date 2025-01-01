@@ -211,16 +211,22 @@ class QueryDiscordMessageStats(generics.ListAPIView):
     def get(self, request):
         member_ids = request.query_params.getlist("member_id")
         channel_ids = request.query_params.getlist("channel_id")
+        member_ids = [int(member_id) for member_id in member_ids]
+        channel_ids = [int(channel_id) for channel_id in channel_ids]
         qs = None
         if not member_ids and not channel_ids:
+            logger.info("Querying all message stats")
             qs = DiscordMessageStats.objects.all()
         elif member_ids and channel_ids:
+            logger.info("Querying message stats for members and channels")
             qs = DiscordMessageStats.objects.filter(
                 member_id__in=member_ids, channel_id__in=channel_ids
             )
         elif member_ids:
+            logger.info("Querying message stats for members")
             qs = DiscordMessageStats.objects.filter(member_id__in=member_ids)
         elif channel_ids:
+            logger.info("Querying message stats for channels %s", channel_ids)
             qs = DiscordMessageStats.objects.filter(channel_id__in=channel_ids)
 
         # todo: aggregate should return mapping of user_id -> channel_name -> message_count
@@ -235,7 +241,7 @@ class QueryDiscordMessageStats(generics.ListAPIView):
                 "stats": {
                     channel_id: count
                     for channel_id, count in stats.items()
-                    if channel_id in channel_ids or not channel_ids
+                    if channel_id != "total" and int(channel_id) in channel_ids or not channel_ids
                 },
             }
             for member_id, stats in aggregated.items()
