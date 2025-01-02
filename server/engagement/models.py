@@ -53,3 +53,8 @@ class DiscordMessageStats(models.Model):
 
     def __str__(self):
         return f"{self.member_id.username} - {self.channel_id} - {self.message_count}"
+
+
+class AttendanceSessionStats(models.Model):
+    member = models.ForeignKey(User, on_delete=models.CASCADE)
+    sessions_attended = models.PositiveIntegerField(default=0)
