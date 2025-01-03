@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import AttendanceSession
+from .models import AttendanceSession, AttendanceSessionStats
 from members.models import User
+from members.serializers import UsernameSerializer
 
 
 class AttendeeSerializer(serializers.ModelSerializer):
@@ -23,3 +24,11 @@ class MemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id"]
+
+
+class AttendanceStatsSerializer(serializers.ModelSerializer):
+    member = UsernameSerializer(read_only=True)
+
+    class Meta:
+        model = AttendanceSessionStats
+        fields = "__all__"

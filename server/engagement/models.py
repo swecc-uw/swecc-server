@@ -53,3 +53,13 @@ class DiscordMessageStats(models.Model):
 
     def __str__(self):
         return f"{self.member_id.username} - {self.channel_id} - {self.message_count}"
+
+
+# Derived data
+# Any time we implement a view that modifies the number of attendance sessions tied to a particular user, we must update this model accordingly.
+class AttendanceSessionStats(models.Model):
+    member = models.ForeignKey(User, on_delete=models.CASCADE)
+    sessions_attended = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.member.username}: {self.sessions_attended}"

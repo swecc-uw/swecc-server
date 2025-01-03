@@ -5,8 +5,18 @@ from rest_framework import generics
 
 from members.permissions import IsApiKey
 from members.models import User
-from .models import GitHubStats, InternshipApplicationStats, LeetcodeStats, NewGradApplicationStats
-from .serializers import GitHubStatsSerializer, InternshipApplicationStatsSerializer, LeetcodeStatsSerializer, NewGradApplicationStatsSerializer
+from .models import (
+    GitHubStats,
+    InternshipApplicationStats,
+    LeetcodeStats,
+    NewGradApplicationStats,
+)
+from .serializers import (
+    GitHubStatsSerializer,
+    InternshipApplicationStatsSerializer,
+    LeetcodeStatsSerializer,
+    NewGradApplicationStatsSerializer,
+)
 from django.db import transaction
 from django.db.models import F, ExpressionWrapper, FloatField
 from rest_framework.exceptions import ValidationError
@@ -15,10 +25,13 @@ from datetime import timedelta
 import logging
 from rest_framework.response import Response
 from rest_framework import status
+from engagement.serializers import AttendanceStatsSerializer
+from engagement.models import AttendanceSessionStats
 
 logger = logging.getLogger(__name__)
 INTERNSHIP_CHANNEL_ID = int(os.getenv("INTERNSHIP_CHANNEL_ID"))
 NEW_GRAD_CHANNEL_ID = int(os.getenv("NEW_GRAD_CHANNEL_ID"))
+
 
 class LeetcodeLeaderboardView(generics.ListAPIView):
     serializer_class = LeetcodeStatsSerializer
@@ -98,6 +111,7 @@ class GitHubLeaderboardView(generics.ListAPIView):
 
         return queryset.order_by(order_field)
 
+
 class InternshipApplicationLeaderboardView(generics.ListAPIView):
     serializer_class = InternshipApplicationStatsSerializer
     permission_classes = []
@@ -129,6 +143,7 @@ class InternshipApplicationLeaderboardView(generics.ListAPIView):
 
         return queryset.order_by(order_field)
 
+
 class NewGradApplicationLeaderboardView(generics.ListAPIView):
     serializer_class = NewGradApplicationStatsSerializer
     permission_classes = []
@@ -159,50 +174,53 @@ class NewGradApplicationLeaderboardView(generics.ListAPIView):
             )
 
         return queryset.order_by(order_field)
+
+
 class InjestReactionEventView(generics.CreateAPIView):
     permission_classes = [IsApiKey]
 
     def _get_user_id(self, discord_id):
         return get_object_or_404(User, discord_id=discord_id).id
 
-
     def _get_channel_config(self, channel_id):
         channel_configs = {
             INTERNSHIP_CHANNEL_ID: {
-                'model': InternshipApplicationStats,
-                'name': 'internship',
+                "model": InternshipApplicationStats,
+                "name": "internship",
             },
             NEW_GRAD_CHANNEL_ID: {
-                'model': NewGradApplicationStats,
-                'name': 'new grad',
+                "model": NewGradApplicationStats,
+                "name": "new grad",
             },
         }
         return channel_configs.get(channel_id)
 
-    def _handle_stats(self, user_id, channel_config, action='increment'):
-        model = channel_config['model']
-        position_type = channel_config['name']
+    def _handle_stats(self, user_id, channel_config, action="increment"):
+        model = channel_config["model"]
+        position_type = channel_config["name"]
 
         try:
             stats = model.objects.select_for_update().get(user_id=user_id)
 
-            if action == 'increment':
-                stats.applied = F('applied') + 1
-            elif action == 'decrement' and stats.applied > 0:
-                stats.applied = F('applied') - 1
+            if action == "increment":
+                stats.applied = F("applied") + 1
+            elif action == "decrement" and stats.applied > 0:
+                stats.applied = F("applied") - 1
             else:
                 return False
 
             stats.save()
             stats.refresh_from_db()
 
-            log_msg = (f"User {user_id} has {stats.applied} {position_type} "
-                      f"applications after {action}")
+            log_msg = (
+                f"User {user_id} has {stats.applied} {position_type} "
+                f"applications after {action}"
+            )
             logger.info(log_msg)
             return True
 
         except model.DoesNotExist:
-            if action == 'increment':
+            if action == "increment":
                 model.objects.create(user_id=user_id, applied=1)
                 logger.info(f"Created new {position_type} stats for user {user_id}")
                 return True
@@ -225,7 +243,7 @@ class InjestReactionEventView(generics.CreateAPIView):
                 )
                 return Response(status=status.HTTP_304_NOT_MODIFIED)
 
-            self._handle_stats(user_id, channel_config, 'increment')
+            self._handle_stats(user_id, channel_config, "increment")
             return Response(status=status.HTTP_202_ACCEPTED)
 
         except Http404:
@@ -248,9 +266,42 @@ class InjestReactionEventView(generics.CreateAPIView):
                 )
                 return Response(status=status.HTTP_304_NOT_MODIFIED)
 
-            self._handle_stats(user_id, channel_config, 'decrement')
+            self._handle_stats(user_id, channel_config, "decrement")
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         except Http404:
             logger.error(f"User not found for discord_id: {discord_id}")
             return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+class AttendanceSessionLeaderboard(generics.ListAPIView):
+    serializer_class = AttendanceStatsSerializer
+    permission_classes = []
+
+    def get_queryset(self):
+        order_by = self.request.query_params.get("order_by", "attendance")
+
+        time_range = self.request.query_params.get("updated_within", None)
+
+        queryset = AttendanceSessionStats.objects.all()
+
+        if time_range:
+            try:
+                hours = int(time_range)
+                cutoff = timezone.now() - timedelta(hours=hours)
+                queryset = queryset.filter(last_updated__gte=cutoff)
+            except ValueError:
+                raise ValidationError("updated_within must be a valid number of hours")
+
+        ordering_options = {
+            "attendance": "-sessions_attended",
+            "recent": "-last_updated",
+        }
+
+        order_field = ordering_options.get(order_by)
+        if not order_field:
+            raise ValidationError(
+                f"Invalid order_by parameter. Must be one of: {', '.join(ordering_options.keys())}"
+            )
+
+        return queryset.order_by(order_field)

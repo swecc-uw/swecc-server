@@ -15,7 +15,7 @@ from members.permissions import IsApiKey
 from members.models import User
 from members.serializers import UserSerializer
 from .buffer import MessageBuffer, Message
-from .models import AttendanceSession, DiscordMessageStats
+from .models import AttendanceSession, DiscordMessageStats, AttendanceSessionStats
 from .serializers import AttendanceSessionSerializer, MemberSerializer
 
 logger = logging.getLogger(__name__)
@@ -141,6 +141,13 @@ class AttendSession(generics.CreateAPIView):
                 # Check if user is already in the session
                 if user not in session.attendees.all():
                     session.attendees.add(user)
+
+                    stats, created = AttendanceSessionStats.objects.get_or_create(
+                        member=user
+                    )
+                    stats.sessions_attended += 1
+                    stats.save()
+
                     return Response(status=status.HTTP_201_CREATED)
                 else:
                     return Response(
@@ -241,7 +248,9 @@ class QueryDiscordMessageStats(generics.ListAPIView):
                 "stats": {
                     channel_id: count
                     for channel_id, count in stats.items()
-                    if channel_id != "total" and int(channel_id) in channel_ids or not channel_ids
+                    if channel_id != "total"
+                    and int(channel_id) in channel_ids
+                    or not channel_ids
                 },
             }
             for member_id, stats in aggregated.items()
