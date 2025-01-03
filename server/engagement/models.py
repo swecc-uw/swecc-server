@@ -60,6 +60,7 @@ class DiscordMessageStats(models.Model):
 class AttendanceSessionStats(models.Model):
     member = models.ForeignKey(User, on_delete=models.CASCADE)
     sessions_attended = models.PositiveIntegerField(default=0)
+    last_updated = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return f"{self.member.username}: {self.sessions_attended}"
