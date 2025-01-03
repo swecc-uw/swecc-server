@@ -17,6 +17,7 @@ from members.serializers import UserSerializer
 from .buffer import MessageBuffer, Message
 from .models import AttendanceSession, DiscordMessageStats, AttendanceSessionStats
 from .serializers import AttendanceSessionSerializer, MemberSerializer
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -145,8 +146,11 @@ class AttendSession(generics.CreateAPIView):
                     stats, created = AttendanceSessionStats.objects.get_or_create(
                         member=user
                     )
-                    stats.sessions_attended += 1
-                    stats.save()
+                    with transaction.atomic():
+                        stats.sessions_attended += 1
+                        stats.last_updated = timezone.now()
+
+                        stats.save()
 
                     return Response(status=status.HTTP_201_CREATED)
                 else:

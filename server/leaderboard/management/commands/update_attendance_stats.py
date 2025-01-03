@@ -2,6 +2,8 @@ from django.core.management.base import BaseCommand
 from members.models import User
 from collections import defaultdict
 from engagement.models import AttendanceSessionStats
+from django.db import transaction
+from django.utils import timezone
 
 
 class Command(BaseCommand):
@@ -18,8 +20,11 @@ class Command(BaseCommand):
             user_stats, _ = AttendanceSessionStats.objects.get_or_create(
                 member_id=user_id
             )
-            user_stats.sessions_attended = attended_sessions
 
-            user_stats.save()
+            with transaction.atomic():
+                user_stats.sessions_attended = attended_sessions
+                user_stats.last_updated = timezone.now()
+
+                user_stats.save()
 
             self.stdout.write(self.style.SUCCESS(str(user_stats)))
