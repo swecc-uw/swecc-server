@@ -28,6 +28,7 @@ class MemberSerializer(serializers.ModelSerializer):
 
 class AttendanceStatsSerializer(serializers.ModelSerializer):
     member = UsernameSerializer(read_only=True)
+    rank = serializers.IntegerField()
 
     class Meta:
         model = AttendanceSessionStats
