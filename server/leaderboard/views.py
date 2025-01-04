@@ -27,6 +27,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from engagement.serializers import AttendanceStatsSerializer
 from engagement.models import AttendanceSessionStats
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.views import APIView
 
 logger = logging.getLogger(__name__)
 INTERNSHIP_CHANNEL_ID = int(os.getenv("INTERNSHIP_CHANNEL_ID"))
@@ -274,14 +276,21 @@ class InjestReactionEventView(generics.CreateAPIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
 
-class AttendanceSessionLeaderboard(generics.ListAPIView):
+class AttendancePagination(PageNumberPagination):
+    page_size = 50
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
+class AttendanceSessionLeaderboard(APIView):
     serializer_class = AttendanceStatsSerializer
     permission_classes = []
+    pagination_class = AttendancePagination
 
-    def get_queryset(self):
-        order_by = self.request.query_params.get("order_by", "attendance")
+    def get(self, request):
+        order_by = request.query_params.get("order_by", "attendance")
 
-        time_range = self.request.query_params.get("updated_within", None)
+        time_range = request.query_params.get("updated_within", None)
 
         queryset = AttendanceSessionStats.objects.all()
 
@@ -303,5 +312,10 @@ class AttendanceSessionLeaderboard(generics.ListAPIView):
             raise ValidationError(
                 f"Invalid order_by parameter. Must be one of: {', '.join(ordering_options.keys())}"
             )
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(
+            queryset.order_by(order_field), request
+        )
 
-        return queryset.order_by(order_field)
+        serializer = AttendanceStatsSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
