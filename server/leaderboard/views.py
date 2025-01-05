@@ -29,6 +29,8 @@ from engagement.serializers import AttendanceStatsSerializer
 from engagement.models import AttendanceSessionStats
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
+from django.db.models import Window
+from django.db.models.functions import RowNumber
 
 logger = logging.getLogger(__name__)
 INTERNSHIP_CHANNEL_ID = int(os.getenv("INTERNSHIP_CHANNEL_ID"))
@@ -303,8 +305,8 @@ class AttendanceSessionLeaderboard(APIView):
                 raise ValidationError("updated_within must be a valid number of hours")
 
         ordering_options = {
-            "attendance": "-sessions_attended",
-            "recent": "-last_updated",
+            "attendance": "sessions_attended",
+            "recent": "last_updated",
         }
 
         order_field = ordering_options.get(order_by)
@@ -314,7 +316,10 @@ class AttendanceSessionLeaderboard(APIView):
             )
         paginator = self.pagination_class()
         result_page = paginator.paginate_queryset(
-            queryset.order_by(order_field), request
+            queryset.annotate(
+                rank=Window(expression=RowNumber(), order_by=F(order_field).desc())
+            ).order_by(f"-{order_field}"),
+            request,
         )
 
         serializer = AttendanceStatsSerializer(result_page, many=True)
