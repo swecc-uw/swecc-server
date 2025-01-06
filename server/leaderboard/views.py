@@ -300,7 +300,8 @@ class AttendanceSessionLeaderboard(APIView):
             try:
                 hours = int(time_range)
                 cutoff = timezone.now() - timedelta(hours=hours)
-                queryset = queryset.filter(last_updated__gte=cutoff)
+                # only include if >= 0 sessions attended
+                queryset = queryset.filter(last_updated__gte=cutoff, sessions_attended__gte=1)
             except ValueError:
                 raise ValidationError("updated_within must be a valid number of hours")
 
