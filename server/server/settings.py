@@ -12,6 +12,8 @@ SENDGRID_API_KEY = os.environ["SENDGRID_API_KEY"]
 # use for storage client only
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_KEY = os.environ["SUPABASE_KEY"]
+# use for accessing metric from chronos
+METRIC_SERVER_URL = os.environ["METRIC_SERVER_URL"]
 
 print(
     {
@@ -22,6 +24,7 @@ print(
         "DB_USER": DB_USER,
         "DB_PASSWORD": DB_PASSWORD,
         "SENDGRID_API_KEY": SENDGRID_API_KEY,
+        "METRIC_SERVER_URL": METRIC_SERVER_URL,
     }
 )
 
