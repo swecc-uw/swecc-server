@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import Max, Q
 from django.core.exceptions import ValidationError
+from django.core.cache import cache
 from django.db import transaction
 import logging
 
@@ -88,14 +89,10 @@ class GetSignupData(APIView):
         return Response(signup_data)
 
 
-# Create your views here.
 class AuthenticatedMemberSignupForInterview(APIView):
     permission_classes = [IsAuthenticated, IsVerified]
 
     def get(self, request):
-        logger.info(
-            f"GET request received for AuthenticatedMemberSignupForInterview by user {request.user.username}"
-        )
         try:
             _ = InterviewPool.objects.get(member=request.user)
             logger.info(
@@ -123,15 +120,10 @@ class AuthenticatedMemberSignupForInterview(APIView):
             )
 
     def post(self, request):
-        logger.info(
-            f"POST request received for AuthenticatedMemberSignupForInterview by user {request.user.username}"
-        )
-        # Get or create InterviewAvailability for the user
         interview_availability, _ = InterviewAvailability.objects.get_or_create(
             member=request.user,
         )
 
-        # Update availability if provided in the request
         if "availability" in request.data:
             new_availability = request.data["availability"]
             try:
@@ -170,9 +162,6 @@ class AuthenticatedMemberSignupForInterview(APIView):
             )
 
     def delete(self, request):
-        logger.info(
-            f"DELETE request received for AuthenticatedMemberSignupForInterview by user {request.user.username}"
-        )
         try:
             interview_pool = InterviewPool.objects.get(member=request.user)
             interview_pool.delete()
@@ -195,7 +184,6 @@ class GetInterviewPoolStatus(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        logger.info("GET request received for GetInterviewPoolStatus")
         try:
             interview_pool = InterviewPool.objects.all()
             logger.info(
@@ -221,7 +209,6 @@ class PairInterview(APIView):
 
     @transaction.atomic
     def post(self, request):
-        logger.info("POST request received for PairInterview")
         pool_members = list(InterviewPool.objects.all())
 
         if len(pool_members) % 2 != 0:
@@ -286,7 +273,6 @@ class PairInterview(APIView):
         # Get the two questions at consecutive positions
         question_queues = [tqs.filter(position=low + i).first() for i in range(2)]
         technical_questions = [tq.question for tq in question_queues if tq]
-        logger.info("Paired interviews will have questions: %s", technical_questions)
         if len(technical_questions) < 2:
             return Response(
                 {"detail": "Could not find consecutive questions in the queue."},
@@ -294,8 +280,6 @@ class PairInterview(APIView):
             )
 
         matches = matching_result.pairs
-        logger.info("Common slots matrix shape: %s", matching_result.common_slots.shape)
-        logger.info("Number of preference scores: %d", len(matching_result.preference_scores))
 
         for i, j in enumerate(matches):
             if i < j:  # Avoid creating duplicate interviews
@@ -303,12 +287,6 @@ class PairInterview(APIView):
                 p2 = pool_members[j].member
 
                 common_slots_count = matching_result.common_slots[i, j]
-                logger.info(
-                    "Creating interview pair with %d common slots: %s and %s",
-                    common_slots_count,
-                    p1.username,
-                    p2.username
-                )
 
                 interview1 = Interview.objects.create(
                     interviewer=p1,
@@ -351,78 +329,76 @@ class PairInterview(APIView):
         logger.info(
             "Sending notifications to %d paired members", len(paired_interviews)
         )
-        if not settings.DJANGO_DEBUG:
-            logger.info("DEBUG is off, sending emails")
-            for interview in paired_interviews:
-                try:
-                    send_email(
-                        from_email=INTERVIEW_NOTIFICATION_ADDR,
-                        to_email=interview.interviewer.email,
-                        subject="You've been paired for an upcoming mock interview!",
-                        html_content=interview_paired_notification_html(
-                            name=interview.interviewer.first_name,
-                            partner_name=interview.interviewee.first_name,
-                            partner_email=interview.interviewee.email,
-                            partner_discord_id=interview.interviewee.discord_id,
-                            partner_discord_username=interview.interviewee.discord_username,
-                            interview_date=interview.date_effective,
-                        ),
-                    )
-                except Exception as e:
-                    failed_paired_emails.append(
-                        (interview.interview_id, interview.interviewer.email, str(e))
-                    )
 
-                try:
-                    send_email(
-                        from_email=INTERVIEW_NOTIFICATION_ADDR,
-                        to_email=interview.interviewee.email,
-                        subject="You've been paired for an upcoming mock interview!",
-                        html_content=interview_paired_notification_html(
-                            name=interview.interviewee.first_name,
-                            partner_name=interview.interviewer.first_name,
-                            partner_email=interview.interviewer.email,
-                            partner_discord_id=interview.interviewer.discord_id,
-                            partner_discord_username=interview.interviewer.discord_username,
-                            interview_date=interview.date_effective,
-                        ),
-                    )
-                except Exception as e:
-                    failed_paired_emails.append(
-                        (interview.interview_id, interview.interviewee.email, str(e))
-                    )
-        else:
-            logger.info("DEBUG is on, not sending emails")
+        for interview in paired_interviews:
+            try:
+                send_email(
+                    from_email=INTERVIEW_NOTIFICATION_ADDR,
+                    to_email=interview.interviewer.email,
+                    subject="You've been paired for an upcoming mock interview!",
+                    html_content=interview_paired_notification_html(
+                        name=interview.interviewer.first_name,
+                        partner_name=interview.interviewee.first_name,
+                        partner_email=interview.interviewee.email,
+                        partner_discord_id=interview.interviewee.discord_id,
+                        partner_discord_username=interview.interviewee.discord_username,
+                        interview_date=interview.date_effective,
+                    ),
+                )
+            except Exception as e:
+                failed_paired_emails.append(
+                    (interview.interview_id, interview.interviewer.email, str(e))
+                )
 
-        logger.error(
-            "Failed to send notifications to %d paired members",
-            len(failed_paired_emails),
-        )
+            try:
+                send_email(
+                    from_email=INTERVIEW_NOTIFICATION_ADDR,
+                    to_email=interview.interviewee.email,
+                    subject="You've been paired for an upcoming mock interview!",
+                    html_content=interview_paired_notification_html(
+                        name=interview.interviewee.first_name,
+                        partner_name=interview.interviewer.first_name,
+                        partner_email=interview.interviewer.email,
+                        partner_discord_id=interview.interviewer.discord_id,
+                        partner_discord_username=interview.interviewer.discord_username,
+                        interview_date=interview.date_effective,
+                    ),
+                )
+            except Exception as e:
+                failed_paired_emails.append(
+                    (interview.interview_id, interview.interviewee.email, str(e))
+                )
+        if failed_paired_emails:
+            logger.error(
+                "Failed to send notifications to %d paired members",
+                len(failed_paired_emails),
+            )
+
         logger.info(
             "Sending notifications to %d unpaired members", len(unpaired_members)
         )
+
         failed_unpaired_emails = []
-        if not settings.DJANGO_DEBUG:
-            logger.info("DEBUG is off, sending emails")
-            for pool_member in unpaired_members:
-                try:
-                    send_email(
-                        from_email=INTERVIEW_NOTIFICATION_ADDR,
-                        to_email=pool_member.member.email,
-                        subject="You have not been paired for an upcoming mock interview",
-                        html_content=interview_unpaired_notification_html(
-                            pool_member.member.first_name,
-                            timezone.now().strftime("%B %d, %Y"),
-                        ),
-                    )
-                except Exception as e:
-                    failed_unpaired_emails.append((pool_member.member.email, str(e)))
-        else:
-            logger.info("DEBUG is on, not sending emails")
-        logger.error(
-            "Failed to send notifications to %d unpaired members",
-            len(failed_unpaired_emails),
-        )
+
+        for pool_member in unpaired_members:
+            try:
+                send_email(
+                    from_email=INTERVIEW_NOTIFICATION_ADDR,
+                    to_email=pool_member.member.email,
+                    subject="You have not been paired for an upcoming mock interview",
+                    html_content=interview_unpaired_notification_html(
+                        pool_member.member.first_name,
+                        timezone.now().strftime("%B %d, %Y"),
+                    ),
+                )
+            except Exception as e:
+                failed_unpaired_emails.append((pool_member.member.email, str(e)))
+
+        if failed_unpaired_emails:
+            logger.error(
+                "Failed to send notifications to %d unpaired members",
+                len(failed_unpaired_emails),
+            )
 
         unpaired_members_username = [
             member.member.username for member in unpaired_members
@@ -443,8 +419,8 @@ class PairInterview(APIView):
                         "interviewee": interview.interviewee.username,
                         "common_slots": matching_result.common_slots[
                             pool_member_ids.index(interview.interviewer.id),
-                            pool_member_ids.index(interview.interviewee.id)
-                        ]
+                            pool_member_ids.index(interview.interviewee.id),
+                        ],
                     }
                     for interview in paired_interviews
                 ],
@@ -552,9 +528,6 @@ class InterviewQuestions(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request, interview_id):
-        logger.info(
-            f"GET request received for InterviewQuestions. Interview ID: {interview_id}"
-        )
         try:
             interview = Interview.objects.get(interview_id=interview_id)
             logger.info("Retrieved questions for interview ID: %s", interview_id)
@@ -580,9 +553,6 @@ class InterviewRunningStatus(APIView):
     permission_classes = [IsAuthenticated, IsVerified]
 
     def get(self, request, interview_id):
-        logger.info(
-            f"GET request received for InterviewRunningStatus. Interview ID: {interview_id}"
-        )
         try:
             interview = Interview.objects.get(
                 interviewer=request.user, interview_id=interview_id, status="active"
@@ -605,9 +575,6 @@ class InterviewRunningStatus(APIView):
             )
 
     def put(self, request, interview_id):
-        logger.info(
-            f"PUT request received for InterviewRunningStatus. Interview ID: {interview_id}"
-        )
         try:
             interview = Interview.objects.get(
                 interviewer=request.user, interview_id=interview_id, status="active"
@@ -674,15 +641,26 @@ class InterviewDetailView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         user = self.request.user
+        key = user.username + "_interviews"
+        cached_interviews = cache.get(key)
+
+        if cached_interviews:
+            logger.info(
+                "Retrieving cached interview details for user: %s", user.username
+            )
+            return cached_interviews
+
         logger.info("Retrieving interview details for user: %s", user.username)
-        return Interview.objects.filter(interviewer=user) | Interview.objects.filter(
-            interviewee=user
-        )
+        interviews = Interview.objects.filter(
+            interviewer=user
+        ) | Interview.objects.filter(interviewee=user)
+        cache.set(key, interviews, timeout=60 * 3)
+        return interviews
 
     def _format_interview_data(self, interview, user):
         # Prepare interview data based on user role and interview status
         serializer = InterviewSerializer(interview)
-
+        logger.fatal(f"Interview data: {serializer.data}")
         interview_data = serializer.data
 
         # Remove questions if user role and status conditions are met
@@ -768,218 +746,6 @@ class InterviewAvailabilityView(APIView):
             )
 
 
-class ProposeView(APIView):
-    permission_classes = [IsAuthenticated, IsInterviewParticipant, IsVerified]
-
-    @transaction.atomic
-    def post(self, request, interview_id):
-        logger.info(
-            f"POST request received for ProposeView. Interview ID: {interview_id}"
-        )
-        try:
-            interview = Interview.objects.get(interview_id=interview_id)
-
-            if interview.status not in ["pending", "active"]:
-                logger.warning(
-                    f"Invalid interview status for proposal. Status: {interview.status}"
-                )
-                return Response(
-                    {
-                        "detail": "Cannot propose time for this interview. Status: {interview.status}"
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            proposed_time = request.data.get("time")
-            if not proposed_time:
-                logger.warning("No time provided in the request")
-                return Response(
-                    {"detail": "Time must be provided."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            if isinstance(proposed_time, str):
-                try:
-                    proposed_time = parse_date(proposed_time)
-                except ValueError:
-                    logger.warning("Invalid time format provided: %s", proposed_time)
-                    return Response(
-                        {"detail": "Invalid time format. Please use ISO format."},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-            interview.proposed_time = proposed_time
-            interview.proposed_by = request.user
-            interview.status = "pending"
-            interview.committed_time = None
-            interview.save()
-
-            updated_interview_serialized = InterviewSerializer(interview).data
-            logger.info("Interview proposal updated. ID: %s", interview_id)
-            return Response(
-                {
-                    "detail": "Interview time proposed successfully.",
-                    "interview": updated_interview_serialized,
-                },
-                status=status.HTTP_200_OK,
-            )
-
-        except Interview.DoesNotExist:
-            logger.error("Interview not found. ID: %s", interview_id)
-            return Response(
-                {"detail": "Interview not found."}, status=status.HTTP_404_NOT_FOUND
-            )
-        except ValidationError as e:
-            logger.error("Validation error: %s", str(e))
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class CommitView(APIView):
-    permission_classes = [IsAuthenticated, IsInterviewParticipant, IsVerified]
-
-    @transaction.atomic
-    def post(self, request, interview_id):
-        logger.info(
-            f"POST request received for CommitView. Interview ID: {interview_id}"
-        )
-        try:
-            interview = Interview.objects.get(interview_id=interview_id)
-
-            if interview.status != "pending":
-                logger.warning(
-                    f"Invalid interview status for commit. Status: {interview.status}"
-                )
-                return Response(
-                    {"detail": "Cannot commit to this interview."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            if interview.proposed_by == request.user:
-                logger.warning("User attempting to commit to their own proposal")
-                return Response(
-                    {"detail": "Cannot commit to your own proposal."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            commit_time = request.data.get("time")
-            if not commit_time:
-                logger.warning("No time provided in the request")
-                return Response(
-                    {"detail": "Time must be provided."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            if isinstance(commit_time, str):
-                try:
-                    commit_time = parse_date(commit_time)
-                except ValueError:
-                    logger.warning("Invalid time format provided")
-                    return Response(
-                        {"detail": "Invalid time format. Please use ISO format."},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-            if commit_time != interview.proposed_time:
-                logger.warning(
-                    "Commit time does not match proposed time, proposed: %s, commit: %s",
-                    interview.proposed_time,
-                    commit_time,
-                )
-                return Response(
-                    {"detail": "Commit time must match the proposed time."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            interview.status = "active"
-            interview.committed_time = commit_time
-            interview.date_effective = timezone.now()
-            interview.proposed_time = None
-            interview.proposed_by = None
-            interview.save()
-
-            updated_interview_serialized = InterviewSerializer(interview).data
-
-            logger.info("Interview committed successfully. ID: %s", interview_id)
-            return Response(
-                {
-                    "detail": "Interview committed successfully.",
-                    "interview": updated_interview_serialized,
-                },
-                status=status.HTTP_200_OK,
-            )
-
-        except Interview.DoesNotExist:
-            logger.error("Interview not found. ID: %s", interview_id)
-            return Response(
-                {"detail": "Interview not found."}, status=status.HTTP_404_NOT_FOUND
-            )
-        except ValidationError as e:
-            logger.error("Validation error: %s", str(e))
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class CompleteView(APIView):
-    permission_classes = [IsAuthenticated, IsInterviewParticipant, IsVerified]
-
-    @transaction.atomic
-    def post(self, request, interview_id):
-        logger.info(
-            f"POST request received for CompleteView. Interview ID: {interview_id}"
-        )
-        try:
-            interview = Interview.objects.get(interview_id=interview_id)
-
-            if interview.status != "active":
-                logger.warning(
-                    f"Invalid interview status for completion. Status: {interview.status}"
-                )
-                return Response(
-                    {"detail": "Cannot complete this interview."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            completion_time = request.data.get("time")
-            if completion_time:
-                if isinstance(completion_time, str):
-                    try:
-                        completion_time = parse_date(completion_time)
-                    except ValueError:
-                        logger.warning("Invalid time format provided")
-                        return Response(
-                            {"detail": "Invalid time format. Please use ISO format."},
-                            status=status.HTTP_400_BAD_REQUEST,
-                        )
-                interview.status = "inactive_completed"
-                interview.date_completed = completion_time
-            else:
-                interview.status = "inactive_incomplete"
-                interview.date_completed = timezone.now()
-
-            interview.save()
-
-            updated_interview_serialized = InterviewSerializer(interview).data
-
-            logger.info(
-                f"Interview marked as {'completed' if completion_time else 'incomplete'}. ID: {interview_id}"
-            )
-            return Response(
-                {
-                    "detail": f"Interview marked as {'completed' if completion_time else 'incomplete'}.",
-                    "interview": updated_interview_serialized,
-                },
-                status=status.HTTP_200_OK,
-            )
-
-        except Interview.DoesNotExist:
-            logger.error("Interview not found. ID: %s", interview_id)
-            return Response(
-                {"detail": "Interview not found."}, status=status.HTTP_404_NOT_FOUND
-            )
-        except ValidationError as e:
-            logger.error("Validation error: %s", str(e))
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
 class UserInterviewsDetailView(APIView):
     permission_classes = [IsAuthenticated, IsVerified]
 
@@ -988,9 +754,14 @@ class UserInterviewsDetailView(APIView):
         Fetch all interviews for the authenticated user with hydrated fields.
         Questions are only visible to the interviewer before interview completion.
         """
-        logger.info(
-            f"GET request received for UserInterviewsDetailView by user {request.user.username}"
-        )
+        key = request.user.username + "_interviews_hydrated"
+        cached_interviews = cache.get(key)
+
+        if cached_interviews:
+            logger.info(f"Retrieved cached interviews for user {request.user.username}")
+            return Response(
+                {"interviews": cached_interviews}, status=status.HTTP_200_OK
+            )
 
         try:
             # all interviews where user is interviewer or interviewee
@@ -1039,6 +810,9 @@ class UserInterviewsDetailView(APIView):
             logger.info(
                 f"Retrieved {len(processed_interviews)} interviews for user {request.user.username}"
             )
+
+            cache.set(key, processed_interviews, timeout=60 * 3)
+
             return Response(
                 {"interviews": processed_interviews}, status=status.HTTP_200_OK
             )
