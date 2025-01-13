@@ -14,8 +14,8 @@ class CacheHandler(ABC):
 
 class CachedView(ABC):
     @abstractmethod
-    def generate_key(self, **kwargs):
-        return "-".join(kwargs.values())
+    def generate_key(self, prefix, **kwargs):
+        return "-".join([prefix] + kwargs.values())
 
 
 class DjangoCacheHandler(CacheHandler):
