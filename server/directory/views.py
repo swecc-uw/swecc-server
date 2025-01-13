@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 20
-    page_size_query_param = 'page_size'
+    page_size_query_param = "page_size"
     max_page_size = 100
 
 
@@ -37,7 +37,7 @@ class MemberDirectorySearchView(APIView, BaseMemberDirectoryView):
         query = request.query_params.get("q", "")
         logger.info("Searching for members with query: %s", query)
 
-        members = User.objects.all().order_by('username')
+        members = User.objects.all().order_by("username")
 
         if query:
             terms = query.split()
@@ -45,9 +45,9 @@ class MemberDirectorySearchView(APIView, BaseMemberDirectoryView):
 
             for term in terms:
                 q_objects |= (
-                    Q(username__icontains=term) |
-                    Q(first_name__icontains=term) |
-                    Q(last_name__icontains=term)
+                    Q(username__icontains=term)
+                    | Q(first_name__icontains=term)
+                    | Q(last_name__icontains=term)
                 )
 
             members = members.filter(q_objects).distinct()
@@ -69,7 +69,7 @@ class MemberDirectoryView(APIView, BaseMemberDirectoryView):
         key = f"member:{id}"
         cached_member = cache.get(key)
 
-        if member:
+        if cached_member:
             cache.set(key, cached_member, timeout=60 * 3)
             return Response(cached_member)
 
