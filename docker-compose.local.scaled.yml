@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:latest
+    networks:
+      - swecc-default
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+
+  web:
+    tty: true
+    build: .
+    networks:
+      - swecc-default
+    volumes:
+      - .:/app
+    expose:
+      - "8000"
+    depends_on:
+      - db
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+    environment:
+      - DJANGO_DEBUG=${DJANGO_DEBUG}
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - INTERNSHIP_CHANNEL_ID=${INTERNSHIP_CHANNEL_ID}
+      - NEW_GRAD_CHANNEL_ID=${NEW_GRAD_CHANNEL_ID}
+
+  db:
+    image: postgres:13
+    networks:
+      - swecc-default
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_PORT=${DB_PORT}
+
+volumes:
+  postgres_data:
+
+networks:
+  swecc-default:
+    external: true
+    name: swecc-default
