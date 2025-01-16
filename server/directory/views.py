@@ -13,8 +13,11 @@ from custom_auth.permissions import IsAdmin, IsVerified
 import logging
 from datetime import date
 import random
+from cache import CachedView, DjangoCacheHandler
+from .managers import DirectoryManager
 
 logger = logging.getLogger(__name__)
+
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 20
@@ -29,15 +32,20 @@ class BaseMemberDirectoryView:
         return RegularDirectoryMemberSerializer
 
 
-class MemberDirectorySearchView(APIView, BaseMemberDirectoryView):
+class MemberDirectorySearchView(APIView, BaseMemberDirectoryView, CachedView):
     permission_classes = [IsVerified]
     pagination_class = StandardResultsSetPagination
+
+    def generate_key():
+        return "user:all"
+
+    manager = DirectoryManager(DjangoCacheHandler(expiration=60 * 60), generate_key)
 
     def get(self, request):
         query = request.query_params.get("q", "")
         logger.info("Searching for members with query: %s", query)
 
-        members = User.objects.all().order_by("username")
+        members = self.manager.get_all()
 
         if query:
             terms = query.split()
@@ -61,24 +69,18 @@ class MemberDirectorySearchView(APIView, BaseMemberDirectoryView):
         return paginator.get_paginated_response(serializer.data)
 
 
-class MemberDirectoryView(APIView, BaseMemberDirectoryView):
+class MemberDirectoryView(APIView, BaseMemberDirectoryView, CachedView):
     permission_classes = [IsVerified]
 
+    def generate_key(**kwargs):
+        return f"user:member:{kwargs['id']}"
+
+    manager = DirectoryManager(DjangoCacheHandler(60 * 3), generate_key)
+
     def get(self, request, id):
-
-        key = f"member:{id}"
-        cached_member = cache.get(key)
-
-        if cached_member:
-            cache.set(key, cached_member, timeout=60 * 3)
-            return Response(cached_member)
-
         try:
-            member = User.objects.get(id=id)
-            serializer_class = self.get_serializer_class(request)
-            serializer = serializer_class(member)
-            cache.set(key, serializer.data, timeout=60 * 3)
-            return Response(serializer.data)
+            member = self.manager.get(id, serializer=self.get_serializer_class(request))
+            return Response(member)
         except User.DoesNotExist:
             logger.error("Error retrieving user: user with id %s not found", id)
             return JsonResponse({"detail": "Member not found."}, status=404)
@@ -91,7 +93,7 @@ def simple_hash(s: str) -> int:
     return h
 
 
-class RecommendedMembersView(APIView, BaseMemberDirectoryView):
+class RecommendedMembersView(APIView, BaseMemberDirectoryView, CachedView):
     permission_classes = [IsVerified]
 
     def get_daily_seed(self, username):
@@ -100,28 +102,23 @@ class RecommendedMembersView(APIView, BaseMemberDirectoryView):
         seed_string = f"{username}:{today}"
         return simple_hash(seed_string)
 
+    def generate_key(**kwargs):
+        return "user:all"
+
+    manager = DirectoryManager(DjangoCacheHandler(60 * 60), generate_key)
+
     def get(self, request):
-        key = f"users:all"
-        all_users = cache.get(key)
 
         try:
-            if not all_users:
-                logger.info("Retrieving all users from database")
-                all_users = list(User.objects.all())
-                cache.set(key, all_users, timeout=60 * 60)
-            else:
-                logger.info("Retrieved all users from cache")
-
+            all_users = self.manager.get_all()
             all_users.remove(request.user)
 
             if not all_users:
                 return Response([])
 
             seed = self.get_daily_seed(request.user.username)
-
             r = random.Random(seed)
             r.shuffle(all_users)
-
             recommended = all_users[:5]
 
             serializer_class = self.get_serializer_class(request)
