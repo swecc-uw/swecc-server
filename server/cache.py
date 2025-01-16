@@ -15,7 +15,7 @@ class CacheHandler(ABC):
 class CachedView(ABC):
     @abstractmethod
     def generate_key(**kwargs):
-        pass
+        raise NotImplementedError
 
 
 class DjangoCacheHandler(CacheHandler):
