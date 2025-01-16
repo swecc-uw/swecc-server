@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     "leaderboard.apps.LeaderboardConfig",
     "engagement.apps.EngagementConfig",
     "metasync.apps.MetasyncConfig",
+    "metrics.apps.MetricsConfig",
     "corsheaders",
     "rest_framework_api_key",
 ]
