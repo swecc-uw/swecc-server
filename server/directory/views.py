@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from django.core.cache import cache
 from django.db.models import Q
 from members.models import User
 from .serializers import (
@@ -15,10 +16,9 @@ import random
 
 logger = logging.getLogger(__name__)
 
-
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 20
-    page_size_query_param = 'page_size'
+    page_size_query_param = "page_size"
     max_page_size = 100
 
 
@@ -37,7 +37,7 @@ class MemberDirectorySearchView(APIView, BaseMemberDirectoryView):
         query = request.query_params.get("q", "")
         logger.info("Searching for members with query: %s", query)
 
-        members = User.objects.all().order_by('username')
+        members = User.objects.all().order_by("username")
 
         if query:
             terms = query.split()
@@ -45,9 +45,9 @@ class MemberDirectorySearchView(APIView, BaseMemberDirectoryView):
 
             for term in terms:
                 q_objects |= (
-                    Q(username__icontains=term) |
-                    Q(first_name__icontains=term) |
-                    Q(last_name__icontains=term)
+                    Q(username__icontains=term)
+                    | Q(first_name__icontains=term)
+                    | Q(last_name__icontains=term)
                 )
 
             members = members.filter(q_objects).distinct()
@@ -65,10 +65,19 @@ class MemberDirectoryView(APIView, BaseMemberDirectoryView):
     permission_classes = [IsVerified]
 
     def get(self, request, id):
+
+        key = f"member:{id}"
+        cached_member = cache.get(key)
+
+        if cached_member:
+            cache.set(key, cached_member, timeout=60 * 3)
+            return Response(cached_member)
+
         try:
             member = User.objects.get(id=id)
             serializer_class = self.get_serializer_class(request)
             serializer = serializer_class(member)
+            cache.set(key, serializer.data, timeout=60 * 3)
             return Response(serializer.data)
         except User.DoesNotExist:
             logger.error("Error retrieving user: user with id %s not found", id)
@@ -92,8 +101,18 @@ class RecommendedMembersView(APIView, BaseMemberDirectoryView):
         return simple_hash(seed_string)
 
     def get(self, request):
+        key = f"users:all"
+        all_users = cache.get(key)
+
         try:
-            all_users = list(User.objects.exclude(id=request.user.id))
+            if not all_users:
+                logger.info("Retrieving all users from database")
+                all_users = list(User.objects.all())
+                cache.set(key, all_users, timeout=60 * 60)
+            else:
+                logger.info("Retrieved all users from cache")
+
+            all_users.remove(request.user)
 
             if not all_users:
                 return Response([])
