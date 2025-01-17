@@ -25,7 +25,7 @@ def call_from_metric_service(endpoint: str):
         raise Exception("Failed to fetch data from metric service") from e
 
 class GetAllContainerStatus(APIView):
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
     def _call_from_metric_service(self):
         data = call_from_metric_service('/status')
         return data
@@ -52,7 +52,7 @@ class GetRunningContainer(APIView):
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR, data={"error": str(e)})
 
 class GetChronosHealth(APIView):
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
     def _call_from_metric_service(self):
         data = call_from_metric_service('/health')
         return data
@@ -65,7 +65,7 @@ class GetChronosHealth(APIView):
             return Response(status=status.HTTP_200_OK, data={"error": str(e)})
 
 class GetContainerMetadata(APIView):
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
     def _call_from_metric_service(self, container_name: str):
         data = call_from_metric_service('/container/' + container_name)
         return data
@@ -78,7 +78,7 @@ class GetContainerMetadata(APIView):
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR, data={"error": str(e)})
 
 class GetContainerRecentUsage(APIView):
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
     def _call_from_metric_service(self, container_name: str):
         data = call_from_metric_service('/usage/' + container_name)
         return data
@@ -91,7 +91,7 @@ class GetContainerRecentUsage(APIView):
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR, data={"error": str(e)})
 
 class GetContainerUsageHistory(APIView):
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
     def _call_from_metric_service(self, container_name: str):
         data = call_from_metric_service('/usage/' + container_name + '/all')
         return data
@@ -104,7 +104,7 @@ class GetContainerUsageHistory(APIView):
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR, data={"error": str(e)})
 
 class DisableMetricTask(APIView):
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
     def _post_to_metric_service(self, job_id: str):
         try:
             metric_url = os.environ["METRIC_SERVER_URL"]
@@ -141,7 +141,7 @@ class DisableMetricTask(APIView):
             )
 
 class EnableMetricCollection(APIView):
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
     def _post_to_metric_service(self):
         try:
             metric_url = os.environ["METRIC_SERVER_URL"]
@@ -164,7 +164,7 @@ class EnableMetricCollection(APIView):
             )
 
 class DisableMetricCollection(APIView):
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
     def _post_to_metric_service(self):
         try:
             metric_url = os.environ["METRIC_SERVER_URL"]
@@ -187,7 +187,7 @@ class DisableMetricCollection(APIView):
             )
         
 class GetMetricCollectionStatus(APIView):
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
     def _call_from_metric_service(self):
         data = call_from_metric_service('/job/' + METRIC_COLLECT_JOB_ID + '/status')
         return data
@@ -201,7 +201,7 @@ class GetMetricCollectionStatus(APIView):
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR, data={"error": str(e)})
 
 class EnableMetricTask(APIView):
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
     def _post_to_metric_service(self, job_id: str):
         try:
             metric_url = os.environ["METRIC_SERVER_URL"]
@@ -238,7 +238,7 @@ class EnableMetricTask(APIView):
             )
 
 class GetMetricTaskStatus(APIView):
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
     def _call_from_metric_service(self, job_id: str):
         data = call_from_metric_service('/job/' + job_id + '/status')
         return data
@@ -251,7 +251,7 @@ class GetMetricTaskStatus(APIView):
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR, data={"error": str(e)})
 
 class MetricViewAllRecent(APIView):
-    # permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin]
 
     def _call_from_metric_service(self):
         data = call_from_metric_service('/usage')
