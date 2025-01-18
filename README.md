@@ -62,12 +62,15 @@ docker exec -it swecc-server-web-1 python server/manage.py migrate
 ```bash
 docker exec -it swecc-server-web-1 python server/manage.py createsuperuser
 ```
+5. Grant admin acess
+```bash
+docker exec -it swecc-server-web-1 python server/manage.py create_admin --username yourUserName
+```
+6. Access the admin panel at `http://localhost:8000/admin/`, and login with the superuser credentials you created.
 
-5. Access the admin panel at `http://localhost:8000/admin/`, and login with the superuser credentials you created.
+7. In the admin panel, create a new API key. Doesn't matter what you name it, but make sure to **copy the key somewhere safe**. I recommend putting it in your `dev.venv/bin/activate` file, e.g. `export VERIFICATION_KEY=your_key_here`.
 
-6. In the admin panel, create a new API key. Doesn't matter what you name it, but make sure to **copy the key somewhere safe**. I recommend putting it in your `dev.venv/bin/activate` file, e.g. `export VERIFICATION_KEY=your_key_here`.
-
-7. Verify your discord account, using the API key you just created, and the **non-superuser** credentials you created in step 3.
+8. Verify your discord account, using the API key you just created, and the **non-superuser** credentials you created in step 3.
 ```bash
 curl -X PUT \
 -H "Authorization: Api-Key <VERIFICATION_KEY>" \
@@ -75,19 +78,15 @@ curl -X PUT \
 -d '{"username": <YOUR_USER>, "discord_username": <YOUR_DISCORD>, "discord_id": <SOME_INT>}' \
 http://localhost:8000/members/verify-discord/
 ```
+```bash
+For local development verify
+docker exec -it swecc-server-web-1 python manage.py verify_account --username yourUsername
+```
 
 ### Creating user with script
-1. Windows
-
-**Warning**: Before running the script make sure to setup dev env first and migrate the db.
-
-- Run `script/userCreate.bat <username>` to create a new verified user. Default password for each created user 
-when using the script is `123456`.
-- Run `script/makeAdmin.bat <username>` to make an existing user admin
-- Run `script/populateUser.bat <num users>` to add `<num user>` verfied users dev db.
-
-2. Unix
-- To be developed
+1. Docker
+```bash
+docker exec -it swecc-server-web-1 python server/manage.py createsuperuser
 
 ### Out of space
 
