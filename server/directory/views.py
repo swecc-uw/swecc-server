@@ -49,16 +49,16 @@ class MemberDirectorySearchView(APIView, BaseMemberDirectoryView, CachedView):
 
         if query:
             terms = query.split()
-            q_objects = Q()
-
-            for term in terms:
-                q_objects |= (
-                    Q(username__icontains=term)
-                    | Q(first_name__icontains=term)
-                    | Q(last_name__icontains=term)
+            members = [
+                member
+                for term in terms
+                for member in members
+                if (
+                    term in member.username
+                    or term in member.first_name
+                    or term in member.last_name
                 )
-
-            members = members.filter(q_objects).distinct()
+            ]
 
         paginator = self.pagination_class()
         paginated_members = paginator.paginate_queryset(members, request)
