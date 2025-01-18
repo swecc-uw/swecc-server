@@ -78,15 +78,10 @@ curl -X PUT \
 -d '{"username": <YOUR_USER>, "discord_username": <YOUR_DISCORD>, "discord_id": <SOME_INT>}' \
 http://localhost:8000/members/verify-discord/
 ```
-```bash
 For local development verify
+```bash
 docker exec -it swecc-server-web-1 python manage.py verify_account --username yourUsername
 ```
-
-### Creating user with script
-1. Docker
-```bash
-docker exec -it swecc-server-web-1 python server/manage.py createsuperuser
 
 ### Out of space
 
