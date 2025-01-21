@@ -66,6 +66,47 @@ def is_valid_availability(availability):
         and all(isinstance(slot, bool) for slot in availability)
     )
 
+def get_next_cutoff(user_timezone="America/Los_Angeles", force_current_week=False):
+        """Get the cutoff Sunday at 11 PM in the specified timezone"""
+        try:
+            current_time = django_now().astimezone(ZoneInfo(user_timezone))
+        except Exception as e:
+            logger.error(f"Error getting current time in {user_timezone}: {e}")
+            return None
+
+        # Get the most recently passed Sunday at 11 PM
+        days_since_sunday = current_time.weekday() + 1
+        last_sunday = current_time - timezone.timedelta(days=days_since_sunday)
+        last_sunday = last_sunday.replace(hour=23, minute=0, second=0, microsecond=0)
+
+        logger.info(f"Last Sunday: {last_sunday}")
+        
+        # By default, return the previous Sunday
+        # If force_current_week, return next Sunday
+        if force_current_week == "true":
+            logger.info("Force current week")
+            return last_sunday + timezone.timedelta(days=7)  # One week ahead
+        return last_sunday  # Most recent Sunday
+
+def get_previous_cutoff(days: int = 7, user_timezone="America/Los_Angeles", force_current_week=False):
+    """Get the previous cutoff Sunday at 11 PM"""
+    try:
+        current_time = django_now().astimezone(ZoneInfo(user_timezone))
+    except Exception as e:
+        logger.error(f"Error getting current time in {user_timezone}: {e}")
+        return None
+
+    # Get the most recently passed Sunday at 11 PM
+    days_since_sunday = current_time.weekday() + 1
+    last_sunday = current_time - timezone.timedelta(days=days_since_sunday)
+    last_sunday = last_sunday.replace(hour=23, minute=0, second=0, microsecond=0)
+    
+    # By default, return the Sunday before last
+    # If force_current_week, return the previous Sunday
+    if force_current_week == "true":
+        return last_sunday  # Most recent Sunday
+    return last_sunday - timezone.timedelta(days=7)  # Week before last Sunday
+
 
 class GetSignupData(APIView):
     permission_classes = [IsAdmin]
@@ -74,8 +115,8 @@ class GetSignupData(APIView):
         days = int(request.query_params.get("days", 14))
         # end_date = timezone.now()
         # start_date = end_date - timedelta(days=days)
-        next_cutoff = PairInterview.get_next_cutoff()
-        previous_cutoff = PairInterview.get_previous_cutoff(days)
+        next_cutoff = get_next_cutoff()
+        previous_cutoff = get_previous_cutoff(days)
         logger.info(f"Next cutoff: {next_cutoff}, previous cutoff: {previous_cutoff}")
 
         signups = InterviewPool.objects.filter(
@@ -191,8 +232,8 @@ class GetInterviewPoolStatus(APIView):
     def get(self, request):
         try:
             force_current_week = request.query_params.get('force_current_week', False)
-            next_cutoff = PairInterview.get_next_cutoff(force_current_week=force_current_week)
-            previous_cutoff = PairInterview.get_previous_cutoff(force_current_week=force_current_week)
+            next_cutoff = get_next_cutoff(force_current_week=force_current_week)
+            previous_cutoff = get_previous_cutoff(force_current_week=force_current_week)
             interview_pool = InterviewPool.objects.filter(timestamp__gte=previous_cutoff, timestamp__lte=next_cutoff)
             logger.info(f"Next cutoff: {next_cutoff}, previous cutoff: {previous_cutoff}, force_current_week: {force_current_week}")
 
@@ -219,52 +260,11 @@ class PairInterview(APIView):
         super().__init__(*args, **kwargs)
         self.pairing_algorithm = CommonAvailabilityStableMatching()
 
-    def get_next_cutoff(user_timezone="America/Los_Angeles", force_current_week=False):
-        """Get the cutoff Sunday at 11 PM in the specified timezone"""
-        try:
-            current_time = django_now().astimezone(ZoneInfo(user_timezone))
-        except Exception as e:
-            logger.error(f"Error getting current time in {user_timezone}: {e}")
-            return None
-
-        # Get the most recently passed Sunday at 11 PM
-        days_since_sunday = current_time.weekday() + 1
-        last_sunday = current_time - timezone.timedelta(days=days_since_sunday)
-        last_sunday = last_sunday.replace(hour=23, minute=0, second=0, microsecond=0)
-
-        logger.info(f"Last Sunday: {last_sunday}")
-        
-        # By default, return the previous Sunday
-        # If force_current_week, return next Sunday
-        if force_current_week == "true":
-            logger.info("Force current week")
-            return last_sunday + timezone.timedelta(days=7)  # One week ahead
-        return last_sunday  # Most recent Sunday
-
-    def get_previous_cutoff(days: int = 7, user_timezone="America/Los_Angeles", force_current_week=False):
-        """Get the previous cutoff Sunday at 11 PM"""
-        try:
-            current_time = django_now().astimezone(ZoneInfo(user_timezone))
-        except Exception as e:
-            logger.error(f"Error getting current time in {user_timezone}: {e}")
-            return None
-
-        # Get the most recently passed Sunday at 11 PM
-        days_since_sunday = current_time.weekday() + 1
-        last_sunday = current_time - timezone.timedelta(days=days_since_sunday)
-        last_sunday = last_sunday.replace(hour=23, minute=0, second=0, microsecond=0)
-        
-        # By default, return the Sunday before last
-        # If force_current_week, return the previous Sunday
-        if force_current_week == "true":
-            return last_sunday  # Most recent Sunday
-        return last_sunday - timezone.timedelta(days=7)  # Week before last Sunday
-
     @transaction.atomic
     def post(self, request):
         force_current_week = request.data.get('force_current_week', False)
-        next_cutoff = PairInterview.get_next_cutoff(force_current_week=force_current_week)
-        previous_cutoff = PairInterview.get_previous_cutoff(force_current_week=force_current_week)
+        next_cutoff = get_next_cutoff(force_current_week=force_current_week)
+        previous_cutoff = get_previous_cutoff(force_current_week=force_current_week)
         logger.info(f"Next cutoff: {next_cutoff}, previous cutoff: {previous_cutoff} force_current_week: {force_current_week}")
 
         if next_cutoff is None or previous_cutoff is None:
