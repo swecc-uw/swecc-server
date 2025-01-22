@@ -11,7 +11,6 @@ class AttendanceLeaderboardManager:
     def __init__(self, cache_handler: CacheHandler, generate_key):
         self.cache_handler = cache_handler
         self.generate_key = generate_key
-        pass
 
     def refresh_key(self, key, value):
         self.cache_handler.set(key, value)
