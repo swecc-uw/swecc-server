@@ -28,9 +28,13 @@ from rest_framework import status
 from engagement.serializers import AttendanceStatsSerializer
 from engagement.models import AttendanceSessionStats
 from rest_framework.pagination import PageNumberPagination
+from django.core.paginator import Paginator
 from rest_framework.views import APIView
 from django.db.models import Window
 from django.db.models.functions import RowNumber
+from cache import CachedView, DjangoCacheHandler
+from .managers import AttendanceLeaderboardManager
+from django.http import JsonResponse
 
 logger = logging.getLogger(__name__)
 INTERNSHIP_CHANNEL_ID = int(os.getenv("INTERNSHIP_CHANNEL_ID"))
@@ -284,24 +288,35 @@ class AttendancePagination(PageNumberPagination):
     max_page_size = 100
 
 
-class AttendanceSessionLeaderboard(APIView):
+class AttendanceSessionLeaderboard(APIView, CachedView):
     serializer_class = AttendanceStatsSerializer
     permission_classes = []
     pagination_class = AttendancePagination
 
+    def generate_key(**kwargs):
+        return "attendance:all"
+
+    manager = AttendanceLeaderboardManager(
+        DjangoCacheHandler(expiration=60 * 60), generate_key
+    )
+
     def get(self, request):
         order_by = request.query_params.get("order_by", "attendance")
-
+        page_number = request.query_params.get("page", 1)
         time_range = request.query_params.get("updated_within", None)
 
-        queryset = AttendanceSessionStats.objects.all()
+        attendance_data = self.manager.get_all()
 
         if time_range:
             try:
                 hours = int(time_range)
                 cutoff = timezone.now() - timedelta(hours=hours)
-                # only include if >= 0 sessions attended
-                queryset = queryset.filter(last_updated__gte=cutoff, sessions_attended__gte=1)
+                # only include if >= 1 sessions attended
+                attendance_data = filter(
+                    lambda x: x["last_updated"] >= cutoff
+                    and x["sessions_attended"] >= 1,
+                    attendance_data,
+                )
             except ValueError:
                 raise ValidationError("updated_within must be a valid number of hours")
 
@@ -315,13 +330,22 @@ class AttendanceSessionLeaderboard(APIView):
             raise ValidationError(
                 f"Invalid order_by parameter. Must be one of: {', '.join(ordering_options.keys())}"
             )
-        paginator = self.pagination_class()
-        result_page = paginator.paginate_queryset(
-            queryset.annotate(
-                rank=Window(expression=RowNumber(), order_by=F(order_field).desc())
-            ).order_by(f"-{order_field}"),
-            request,
-        )
 
-        serializer = AttendanceStatsSerializer(result_page, many=True)
-        return paginator.get_paginated_response(serializer.data)
+        # Sorting in the backend is slower than sorting in the SQL query itself, but necessary for caching
+        attendance_data.sort(key=lambda x: x[order_field], reverse=True)
+
+        # Annotate with rank
+        for i in range(len(attendance_data)):
+            attendance_data[i]["rank"] = i + 1
+
+        paginator = Paginator(attendance_data, 1)
+        page = paginator.get_page(page_number)
+
+        payload = {
+            "count": paginator.count,
+            "next": page.next_page_number() if page.has_next() else None,
+            "prev": page.previous_page_number() if page.has_previous() else None,
+            "results": list(page),
+        }
+
+        return JsonResponse(payload)
