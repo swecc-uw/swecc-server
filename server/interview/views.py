@@ -78,13 +78,10 @@ def get_next_cutoff(user_timezone="America/Los_Angeles", force_current_week=Fals
         days_since_sunday = current_time.weekday() + 1
         last_sunday = current_time - timezone.timedelta(days=days_since_sunday)
         last_sunday = last_sunday.replace(hour=23, minute=0, second=0, microsecond=0)
-
-        logger.info(f"Last Sunday: {last_sunday}")
         
         # By default, return the previous Sunday
         # If force_current_week, return next Sunday
         if force_current_week == "true":
-            logger.info("Force current week")
             return last_sunday + timezone.timedelta(days=7)  # One week ahead
         return last_sunday  # Most recent Sunday
 
@@ -117,7 +114,6 @@ class GetSignupData(APIView):
         # start_date = end_date - timedelta(days=days)
         next_cutoff = get_next_cutoff()
         previous_cutoff = get_previous_cutoff(days)
-        logger.info(f"Next cutoff: {next_cutoff}, previous cutoff: {previous_cutoff}")
 
         signups = InterviewPool.objects.filter(
             timestamp__isnull=False, timestamp__gte=previous_cutoff, timestamp__lte=next_cutoff
@@ -235,7 +231,6 @@ class GetInterviewPoolStatus(APIView):
             next_cutoff = get_next_cutoff(force_current_week=force_current_week)
             previous_cutoff = get_previous_cutoff(force_current_week=force_current_week)
             interview_pool = InterviewPool.objects.filter(timestamp__gte=previous_cutoff, timestamp__lte=next_cutoff)
-            logger.info(f"Next cutoff: {next_cutoff}, previous cutoff: {previous_cutoff}, force_current_week: {force_current_week}")
 
             logger.info(
                 "Interview pool status: %d members signed up", len(interview_pool)
@@ -265,7 +260,8 @@ class PairInterview(APIView):
         force_current_week = request.data.get('force_current_week', False)
         next_cutoff = get_next_cutoff(force_current_week=force_current_week)
         previous_cutoff = get_previous_cutoff(force_current_week=force_current_week)
-        logger.info(f"Next cutoff: {next_cutoff}, previous cutoff: {previous_cutoff} force_current_week: {force_current_week}")
+
+        logger.info(f"Next cutoff: {next_cutoff}, previous cutoff: {previous_cutoff}, force_current_week: {force_current_week}")
 
         if next_cutoff is None or previous_cutoff is None:
             return Response(
