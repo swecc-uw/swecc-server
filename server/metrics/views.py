@@ -1,8 +1,6 @@
 import logging
 import os
-from posixpath import isabs
-from re import M
-from django.shortcuts import render
+from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -11,6 +9,8 @@ from rest_framework.request import Request
 from custom_auth.permissions import IsAdmin
 import requests
 
+from server.settings import METRIC_SERVER_URL
+
 MAX_ALL_METRICS_LENGTH = 100
 METRIC_COLLECT_JOB_ID = "collect_metrics_and_sent_to_db"
 
@@ -18,9 +18,9 @@ METRIC_COLLECT_JOB_ID = "collect_metrics_and_sent_to_db"
 logger = logging.getLogger(__name__)
 
 class MetricServerAPI:
-    def call_from_metric_service(endpoint: str):
+    def get_from_metric_service(self, endpoint: str):
         try:
-            metric_url = os.environ["METRIC_SERVER_URL"]
+            metric_url = METRIC_SERVER_URL
             response = requests.get(metric_url + endpoint)
             response.raise_for_status() # Raise an exception for 4xx/5xx status codes
             data = response.json()
@@ -29,18 +29,18 @@ class MetricServerAPI:
             logger.error(f"Error fetching data from metric service: {e}")
             raise Exception("Failed to fetch data from metric service") from e
     
-    def post_from_metric_service(endpoint: str, data: dict):
+    def post_from_metric_service(self, endpoint: str, data: dict):
         try:
-            metric_url = os.environ["METRIC_SERVER_URL"]
+            metric_url = METRIC_SERVER_URL
             response = requests.post(metric_url + endpoint, json=data)
             response.raise_for_status() # Raise an exception for 4xx/5xx status codes
         except requests.exceptions.RequestException as e:
             logger.error(f"Error posting data from metric service: {e}")
             raise Exception("Failed to fetch data from metric service") from e
         
-    def post_job_to_metric_service(endpoint: str, job_id: str):
+    def post_job_to_metric_service(self, endpoint: str, job_id: str):
         try:
-            metric_url = os.environ["METRIC_SERVER_URL"]
+            metric_url = METRIC_SERVER_URL
             response = requests.post(metric_url + endpoint, json={"id": job_id})
             if response.status_code == 404:
                 raise Exception(f"Job with ID '{job_id}' not found in the metric service.")
@@ -49,106 +49,69 @@ class MetricServerAPI:
             logger.error(f"Error posting data to metric service: {e}")
             raise Exception("Failed to post to metric service") from e
 
-def call_from_metric_service(endpoint: str):
-    try:
-        metric_url = os.environ["METRIC_SERVER_URL"]
-        response = requests.get(metric_url + endpoint)
-        response.raise_for_status() # Raise an exception for 4xx/5xx status codes
-        data = response.json()
-        return data
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching data from metric service: {e}")
-        raise Exception("Failed to fetch data from metric service") from e
-
 class GetAllContainerStatus(APIView, MetricServerAPI):
     permission_classes = [IsAdmin]
     
     def get(self, request: Request):
         try:
-            data = self.call_from_metric_service('/status')
+            data = self.get_from_metric_service('/status')
             return Response(status=status.HTTP_200_OK, data=data)
         except Exception as e:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR, data={"error": str(e)})
 
-class GetRunningContainer(APIView):
-    # permission_classes = [IsAdmin]
-    def _call_from_metric_service(self):
-        data = call_from_metric_service('/status')
-        return data
-    
+class GetRunningContainer(APIView, MetricServerAPI):
+    permission_classes = [IsAdmin]
+
     def get(self, request: Request):
         try:
-            data = self._call_from_metric_service()
+            data = self.get_from_metric_service('/status')
             running_containers = [key for key, value in data.items() if value == 'running']
             return Response(status=status.HTTP_200_OK, data=running_containers)
         except Exception as e:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR, data={"error": str(e)})
 
-class GetChronosHealth(APIView):
+class GetChronosHealth(APIView, MetricServerAPI):
     permission_classes = [IsAdmin]
-    def _call_from_metric_service(self):
-        data = call_from_metric_service('/health')
-        return data
     
     def get(self, request: Request):
         try:
-            data = self._call_from_metric_service()
+            data = self.get_from_metric_service('/health')
             return Response(status=status.HTTP_200_OK, data=data)
         except Exception as e:
-            return Response(status=status.HTTP_200_OK, data={"error": str(e)})
+            return Response(status=status.HTTP_404_NOT_FOUND, data={"error": str(e)})
 
-class GetContainerMetadata(APIView):
+class GetContainerMetadata(APIView, MetricServerAPI):
     permission_classes = [IsAdmin]
-    def _call_from_metric_service(self, container_name: str):
-        data = call_from_metric_service('/container/' + container_name)
-        return data
     
     def get(self, request: Request, container_name: str):
         try:
-            data = self._call_from_metric_service(container_name)
+            data = self.get_from_metric_service('/container/' + container_name)
             return Response(status=status.HTTP_200_OK, data=data)
         except Exception as e:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR, data={"error": str(e)})
 
-class GetContainerRecentUsage(APIView):
+class GetContainerRecentUsage(APIView, MetricServerAPI):
     permission_classes = [IsAdmin]
-    def _call_from_metric_service(self, container_name: str):
-        data = call_from_metric_service('/usage/' + container_name)
-        return data
     
     def get(self, request: Request, container_name: str):
         try:
-            data = self._call_from_metric_service(container_name)
+            data = self.get_from_metric_service('/usage/' + container_name)
             return Response(status=status.HTTP_200_OK, data=data)
         except Exception as e:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR, data={"error": str(e)})
 
-class GetContainerUsageHistory(APIView):
+class GetContainerUsageHistory(APIView, MetricServerAPI):
     permission_classes = [IsAdmin]
-    def _call_from_metric_service(self, container_name: str):
-        data = call_from_metric_service('/usage/' + container_name + '/all')
-        return data
-    
+
     def get(self, request: Request, container_name: str):
         try:
-            data = self._call_from_metric_service(container_name)
+            data = self.get_from_metric_service('/usage/' + container_name + '/all')
             return Response(status=status.HTTP_200_OK, data=data)
         except Exception as e:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR, data={"error": str(e)})
 
-class DisableMetricTask(APIView):
+class DisableMetricTask(APIView, MetricServerAPI):
     permission_classes = [IsAdmin]
-    def _post_to_metric_service(self, job_id: str):
-        try:
-            metric_url = os.environ["METRIC_SERVER_URL"]
-            response = requests.post(metric_url + '/poll/pause', json={"id": job_id})
-            if response.status_code == 404:
-                raise Exception(f"Job with ID '{job_id}' not found in the metric service.")
-            response.raise_for_status()  # Raise for other 4xx/5xx errors
-        except requests.exceptions.RequestException as e:
-            print(f"Error posting data to metric service: {e}")
-            raise Exception("Failed to post to metric service") from e
-
     def post(self, request: Request):
         try:
             job_id = request.data.get('job_id')
@@ -157,7 +120,7 @@ class DisableMetricTask(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                     data={"error": "Missing 'job_id' in request data"}
                 )
-            self._post_to_metric_service(job_id)
+            self.post_job_to_metric_service('/poll/pause', job_id)
             return Response(
                 status=status.HTTP_200_OK,
                 data={"message": f"Job with ID '{job_id}' successfully paused"}
@@ -173,19 +136,12 @@ class DisableMetricTask(APIView):
                 data={"error": str(e)}
             )
 
-class EnableMetricCollection(APIView):
+class EnableMetricCollection(APIView, MetricServerAPI):
     permission_classes = [IsAdmin]
-    def _post_to_metric_service(self):
-        try:
-            metric_url = os.environ["METRIC_SERVER_URL"]
-            response = requests.post(metric_url + '/poll/resume', json={"id": METRIC_COLLECT_JOB_ID})
-            response.raise_for_status()  # Raise for other 4xx/5xx errors
-        except requests.exceptions.RequestException as e:
-            raise Exception("Failed to post to metric service") from e
-        
+
     def post(self, request: Request):
         try:
-            self._post_to_metric_service()
+            self.post_job_to_metric_service('/poll/resume', METRIC_COLLECT_JOB_ID)
             return Response(
                 status=status.HTTP_200_OK,
                 data={"message": "Successfully enable metric collection"}
@@ -196,19 +152,12 @@ class EnableMetricCollection(APIView):
                 data={"error": str(e)}
             )
 
-class DisableMetricCollection(APIView):
+class DisableMetricCollection(APIView, MetricServerAPI):
     permission_classes = [IsAdmin]
-    def _post_to_metric_service(self):
-        try:
-            metric_url = os.environ["METRIC_SERVER_URL"]
-            response = requests.post(metric_url + '/poll/pause', json={"id": METRIC_COLLECT_JOB_ID})
-            response.raise_for_status()  # Raise for other 4xx/5xx errors
-        except requests.exceptions.RequestException as e:
-            raise Exception("Failed to post to metric service") from e
         
     def post(self, request: Request):
         try:
-            self._post_to_metric_service()
+            self.post_job_to_metric_service('/poll/pause', METRIC_COLLECT_JOB_ID)
             return Response(
                 status=status.HTTP_200_OK,
                 data={"message": "Successfully disable metric collection"}
@@ -219,32 +168,20 @@ class DisableMetricCollection(APIView):
                 data={"error": str(e)}
             )
         
-class GetMetricCollectionStatus(APIView):
+class GetMetricCollectionStatus(APIView, MetricServerAPI):
     permission_classes = [IsAdmin]
-    def _call_from_metric_service(self):
-        data = call_from_metric_service('/job/' + METRIC_COLLECT_JOB_ID + '/status')
-        return data
     
     def get(self, request: Request):
         try:
-            data = self._call_from_metric_service()
+            data = self.get_from_metric_service('/job/' + METRIC_COLLECT_JOB_ID + '/status')
             res = data.get('status')[METRIC_COLLECT_JOB_ID]
             return Response(status=status.HTTP_200_OK, data={"status": res})
         except Exception as e:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR, data={"error": str(e)})
 
-class EnableMetricTask(APIView):
+
+class EnableMetricTask(APIView, MetricServerAPI):
     permission_classes = [IsAdmin]
-    def _post_to_metric_service(self, job_id: str):
-        try:
-            metric_url = os.environ["METRIC_SERVER_URL"]
-            response = requests.post(metric_url + '/poll/resume', json={"id": job_id})
-            if response.status_code == 404:
-                raise Exception(f"Job with ID '{job_id}' not found in the metric service.")
-            response.raise_for_status()  # Raise for other 4xx/5xx errors
-        except requests.exceptions.RequestException as e:
-            print(f"Error posting data to metric service: {e}")
-            raise Exception("Failed to post to metric service") from e
 
     def post(self, request: Request):
         try:
@@ -254,7 +191,7 @@ class EnableMetricTask(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                     data={"error": "Missing 'job_id' in request data"}
                 )
-            self._post_to_metric_service(job_id)
+            self.post_job_to_metric_service('/poll/resume', job_id)
             return Response(
                 status=status.HTTP_200_OK,
                 data={"message": f"Job with ID '{job_id}' successfully resumed"}
@@ -270,15 +207,12 @@ class EnableMetricTask(APIView):
                 data={"error": str(e)}
             )
 
-class GetMetricTaskStatus(APIView):
+class GetMetricTaskStatus(APIView, MetricServerAPI):
     permission_classes = [IsAdmin]
-    def _call_from_metric_service(self, job_id: str):
-        data = call_from_metric_service('/job/' + job_id + '/status')
-        return data
     
     def get(self, request: Request, job_id: str):
         try:
-            data = self._call_from_metric_service(job_id)
+            data = self.get_from_metric_service('/job/' + job_id + '/status')
             return Response(status=status.HTTP_200_OK, data=data)
         except Exception as e:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR, data={"error": str(e)})
@@ -286,15 +220,11 @@ class GetMetricTaskStatus(APIView):
 class MetricViewAllRecent(APIView):
     permission_classes = [IsAdmin]
 
-    def _call_from_metric_service(self):
-        data = call_from_metric_service('/usage')
-        if(len(data) > MAX_ALL_METRICS_LENGTH):
-            return data[:MAX_ALL_METRICS_LENGTH]
-        return data
-
     def get(self, request: Request):
         try:
-            data = self._call_from_metric_service()
+            data = self.get_from_metric_service('/usage')
+            if(len(data) > MAX_ALL_METRICS_LENGTH):
+                data = data[:MAX_ALL_METRICS_LENGTH]
             return Response(status=status.HTTP_200_OK, data=data)
         except Exception as e:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR, data={"error": str(e)})
