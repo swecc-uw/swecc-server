@@ -1,3 +1,4 @@
+import logging
 import os
 from posixpath import isabs
 from re import M
@@ -13,6 +14,41 @@ import requests
 MAX_ALL_METRICS_LENGTH = 100
 METRIC_COLLECT_JOB_ID = "collect_metrics_and_sent_to_db"
 
+
+logger = logging.getLogger(__name__)
+
+class MetricServerAPI:
+    def call_from_metric_service(endpoint: str):
+        try:
+            metric_url = os.environ["METRIC_SERVER_URL"]
+            response = requests.get(metric_url + endpoint)
+            response.raise_for_status() # Raise an exception for 4xx/5xx status codes
+            data = response.json()
+            return data
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching data from metric service: {e}")
+            raise Exception("Failed to fetch data from metric service") from e
+    
+    def post_from_metric_service(endpoint: str, data: dict):
+        try:
+            metric_url = os.environ["METRIC_SERVER_URL"]
+            response = requests.post(metric_url + endpoint, json=data)
+            response.raise_for_status() # Raise an exception for 4xx/5xx status codes
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error posting data from metric service: {e}")
+            raise Exception("Failed to fetch data from metric service") from e
+        
+    def post_job_to_metric_service(endpoint: str, job_id: str):
+        try:
+            metric_url = os.environ["METRIC_SERVER_URL"]
+            response = requests.post(metric_url + endpoint, json={"id": job_id})
+            if response.status_code == 404:
+                raise Exception(f"Job with ID '{job_id}' not found in the metric service.")
+            response.raise_for_status()  # Raise for other 4xx/5xx errors
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error posting data to metric service: {e}")
+            raise Exception("Failed to post to metric service") from e
+
 def call_from_metric_service(endpoint: str):
     try:
         metric_url = os.environ["METRIC_SERVER_URL"]
@@ -24,15 +60,12 @@ def call_from_metric_service(endpoint: str):
         print(f"Error fetching data from metric service: {e}")
         raise Exception("Failed to fetch data from metric service") from e
 
-class GetAllContainerStatus(APIView):
+class GetAllContainerStatus(APIView, MetricServerAPI):
     permission_classes = [IsAdmin]
-    def _call_from_metric_service(self):
-        data = call_from_metric_service('/status')
-        return data
     
     def get(self, request: Request):
         try:
-            data = self._call_from_metric_service()
+            data = self.call_from_metric_service('/status')
             return Response(status=status.HTTP_200_OK, data=data)
         except Exception as e:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR, data={"error": str(e)})
