@@ -33,7 +33,7 @@ from rest_framework.views import APIView
 from django.db.models import Window
 from django.db.models.functions import RowNumber
 from cache import CachedView, DjangoCacheHandler
-from .managers import AttendanceLeaderboardManager
+from .managers import AttendanceLeaderboardManager, LeetcodeLeaderboardManager
 from django.http import JsonResponse
 
 logger = logging.getLogger(__name__)
@@ -46,35 +46,47 @@ class LeetcodeLeaderboardView(generics.ListAPIView):
     # allow any permission for now
     permission_classes = []
 
-    def get_queryset(self):
-        latest_stat = LeetcodeStats.objects.order_by("-last_updated").first()
-        order_by = self.request.query_params.get("order_by", "total")
-        time_range = self.request.query_params.get("updated_within", None)
+    def generate_key():
+        return "leetcode:all"
 
-        queryset = LeetcodeStats.objects.all()
-        queryset = queryset.annotate(
-            completion_rate=ExpressionWrapper(
-                (F("total_solved") * 100.0)
-                / (F("easy_solved") + F("medium_solved") + F("hard_solved")),
-                output_field=FloatField(),
+    manager = LeetcodeLeaderboardManager(
+        DjangoCacheHandler(expiration=60 * 60), generate_key
+    )
+
+    def get(self, request):
+        order_by = request.query_params.get("order_by", "total")
+        time_range = request.query_params.get("updated_within", None)
+
+        leetcode_data = self.manager.get_all()
+
+        for element in leetcode_data:
+            element["completion_rate"] = (
+                element["total_solved"]
+                * 100.0
+                / (
+                    element["easy_solved"]
+                    + element["medium_solved"]
+                    + element["hard_solved"]
+                )
             )
-        )
 
         if time_range:
             try:
                 hours = int(time_range)
                 cutoff = timezone.now() - timedelta(hours=hours)
-                queryset = queryset.filter(last_updated__gte=cutoff)
+                leetcode_data = filter(
+                    lambda x: x["last_updated"] >= cutoff, leetcode_data
+                )
             except ValueError:
                 raise ValidationError("updated_within must be a valid number of hours")
 
         ordering_options = {
-            "total": "-total_solved",
-            "easy": "-easy_solved",
-            "medium": "-medium_solved",
-            "hard": "-hard_solved",
-            "recent": "-last_updated",
-            "completion": "-completion_rate",
+            "total": "total_solved",
+            "easy": "easy_solved",
+            "medium": "medium_solved",
+            "hard": "hard_solved",
+            "recent": "last_updated",
+            "completion": "completion_rate",
         }
 
         order_field = ordering_options.get(order_by)
@@ -83,7 +95,9 @@ class LeetcodeLeaderboardView(generics.ListAPIView):
                 f"Invalid order_by parameter. Must be one of: {', '.join(ordering_options.keys())}"
             )
 
-        return queryset.order_by(order_field)
+        leetcode_data.sort(key=lambda x: x[order_field], reverse=True)
+
+        return JsonResponse({"results": leetcode_data})
 
 
 class GitHubLeaderboardView(generics.ListAPIView):
