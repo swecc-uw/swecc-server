@@ -33,7 +33,7 @@ from rest_framework.views import APIView
 from django.db.models import Window
 from django.db.models.functions import RowNumber
 from cache import CachedView, DjangoCacheHandler
-from .managers import AttendanceLeaderboardManager, LeetcodeLeaderboardManager
+from .managers import AttendanceLeaderboardManager, LeetcodeLeaderboardManager, GitHubLeaderboardManager
 from django.http import JsonResponse
 
 logger = logging.getLogger(__name__)
@@ -104,25 +104,34 @@ class GitHubLeaderboardView(generics.ListAPIView):
     serializer_class = GitHubStatsSerializer
     permission_classes = []
 
-    def get_queryset(self):
-        order_by = self.request.query_params.get("order_by", "commits")
-        time_range = self.request.query_params.get("updated_within", None)
+    def generate_key():
+        return "github:all"
 
-        queryset = GitHubStats.objects.all()
+    manager = GitHubLeaderboardManager(
+        DjangoCacheHandler(expiration=60 * 60), generate_key
+    )
+
+    def get(self, request):
+        order_by = request.query_params.get("order_by", "commits")
+        time_range = request.query_params.get("updated_within", None)
+
+        github_data = self.manager.get_all()
 
         if time_range:
             try:
                 hours = int(time_range)
                 cutoff = timezone.now() - timedelta(hours=hours)
-                queryset = queryset.filter(last_updated__gte=cutoff)
+                github_data = filter(
+                    lambda x: x["last_update"] >= cutoff, github_data
+                )
             except ValueError:
                 raise ValidationError("updated_within must be a valid number of hours")
 
         ordering_options = {
-            "commits": "-total_commits",
-            "prs": "-total_prs",
-            "followers": "-followers",
-            "recent": "-last_updated",
+            "commits": "total_commits",
+            "prs": "total_prs",
+            "followers": "followers",
+            "recent": "last_updated",
         }
 
         order_field = ordering_options.get(order_by)
@@ -131,7 +140,9 @@ class GitHubLeaderboardView(generics.ListAPIView):
                 f"Invalid order_by parameter. Must be one of: {', '.join(ordering_options.keys())}"
             )
 
-        return queryset.order_by(order_field)
+        github_data.sort(key=lambda x: x[order_field], reverse=True)
+
+        return JsonResponse({"results": github_data})
 
 
 class InternshipApplicationLeaderboardView(generics.ListAPIView):

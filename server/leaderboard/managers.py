@@ -1,7 +1,7 @@
 from cache import CacheHandler
 import logging
 from members.serializers import UsernameSerializer
-from .models import LeetcodeStats
+from .models import LeetcodeStats, GitHubStats
 from engagement.models import AttendanceSessionStats
 
 
@@ -81,3 +81,43 @@ class AttendanceLeaderboardManager:
             )
 
         return cached_value
+
+class GitHubLeaderboardManager:
+    def __init__(self, cache_handler: CacheHandler, generate_key):
+        self.cache_handler = cache_handler
+        self.generate_key = generate_key
+
+    def refresh_key(self, key, value):
+        self.cache_handler.set(key, value)
+
+    def get_all(self):
+        key = self.generate_key()
+        cached_info = self.cache_handler.get(key)
+
+        if cached_info: 
+            self.refresh_key(key, cached_info)
+            return cached_info
+        
+        value = self.get_all_from_db()
+        self.cache_handler.set(key, value)
+
+        return value;
+
+    def get_all_from_db(self):
+        queryset = GitHubStats.objects.all()
+
+        cached_value = []
+
+        for stat in queryset:
+            cached_value.append(
+                {
+                    "total_prs": stat.total_prs,
+                    "total_commits": stat.total_commits,
+                    "followers": stat.followers,
+                    "last_updated": stat.last_updated,
+                    "user": UsernameSerializer(stat.user).data,
+                }
+            )
+
+        return cached_value
+
