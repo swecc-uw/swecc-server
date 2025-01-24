@@ -1,7 +1,7 @@
 from cache import CacheHandler
 import logging
 from members.serializers import UsernameSerializer
-from .models import (LeetcodeStats, GitHubStats)
+from .models import LeetcodeStats, GitHubStats
 from engagement.models import AttendanceSessionStats
 
 
