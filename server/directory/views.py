@@ -31,7 +31,6 @@ class BaseMemberDirectoryView:
             return AdminDirectoryMemberSerializer
         return RegularDirectoryMemberSerializer
 
-
 class MemberDirectorySearchView(APIView, BaseMemberDirectoryView, CachedView):
     permission_classes = [IsVerified]
     pagination_class = StandardResultsSetPagination

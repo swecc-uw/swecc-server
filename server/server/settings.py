@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     "leaderboard.apps.LeaderboardConfig",
     "engagement.apps.EngagementConfig",
     "metasync.apps.MetasyncConfig",
+    "cms.apps.CMSConfig",
     "corsheaders",
     "rest_framework_api_key",
 ]
