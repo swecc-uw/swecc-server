@@ -3,7 +3,7 @@ from collections import defaultdict
 from typing import Dict, List
 from rest_framework import generics
 from rest_framework import status
-from rest_framework.generics import RetrieveUpdateDestroyAPIView
+
 from rest_framework.response import Response
 from datetime import datetime
 import logging
@@ -14,6 +14,10 @@ class AccouncementList(generics.ListCreateAPIView):
     serializer_class = AnnouncementSerializer
     queryset = Announcement.objects.all()
 
-class AccouncementCRUDView(RetrieveUpdateDestroyAPIView):
+class CreateAnnouncement(generics.CreateAPIView):
+    serializer_class = AnnouncementSerializer
+    queryset = Announcement.objects.all()
+
+class AccouncementCRUDView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = AnnouncementSerializer
     queryset = Announcement.objects.all()

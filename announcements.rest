@@ -1,0 +1,7 @@
+POST http://localhost/cms/announcement/
+Content-Type: application/json
+
+{
+  "title": "New Feature Release",
+  "content": "We are excited to announce the release of our new feature that enhances user experience."
+}
