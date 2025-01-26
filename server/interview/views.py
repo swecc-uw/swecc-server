@@ -81,7 +81,7 @@ def get_next_cutoff(user_timezone="America/Los_Angeles", force_current_week=Fals
         
         # By default, return the previous Sunday
         # If force_current_week, return next Sunday
-        if force_current_week == "true":
+        if force_current_week == "true" or force_current_week == True:
             return last_sunday + timezone.timedelta(days=7)  # One week ahead
         return last_sunday  # Most recent Sunday
 
@@ -100,7 +100,7 @@ def get_previous_cutoff(days: int = 7, user_timezone="America/Los_Angeles", forc
     
     # By default, return the Sunday before last
     # If force_current_week, return the previous Sunday
-    if force_current_week == "true":
+    if force_current_week == "true" or force_current_week == True:
         return last_sunday  # Most recent Sunday
     return last_sunday - timezone.timedelta(days=7)  # Week before last Sunday
 
@@ -258,8 +258,12 @@ class PairInterview(APIView):
     @transaction.atomic
     def post(self, request):
         force_current_week = request.data.get('force_current_week', False)
-        next_cutoff = get_next_cutoff(force_current_week=force_current_week)
-        previous_cutoff = get_previous_cutoff(force_current_week=force_current_week)
+        next_cutoff = get_next_cutoff(force_current_week=True)
+        previous_cutoff = get_previous_cutoff(force_current_week=True)
+        # force_current_week = request.query_params.get('force_current_week', False)
+        #     next_cutoff = get_next_cutoff(force_current_week=force_current_week)
+        #     previous_cutoff = get_previous_cutoff(force_current_week=force_current_week)
+        #     interview_pool = InterviewPool.objects.filter(timestamp__gte=previous_cutoff, timestamp__lte=next_cutoff)
 
         logger.info(f"Next cutoff: {next_cutoff}, previous cutoff: {previous_cutoff}, force_current_week: {force_current_week}")
 
@@ -270,6 +274,7 @@ class PairInterview(APIView):
             )
         
         pool_members = InterviewPool.objects.filter(timestamp__gte=previous_cutoff, timestamp__lte=next_cutoff)
+        print("pool_members", pool_members)
         
         if len(pool_members) % 2 != 0:
             random_idx_of_death = random.randint(0, len(pool_members) - 1)
