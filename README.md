@@ -66,7 +66,7 @@ docker exec -it swecc-server-web-1 python server/manage.py createsuperuser
 ```bash
 docker exec -it swecc-server-web-1 python server/manage.py create_admin --username yourUserName
 ```
-6. Access the admin panel at `http://localhost:8000/admin/`, and login with the superuser credentials you created.
+6. Access the admin panel at `http://localhost:8000/admin/`, and login with the superuser credentials you created. (Remember to uncomment the admin library import in server urls.py)
 
 7. In the admin panel, create a new API key. Doesn't matter what you name it, but make sure to **copy the key somewhere safe**. I recommend putting it in your `dev.venv/bin/activate` file, e.g. `export VERIFICATION_KEY=your_key_here`.
 
