@@ -81,7 +81,7 @@ def get_next_cutoff(user_timezone="America/Los_Angeles", force_current_week=Fals
         
         # By default, return the previous Sunday
         # If force_current_week, return next Sunday
-        if force_current_week == "true":
+        if force_current_week == "true" or force_current_week == True:
             return last_sunday + timezone.timedelta(days=7)  # One week ahead
         return last_sunday  # Most recent Sunday
 
@@ -100,7 +100,7 @@ def get_previous_cutoff(days: int = 7, user_timezone="America/Los_Angeles", forc
     
     # By default, return the Sunday before last
     # If force_current_week, return the previous Sunday
-    if force_current_week == "true":
+    if force_current_week == "true" or force_current_week == True:
         return last_sunday  # Most recent Sunday
     return last_sunday - timezone.timedelta(days=7)  # Week before last Sunday
 
