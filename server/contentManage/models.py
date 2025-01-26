@@ -42,7 +42,6 @@ class image(models.Model):
     def __str__(self):
         return f"{self.image_id}: {self.title} - {self.image.url}"
     
-# Customizable text field for each component
 class text(models.Model):
     parent_component = models.ForeignKey(component, on_delete=models.CASCADE, related_name="text_field")
     title = models.CharField(max_length=25, blank=False)
@@ -51,7 +50,7 @@ class text(models.Model):
     url = models.URLField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.title}, belongs to  {self.parent_component.title}"
+        return f"{self.title}, belongs to  {self.parent_component.title}" 
     
 
 
