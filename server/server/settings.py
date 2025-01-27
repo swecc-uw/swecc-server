@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     "report.apps.ReportConfig",
     "leaderboard.apps.LeaderboardConfig",
     "engagement.apps.EngagementConfig",
+    "contentManage.apps.ContentManageConfig",
     "metasync.apps.MetasyncConfig",
     "metrics.apps.MetricsConfig",
     "corsheaders",
