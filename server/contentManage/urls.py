@@ -18,6 +18,15 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+#page_create/
+#page/component_create/
+#component/image_upload
+#component/text_upload
+#page/details
+#publish/
+#component/delete
+#page/delete
+
 urlpatterns = [
     path("admin/", admin.site.urls),
 ]
