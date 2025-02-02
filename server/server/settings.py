@@ -257,3 +257,15 @@ LOGGING = {
         "level": "INFO",
     },
 }
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://swecc-redis-instance:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            # Django will keep running if redis isn't available
+            "IGNORE_EXCEPTIONS": True,
+        },
+    }
+}

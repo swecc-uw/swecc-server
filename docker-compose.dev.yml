@@ -8,7 +8,7 @@ services:
     volumes:
       - ./nginx/dev.conf:/etc/nginx/nginx.conf:ro
     ports:
-      - "80:80"
+      - '80:80'
     depends_on:
       - web
 
@@ -16,13 +16,13 @@ services:
     tty: true
     build:
       context: .
-      target: development  # multi-stage build
+      target: development # multi-stage build
     networks:
       - swecc-default
     volumes:
       - .:/app
     expose:
-      - "8000"
+      - '8000'
     depends_on:
       - db
     environment:
@@ -47,20 +47,42 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "${DB_PORT}:${DB_PORT}"
+      - '${DB_PORT}:${DB_PORT}'
     environment:
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_PORT=${DB_PORT}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
       interval: 5s
       timeout: 5s
       retries: 5
+  redis:
+    image: redis:6.0.7
+    container_name: swecc-redis-instance
+    restart: always
+    networks:
+      - swecc-default
+    volumes:
+      - redis_volume_data:/data
+    ports:
+      - 6379:6379
+  redis_insight:
+    image: redislabs/redisinsight:1.14.0
+    container_name: redis_insight
+    restart: always
+    networks:
+      - swecc-default
+    ports:
+      - 8001:8001
+    volumes:
+      - redis_insight_volume_data:/db
 
 volumes:
   postgres_data:
+  redis_volume_data:
+  redis_insight_volume_data:
 
 networks:
   swecc-default:

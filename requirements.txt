@@ -14,3 +14,6 @@ sendgrid
 supabase
 requests
 beautifulsoup4
+Pillow
+django-redis
+redis
