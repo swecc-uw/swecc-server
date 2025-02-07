@@ -217,7 +217,7 @@ class GetMetricTaskStatus(APIView, MetricServerAPI):
         except Exception as e:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR, data={"error": str(e)})
 
-class MetricViewAllRecent(APIView):
+class MetricViewAllRecent(APIView, MetricServerAPI):
     permission_classes = [IsAdmin]
 
     def get(self, request: Request):
