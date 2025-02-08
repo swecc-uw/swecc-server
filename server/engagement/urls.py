@@ -33,4 +33,29 @@ urlpatterns = [
         name="get-session-attendees",
     ),
     path("attendance/attend", views.AttendSession.as_view(), name="attend-session"),
+    path(
+        "cohort/oa/<int:amt>",
+        view=views.UpdateOAStatsView.as_view(),
+        name="cohort-update-oa-stats",
+    ),
+    path(
+        "cohort/apply/<int:amt>",
+        view=views.UpdateApplicationStatsView.as_view(),
+        name="cohort-update-application-stats",
+    ),
+    path(
+        "cohort/interview/<int:amt>",
+        view=views.UpdateInterviewStatsView.as_view(),
+        name="cohort-update-interview-stats",
+    ),
+    path(
+        "cohort/offer/<int:amt>",
+        view=views.UpdateOffersStatsView.as_view(),
+        name="cohort-update-offer-stats",
+    ),
+    path(
+        "cohort/dailycheck",
+        view=views.UpdateDailyChecksView.as_view(),
+        name="cohort-update-daily-check",
+    ),
 ]

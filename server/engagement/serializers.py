@@ -1,7 +1,8 @@
 from rest_framework import serializers
-from .models import AttendanceSession, AttendanceSessionStats
+from .models import AttendanceSession, AttendanceSessionStats, CohortStats
 from members.models import User
-from members.serializers import UsernameSerializer
+from members.serializers import UsernameSerializer, UserSerializer
+from cohort.serializers import CohortSerializer
 
 
 class AttendeeSerializer(serializers.ModelSerializer):
@@ -33,3 +34,20 @@ class AttendanceStatsSerializer(serializers.ModelSerializer):
     class Meta:
         model = AttendanceSessionStats
         fields = "__all__"
+
+
+class CohortStatsSerializer(serializers.ModelField):
+    member = UserSerializer(read_only=True)
+    cohort = CohortSerializer
+
+    class Meta:
+        model = CohortStats
+        fields = [
+            "member",
+            "cohort",
+            "applications",
+            "onlineAssessments",
+            "interviews",
+            "offers",
+            "dailyChecks",
+        ]
