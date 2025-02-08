@@ -6,6 +6,7 @@ from engagement.serializers import CohortStatsSerializer
 
 
 class Command(BaseCommand):
+    help = "Add a user to a cohort, and create a CohortStats object for the user"
 
     def add_arguments(self, parser):
         parser.add_argument("--cohort-name", type=str, help="Cohort Name")
