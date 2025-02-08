@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     "contentManage.apps.ContentManageConfig",
     "metasync.apps.MetasyncConfig",
     "metrics.apps.MetricsConfig",
+    "cohort.apps.CohortConfig",
     "corsheaders",
     "rest_framework_api_key",
 ]

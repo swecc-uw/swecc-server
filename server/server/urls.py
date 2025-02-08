@@ -17,6 +17,7 @@ urlpatterns = [
     path('engagement/', include('engagement.urls')),
     path('metasync/', include('metasync.urls')),
     path('metrics/', include('metrics.urls')),
+    path('cohorts/', include('cohort.urls')),
 ]
 
 
