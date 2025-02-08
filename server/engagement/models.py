@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from members.models import User
+from cohort.models import Cohort
 
 
 class AttendanceSession(models.Model):
@@ -64,3 +65,15 @@ class AttendanceSessionStats(models.Model):
 
     def __str__(self):
         return f"{self.member.username}: {self.sessions_attended}"
+
+
+class CohortStats(models.Model):
+    member = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="cohort_member_stats"
+    )
+    cohort = models.ForeignKey(Cohort, on_delete=models.CASCADE)
+    applications = models.IntegerField(default=0)
+    onlineAssessments = models.IntegerField(default=0)
+    interviews = models.IntegerField(default=0)
+    offers = models.IntegerField(default=0)
+    dailyChecks = models.IntegerField(default=0)
