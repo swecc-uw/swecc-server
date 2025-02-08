@@ -19,8 +19,8 @@ from .models import AttendanceSession, DiscordMessageStats, AttendanceSessionSta
 from .serializers import AttendanceSessionSerializer, MemberSerializer
 from django.db import transaction
 from django.http import JsonResponse
-from cohort.models import CohortStats
-from cohort.serializers import CohortStatsSerializer
+from .models import CohortStats
+from .serializers import CohortStatsSerializer
 
 logger = logging.getLogger(__name__)
 
