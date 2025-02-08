@@ -31,8 +31,8 @@ class CohortStats(models.Model):
         User, on_delete=models.CASCADE, related_name="cohort_member_stats"
     )
     cohort = models.ForeignKey(Cohort, on_delete=models.CASCADE)
-    applications = models.IntegerField()
-    onlineAssessments = models.IntegerField()
-    interviews = models.IntegerField()
-    offers = models.IntegerField()
-    dailyChecks = models.IntegerField()
+    applications = models.IntegerField(default=0)
+    onlineAssessments = models.IntegerField(default=0)
+    interviews = models.IntegerField(default=0)
+    offers = models.IntegerField(default=0)
+    dailyChecks = models.IntegerField(default=0)
