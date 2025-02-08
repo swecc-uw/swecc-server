@@ -36,9 +36,9 @@ class AttendanceStatsSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class CohortStatsSerializer(serializers.ModelField):
+class CohortStatsSerializer(serializers.ModelSerializer):
     member = UserSerializer(read_only=True)
-    cohort = CohortSerializer
+    cohort = CohortSerializer(read_only=True)
 
     class Meta:
         model = CohortStats
