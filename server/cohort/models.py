@@ -1,4 +1,5 @@
 from django.db import models
+from members.models import User
 
 
 class Cohort(models.Model):
@@ -23,3 +24,15 @@ class Cohort(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.get_level_display()})"
+
+
+class CohortStats(models.Model):
+    member = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="cohort_member_stats"
+    )
+    cohort = models.ForeignKey(Cohort, on_delete=models.CASCADE)
+    applications = models.IntegerField()
+    onlineAssessments = models.IntegerField()
+    interviews = models.IntegerField()
+    offers = models.IntegerField()
+    dailyChecks = models.IntegerField()
