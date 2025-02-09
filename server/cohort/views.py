@@ -15,6 +15,7 @@ from .serializers import (
 )
 from members.models import User
 from engagement.models import CohortStats
+from custom_auth.permissions import IsAdmin
 
 
 def _get_serializer_class(req):
@@ -203,3 +204,44 @@ class CohortStatsView(APIView):
             if str(e).startswith("No user found"):
                 raise
             raise ValueError("Invalid ID format provided")
+
+
+class CohortRemoveView(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request):
+        """
+        - Remove a member from a cohort
+        - Remove stats for that member from the cohort
+        """
+        try:
+            member_id = request.data.get("member_id")
+            cohort_id = request.data.get("cohort_id")
+        except KeyError:
+            return Response(
+                {"error": "Please provide both 'member_id' and 'cohort_id'"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            member = User.objects.get(pk=member_id)
+        except User.DoesNotExist:
+            return Response(
+                {"error": f"No user found with id: {member_id}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            cohort = Cohort.objects.get(pk=cohort_id)
+        except Cohort.DoesNotExist:
+            return Response(
+                {"error": f"No cohort found with id: {cohort_id}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        cohort.members.remove(member)
+        CohortStats.objects.filter(member=member, cohort=cohort).delete()
+
+        return Response(
+            {"message": f"Member {member_id} removed from cohort {cohort_id}"}
+        )
