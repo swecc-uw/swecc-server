@@ -41,6 +41,7 @@ from .managers import (
 from django.http import JsonResponse
 from engagement.serializers import CohortStatsLeaderboardSerializer
 from engagement.models import CohortStats
+from .managers import CohortStatsLeaderboardManager
 
 logger = logging.getLogger(__name__)
 INTERNSHIP_CHANNEL_ID = int(os.getenv("INTERNSHIP_CHANNEL_ID"))
@@ -384,12 +385,19 @@ class CohortStatsLeaderboard(APIView):
     seraializer_class = CohortStatsLeaderboardSerializer
     permission_classes = []
 
+    def generate_key(**kwargs):
+        return "cohort:all"
+
+    manager = CohortStatsLeaderboardManager(
+        DjangoCacheHandler(expiration=60 * 60), generate_key
+    )
+
     def get(self, request):
         order_by = request.query_params.get("order_by", "daily_check")
         page_number = request.query_params.get("page", 1)
         time_range = request.query_params.get("updated_within", None)
 
-        cohort_stats = CohortStats.objects.all()
+        cohort_stats = self.manager.get_all()
 
         if time_range:
             try:
@@ -407,9 +415,9 @@ class CohortStatsLeaderboard(APIView):
                 )
 
         ordering_options = {
-            "daily_check": "dailyChecks",
+            "daily_check": "daily_checks",
             "applications": "applications",
-            "online_assessments": "onlineAssessments",
+            "online_assessments": "online_assessments",
             "interviews": "interviews",
             "offers": "offers",
         }
