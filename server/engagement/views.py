@@ -21,6 +21,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from .models import CohortStats
 from .serializers import CohortStatsSerializer
+from cohort.models import Cohort
 
 logger = logging.getLogger(__name__)
 
@@ -296,8 +297,20 @@ class CohortStatsBase(APIView):
         if error:
             return JsonResponse({"error": error}, status=400)
 
+        cohort_name = request.data.get("cohort_name")
+
+        if not cohort_name:
+            return JsonResponse({"error": "Cohort name is required"}, status=400)
+
+        cohort_obj = Cohort.objects.filter(name=cohort_name).first()
+
+        if not cohort_obj:
+            return JsonResponse({"error": "Cohort not found"}, status=404)
+
         try:
-            cohort_stats_object = CohortStats.objects.get(member__id=user_id)
+            cohort_stats_object = CohortStats.objects.get(
+                cohort__name=cohort_name, member__id=user_id
+            )
         except CohortStats.DoesNotExist:
             return JsonResponse(
                 {"error": "Cohort stats object doesn't exist for this user"}, status=404
