@@ -51,3 +51,12 @@ class CohortStatsSerializer(serializers.ModelSerializer):
             "offers",
             "dailyChecks",
         ]
+
+
+class CohortStatsLeaderboardSerializer(serializers.ModelSerializer):
+    member = UsernameSerializer
+    rank = serializers.IntegerField()
+
+    class Meta:
+        model = CohortStats
+        fields = "__all__"

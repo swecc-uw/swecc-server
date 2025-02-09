@@ -28,4 +28,9 @@ urlpatterns = [
         views.AttendanceSessionLeaderboard.as_view(),
         name="attendance-leaderboard",
     ),
+    path(
+        "cohorts/",
+        views.CohortStatsLeaderboard.as_view(),
+        name="cohort-leaderboard",
+    ),
 ]

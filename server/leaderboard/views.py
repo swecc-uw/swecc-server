@@ -33,8 +33,14 @@ from rest_framework.views import APIView
 from django.db.models import Window
 from django.db.models.functions import RowNumber
 from cache import CachedView, DjangoCacheHandler
-from .managers import AttendanceLeaderboardManager, LeetcodeLeaderboardManager, GitHubLeaderboardManager
+from .managers import (
+    AttendanceLeaderboardManager,
+    LeetcodeLeaderboardManager,
+    GitHubLeaderboardManager,
+)
 from django.http import JsonResponse
+from engagement.serializers import CohortStatsLeaderboardSerializer
+from engagement.models import CohortStats
 
 logger = logging.getLogger(__name__)
 INTERNSHIP_CHANNEL_ID = int(os.getenv("INTERNSHIP_CHANNEL_ID"))
@@ -121,9 +127,7 @@ class GitHubLeaderboardView(generics.ListAPIView):
             try:
                 hours = int(time_range)
                 cutoff = timezone.now() - timedelta(hours=hours)
-                github_data = filter(
-                    lambda x: x["last_update"] >= cutoff, github_data
-                )
+                github_data = filter(lambda x: x["last_update"] >= cutoff, github_data)
             except ValueError:
                 raise ValidationError("updated_within must be a valid number of hours")
 
@@ -363,7 +367,66 @@ class AttendanceSessionLeaderboard(APIView, CachedView):
         for i in range(len(attendance_data)):
             attendance_data[i]["rank"] = i + 1
 
-        paginator = Paginator(attendance_data, 1)
+        paginator = Paginator(attendance_data, 50)
+        page = paginator.get_page(page_number)
+
+        payload = {
+            "count": paginator.count,
+            "next": page.next_page_number() if page.has_next() else None,
+            "prev": page.previous_page_number() if page.has_previous() else None,
+            "results": list(page),
+        }
+
+        return JsonResponse(payload)
+
+
+class CohortStatsLeaderboard(APIView):
+    seraializer_class = CohortStatsLeaderboardSerializer
+    permission_classes = []
+
+    def get(self, request):
+        order_by = request.query_params.get("order_by", "daily_check")
+        page_number = request.query_params.get("page", 1)
+        time_range = request.query_params.get("updated_within", None)
+
+        cohort_stats = CohortStats.objects.all()
+
+        if time_range:
+            try:
+                hours = int(time_range)
+                cutoff = timezone.now() - timedelta(hours=hours)
+                # only include if >= 1 sessions attended
+                cohort_stats = filter(
+                    lambda x: x["last_updated"] >= cutoff
+                    and x["sessions_attended"] >= 1,
+                    cohort_stats,
+                )
+            except ValueError:
+                raise ValidationError(
+                    "`updated_within` must be a valid number of hours"
+                )
+
+        ordering_options = {
+            "daily_check": "dailyChecks",
+            "applications": "applications",
+            "online_assessments": "onlineAssessments",
+            "interviews": "interviews",
+            "offers": "offers",
+        }
+
+        order_field = ordering_options.get(order_by)
+        if not order_field:
+            raise ValidationError(
+                f"Invalid order_by parameter. Must be one of: {', '.join(ordering_options.keys())}"
+            )
+
+        cohort_stats.sort(key=lambda x: x[order_field], reverse=True)
+
+        # Annotate with rank
+        for i in range(len(cohort_stats)):
+            cohort_stats[i]["rank"] = i + 1
+
+        paginator = Paginator(cohort_stats, 50)
         page = paginator.get_page(page_number)
 
         payload = {
