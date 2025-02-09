@@ -206,7 +206,7 @@ class CohortStatsView(APIView):
             raise ValueError("Invalid ID format provided")
 
 
-class CohortRemoveView(APIView):
+class CohortRemoveMemberView(APIView):
     permission_classes = [IsAdmin]
 
     def post(self, request):
