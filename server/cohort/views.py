@@ -1,8 +1,13 @@
-from rest_framework import generics
+from typing import Dict, List, Optional, Union
+from django.http import JsonResponse
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Sum
+from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
-
-from custom_auth.permissions import IsAdmin
-from .models import Cohort
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from members.permissions import IsApiKey
+from .models import Cohort, CohortStatsData
 from .serializers import (
     CohortHydratedPublicSerializer,
     CohortSerializer,
@@ -12,26 +17,29 @@ from members.models import User
 from engagement.models import CohortStats
 
 
+def _get_serializer_class(req):
+
+    is_admin = req.user.groups.filter(name="is_admin").exists()
+    is_readonly = req.method == "GET"
+
+    if not is_admin and not is_readonly:
+        raise PermissionError("You do not have permission to perform this action")
+
+    if is_readonly:
+        return (
+            CohortHydratedPublicSerializer if not is_admin else CohortHydratedSerializer
+        )
+
+    return CohortSerializer
+
+
 # When assigning a user to a cohort, make sure to create a `CohortStats` object specific to that user and the cohort they're assigned to
 class CohortListCreateView(generics.ListCreateAPIView):
     queryset = Cohort.objects.all()
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
-        is_admin = self.request.user.groups.filter(name="is_admin").exists()
-        is_readonly = self.request.method == "GET"
-
-        if not is_admin and not is_readonly:
-            raise PermissionError("You do not have permission to perform this action")
-
-        if is_readonly:
-            return (
-                CohortHydratedPublicSerializer
-                if not is_admin
-                else CohortHydratedSerializer
-            )
-
-        return CohortSerializer
+        return _get_serializer_class(self.request)
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -54,20 +62,7 @@ class CohortRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
-        is_admin = self.request.user.groups.filter(name="is_admin").exists()
-        is_readonly = self.request.method == "GET"
-
-        if not is_admin and not is_readonly:
-            raise PermissionError("You do not have permission to perform this action")
-
-        if self.request.method == "GET":
-            return (
-                CohortHydratedPublicSerializer
-                if not is_admin
-                else CohortHydratedSerializer
-            )
-
-        return CohortSerializer
+        return _get_serializer_class(self.request)
 
     def put(self, request, *args, **kwargs):
 
@@ -87,3 +82,124 @@ class CohortRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
                 CohortStats.objects.get_or_create(cohort=cohort, member=member)
 
         return response
+
+
+class CohortStatsView(APIView):
+    permission_classes = [IsAuthenticated | IsApiKey]
+
+    def get(self, request):
+        """
+        - if cohort_id is provided, return stats for specified cohorts
+        - if member_id or discord_id is provided, return stats for cohorts where member belongs and has stats
+        - only one of cohort_id, member_id, or discord_id can be provided
+        - if include_profiles is true, include cohort profiles in the response
+        """
+        try:
+            cohort_ids, member_id = self.parse_ids(request.query_params)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        include_profiles = (
+            request.query_params.get("include_profiles", "").lower() == "true"
+        )
+
+        stats_queryset = self.get_queryset(cohort_ids, member_id)
+
+        if member_id:
+            cohort_ids = stats_queryset.values_list("cohort_id", flat=True).distinct()
+            cohorts = self.get_cohorts(cohort_ids, member_id=member_id)
+        else:
+            cohorts = self.get_cohorts(cohort_ids)
+
+        cohort_serializer = (
+            _get_serializer_class(request) if include_profiles else CohortSerializer
+        )
+
+        response = []
+        for cohort in cohorts:
+            stats = self.aggregate_stats(stats_queryset, cohort.id)
+            response.append(
+                {
+                    "stats": stats.to_dict(),
+                    "cohort": cohort_serializer(cohort).data,
+                }
+            )
+
+        return Response(response)
+
+    def get_member_id_from_discord_id(self, discord_id: str) -> Optional[int]:
+        try:
+            user = User.objects.get(discord_id=discord_id)
+            return user.id
+        except ObjectDoesNotExist:
+            return None
+        except ValueError:
+            raise ValueError("Invalid discord_id format")
+
+    def get_queryset(
+        self, cohort_ids: Optional[List[int]] = None, member_id: Optional[int] = None
+    ):
+
+        queryset = CohortStats.objects.all()
+
+        if member_id:
+            member_cohort_ids = Cohort.objects.filter(
+                members__id=member_id
+            ).values_list("id", flat=True)
+
+            queryset = queryset.filter(
+                member_id=member_id, cohort_id__in=member_cohort_ids
+            )
+        elif cohort_ids:
+            queryset = queryset.filter(cohort_id__in=cohort_ids)
+
+        return queryset
+
+    def aggregate_stats(self, queryset, cohort_id: int) -> CohortStatsData:
+        stats = queryset.filter(cohort_id=cohort_id).aggregate(
+            Sum("applications"),
+            Sum("onlineAssessments"),
+            Sum("interviews"),
+            Sum("offers"),
+            Sum("dailyChecks"),
+        )
+        return CohortStatsData.from_db_values(stats)
+
+    def get_cohorts(
+        self, cohort_ids: Optional[List[int]] = None, member_id: Optional[int] = None
+    ):
+        queryset = Cohort.objects.all()
+
+        if member_id:
+            queryset = queryset.filter(members__id=member_id)
+
+        if cohort_ids:
+            queryset = queryset.filter(id__in=cohort_ids)
+
+        return queryset
+
+    def parse_ids(self, params: dict) -> tuple[Optional[List[int]], Optional[int]]:
+        cohort_ids = params.getlist("cohort_id", [])
+        member_id = params.get("member_id")
+        discord_id = params.get("discord_id")
+
+        if sum(bool(x) for x in (cohort_ids, member_id, discord_id)) > 1:
+            raise ValueError(
+                "Only one of 'cohort_id', 'discord_id', or 'member_id' can be provided"
+            )
+
+        try:
+            if cohort_ids:
+                return [int(cid) for cid in cohort_ids], None
+            if member_id:
+                return None, int(member_id)
+            if discord_id:
+                member_id = self.get_member_id_from_discord_id(discord_id)
+                if member_id is None:
+                    raise ValueError(f"No user found with discord_id: {discord_id}")
+                return None, member_id
+            return None, None
+        except ValueError as e:
+            if str(e).startswith("No user found"):
+                raise
+            raise ValueError("Invalid ID format provided")

@@ -8,4 +8,5 @@ urlpatterns = [
         views.CohortRetrieveUpdateDestroyView.as_view(),
         name="cohort-detail",
     ),
+    path("stats/", views.CohortStatsView.as_view(), name="cohort-stats-list"),
 ]
