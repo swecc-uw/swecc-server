@@ -11,7 +11,7 @@ class Cohort(models.Model):
     members = models.ManyToManyField(
         "members.User", related_name="cohorts", blank=True, db_table="cohort_members"
     )
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
     level = models.CharField(
         max_length=64, choices=LEVEL_CHOICES, db_index=True, default="beginner"
     )
