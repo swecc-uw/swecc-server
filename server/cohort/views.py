@@ -1,6 +1,10 @@
 from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+
+from custom_auth.permissions import IsAdmin
 from .models import Cohort
 from .serializers import (
+    CohortHydratedPublicSerializer,
     CohortSerializer,
     CohortHydratedSerializer,
 )
@@ -11,10 +15,22 @@ from engagement.models import CohortStats
 # When assigning a user to a cohort, make sure to create a `CohortStats` object specific to that user and the cohort they're assigned to
 class CohortListCreateView(generics.ListCreateAPIView):
     queryset = Cohort.objects.all()
+    permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
-        if self.request.method == "GET":
-            return CohortHydratedSerializer
+        is_admin = self.request.user.groups.filter(name="is_admin").exists()
+        is_readonly = self.request.method == "GET"
+
+        if not is_admin and not is_readonly:
+            raise PermissionError("You do not have permission to perform this action")
+
+        if is_readonly:
+            return (
+                CohortHydratedPublicSerializer
+                if not is_admin
+                else CohortHydratedSerializer
+            )
+
         return CohortSerializer
 
     def post(self, request, *args, **kwargs):
@@ -35,10 +51,22 @@ class CohortListCreateView(generics.ListCreateAPIView):
 
 class CohortRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Cohort.objects.all()
+    permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
+        is_admin = self.request.user.groups.filter(name="is_admin").exists()
+        is_readonly = self.request.method == "GET"
+
+        if not is_admin and not is_readonly:
+            raise PermissionError("You do not have permission to perform this action")
+
         if self.request.method == "GET":
-            return CohortHydratedSerializer
+            return (
+                CohortHydratedPublicSerializer
+                if not is_admin
+                else CohortHydratedSerializer
+            )
+
         return CohortSerializer
 
     def put(self, request, *args, **kwargs):
