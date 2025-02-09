@@ -280,17 +280,10 @@ class CohortStatsBase(APIView):
         except User.DoesNotExist:
             return None, "User with discord ID not found"
 
-    def update_stats(self, cohort_stats_object: CohortStats, amount):
+    def update_stats(self, cohort_stats_object: CohortStats):
         pass
 
-    def put(self, request, amt):
-
-        try:
-            amt = int(amt)
-        except ValueError:
-            return JsonResponse(
-                {"error": "Invalid amount, must be an integer"}, status=400
-            )
+    def put(self, request):
 
         user_id, error = self.get_user_id_from_discord(request.data.get("discord_id"))
 
@@ -316,7 +309,7 @@ class CohortStatsBase(APIView):
                 {"error": "Cohort stats object doesn't exist for this user"}, status=404
             )
 
-        self.update_stats(cohort_stats_object, amt)
+        self.update_stats(cohort_stats_object)
         cohort_stats_object.save()
 
         serializer = CohortStatsSerializer(cohort_stats_object)
@@ -325,28 +318,25 @@ class CohortStatsBase(APIView):
 
 
 class UpdateApplicationStatsView(CohortStatsBase):
-    def update_stats(self, cohort_stats_object, amount):
-        cohort_stats_object.applications += amount
+    def update_stats(self, cohort_stats_object):
+        cohort_stats_object.applications += 1
 
 
 class UpdateOAStatsView(CohortStatsBase):
-    def update_stats(self, cohort_stats_object: CohortStats, amount):
-        cohort_stats_object.onlineAssessments += amount
+    def update_stats(self, cohort_stats_object: CohortStats):
+        cohort_stats_object.onlineAssessments += 1
 
 
 class UpdateInterviewStatsView(CohortStatsBase):
-    def update_stats(self, cohort_stats_object: CohortStats, amount):
-        cohort_stats_object.interviews += amount
+    def update_stats(self, cohort_stats_object: CohortStats):
+        cohort_stats_object.interviews += 1
 
 
 class UpdateOffersStatsView(CohortStatsBase):
-    def update_stats(self, cohort_stats_object, amount):
-        cohort_stats_object.offers += amount
+    def update_stats(self, cohort_stats_object):
+        cohort_stats_object.offers += 1
 
 
 class UpdateDailyChecksView(CohortStatsBase):
-    def update_stats(self, cohort_stats_object, amount):
-        cohort_stats_object.dailyChecks += amount
-
-    def put(self, request):
-        return super().put(request, 1)
+    def update_stats(self, cohort_stats_object):
+        cohort_stats_object.dailyChecks += 1

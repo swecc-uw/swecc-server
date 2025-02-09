@@ -34,22 +34,22 @@ urlpatterns = [
     ),
     path("attendance/attend", views.AttendSession.as_view(), name="attend-session"),
     path(
-        "cohort/oa/<int:amt>",
+        "cohort/oa",
         view=views.UpdateOAStatsView.as_view(),
         name="cohort-update-oa-stats",
     ),
     path(
-        "cohort/apply/<int:amt>",
+        "cohort/apply",
         view=views.UpdateApplicationStatsView.as_view(),
         name="cohort-update-application-stats",
     ),
     path(
-        "cohort/interview/<int:amt>",
+        "cohort/interview",
         view=views.UpdateInterviewStatsView.as_view(),
         name="cohort-update-interview-stats",
     ),
     path(
-        "cohort/offer/<int:amt>",
+        "cohort/offer",
         view=views.UpdateOffersStatsView.as_view(),
         name="cohort-update-offer-stats",
     ),
