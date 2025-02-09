@@ -78,9 +78,8 @@ class CohortRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
         # Update cohort stats for each member accordingly
         # Not deleting old stats since users can use those stats to benchmark progress
         for member_id in member_ids:
-            if member_id not in past_member_ids:
-                member = User.objects.get(pk=member_id)
-                CohortStats.objects.get_or_create(cohort=cohort, member=member)
+            member = User.objects.get(pk=member_id)
+            CohortStats.objects.get_or_create(cohort=cohort, member=member)
 
         return response
 
