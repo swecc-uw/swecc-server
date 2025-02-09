@@ -243,5 +243,6 @@ class CohortRemoveView(APIView):
         CohortStats.objects.filter(member=member, cohort=cohort).delete()
 
         return Response(
-            {"message": f"Member {member_id} removed from cohort {cohort_id}"}
+            {"message": f"Member {member_id} removed from cohort {cohort_id}"},
+            status=status.HTTP_200_OK,
         )
