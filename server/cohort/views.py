@@ -245,3 +245,64 @@ class CohortRemoveMemberView(APIView):
             {"message": f"Member {member_id} removed from cohort {cohort_id}"},
             status=status.HTTP_200_OK,
         )
+
+
+class CohortTransferView(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request):
+        """
+        - Transfer a member from one cohort to another
+        - Update stats for that member accordingly
+        """
+        try:
+            member_id = request.data.get("member_id")
+            from_cohort_id = request.data.get("from_cohort_id")
+            to_cohort_id = request.data.get("to_cohort_id")
+        except KeyError:
+            return Response(
+                {
+                    "error": "Please provide 'member_id', 'from_cohort_id', and 'to_cohort_id'"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            member = User.objects.get(pk=member_id)
+        except User.DoesNotExist:
+            return Response(
+                {"error": f"No user found with id: {member_id}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            from_cohort = Cohort.objects.get(pk=from_cohort_id)
+        except Cohort.DoesNotExist:
+            return Response(
+                {"error": f"No cohort found with id: {from_cohort_id}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            to_cohort = Cohort.objects.get(pk=to_cohort_id)
+        except Cohort.DoesNotExist:
+            return Response(
+                {"error": f"No cohort found with id: {to_cohort_id}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        from_cohort.members.remove(member)
+        to_cohort.members.add(member)
+
+        associated_cohort_stats = CohortStats.objects.filter(
+            member=member, cohort=from_cohort
+        ).first()
+        associated_cohort_stats.cohort = to_cohort
+        associated_cohort_stats.save()
+
+        return Response(
+            {
+                "message": f"Member {member_id} transferred from cohort {from_cohort_id} to cohort {to_cohort_id}"
+            },
+            status=status.HTTP_200_OK,
+        )
