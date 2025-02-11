@@ -12,4 +12,5 @@ urlpatterns = [
     path(
         "remove/", views.CohortRemoveMemberView.as_view(), name="cohort-remove-member"
     ),
+    path("transfer/", views.CohortTransferView.as_view(), name="cohort-transfer"),
 ]
