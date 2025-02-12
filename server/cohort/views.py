@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional, Union
 from django.http import JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Sum
+from django.db.models import Sum, Max
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -162,6 +162,7 @@ class CohortStatsView(APIView):
             Sum("interviews"),
             Sum("offers"),
             Sum("dailyChecks"),
+            Max("streak"),
         )
         return CohortStatsData.from_db_values(stats)
 
