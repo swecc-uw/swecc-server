@@ -348,7 +348,7 @@ class UpdateDailyChecksView(CohortStatsBase):
         if hour_difference >= 24:
             cohort_stats_object.dailyChecks += 1
             cohort_stats_object.streak = (
-                cohort_stats_object.streak + 1 if hour_difference <= 48 else 0
+                cohort_stats_object.streak + 1 if hour_difference <= 48 else 1
             )
             cohort_stats_object.save()
         else:
