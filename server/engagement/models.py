@@ -77,3 +77,5 @@ class CohortStats(models.Model):
     interviews = models.IntegerField(default=0)
     offers = models.IntegerField(default=0)
     dailyChecks = models.IntegerField(default=0)
+    last_updated = models.DateTimeField(auto_now=True)
+    streak = models.IntegerField(default=0)

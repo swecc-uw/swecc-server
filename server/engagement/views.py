@@ -310,7 +310,6 @@ class CohortStatsBase(APIView):
             )
 
         self.update_stats(cohort_stats_object)
-        cohort_stats_object.save()
 
         serializer = CohortStatsSerializer(cohort_stats_object)
 
@@ -320,23 +319,39 @@ class CohortStatsBase(APIView):
 class UpdateApplicationStatsView(CohortStatsBase):
     def update_stats(self, cohort_stats_object):
         cohort_stats_object.applications += 1
+        cohort_stats_object.save()
 
 
 class UpdateOAStatsView(CohortStatsBase):
     def update_stats(self, cohort_stats_object: CohortStats):
         cohort_stats_object.onlineAssessments += 1
+        cohort_stats_object.save()
 
 
 class UpdateInterviewStatsView(CohortStatsBase):
     def update_stats(self, cohort_stats_object: CohortStats):
         cohort_stats_object.interviews += 1
+        cohort_stats_object.save()
 
 
 class UpdateOffersStatsView(CohortStatsBase):
     def update_stats(self, cohort_stats_object):
         cohort_stats_object.offers += 1
+        cohort_stats_object.save()
 
 
 class UpdateDailyChecksView(CohortStatsBase):
     def update_stats(self, cohort_stats_object):
-        cohort_stats_object.dailyChecks += 1
+        time_delta = timezone.now() - cohort_stats_object.last_updated
+        hour_difference = time_delta.total_seconds() // 3600
+
+        if hour_difference >= 24:
+            cohort_stats_object.dailyChecks += 1
+            cohort_stats_object.streak = (
+                cohort_stats_object.streak + 1 if hour_difference <= 48 else 0
+            )
+            cohort_stats_object.save()
+        else:
+            logging.info(
+                "Daily check occurred more than once within 24 hours. Skipping update."
+            )
