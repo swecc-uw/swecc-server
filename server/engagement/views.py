@@ -346,7 +346,9 @@ class UpdateDailyChecksView(CohortStatsBase):
         updated_to_the_nearest_day = cohort_stats_object.last_updated.replace(
             hour=7, minute=59, second=59, microsecond=0
         )
-        current_day = timezone.now().replace(hour=7, minute=59, second=59, microsecond=0)
+        current_day = timezone.now().replace(
+            hour=7, minute=59, second=59, microsecond=0
+        )
 
         hour_difference = (
             updated_to_the_nearest_day - current_day
