@@ -50,6 +50,7 @@ class CohortStatsSerializer(serializers.ModelSerializer):
             "interviews",
             "offers",
             "dailyChecks",
+            "streak",
         ]
 
 
