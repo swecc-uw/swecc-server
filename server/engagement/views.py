@@ -342,8 +342,14 @@ class UpdateOffersStatsView(CohortStatsBase):
 
 class UpdateDailyChecksView(CohortStatsBase):
     def update_stats(self, cohort_stats_object):
-        time_delta = timezone.now() - cohort_stats_object.last_updated
-        hour_difference = time_delta.total_seconds() // 3600
+        updated_to_the_nearest_day = cohort_stats_object.last_updated.replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        current_day = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+        hour_difference = (
+            updated_to_the_nearest_day - current_day
+        ).total_seconds() // 3600
 
         if hour_difference >= 24:
             cohort_stats_object.dailyChecks += 1
