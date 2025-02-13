@@ -342,10 +342,11 @@ class UpdateOffersStatsView(CohortStatsBase):
 
 class UpdateDailyChecksView(CohortStatsBase):
     def update_stats(self, cohort_stats_object):
+        # 12 AM in PST
         updated_to_the_nearest_day = cohort_stats_object.last_updated.replace(
-            hour=0, minute=0, second=0, microsecond=0
+            hour=7, minute=59, second=59, microsecond=0
         )
-        current_day = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        current_day = timezone.now().replace(hour=7, minute=59, second=59, microsecond=0)
 
         hour_difference = (
             updated_to_the_nearest_day - current_day
