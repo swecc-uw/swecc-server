@@ -34,6 +34,7 @@ class CohortStatsData:
     interviews: int = 0
     offers: int = 0
     daily_checks: int = 0
+    streak: int = 0
 
     def to_dict(self) -> Dict[str, int]:
         return {
@@ -42,14 +43,16 @@ class CohortStatsData:
             "interviews": self.interviews,
             "offers": self.offers,
             "dailyChecks": self.daily_checks,
+            "streak": self.streak,
         }
 
     @classmethod
-    def from_db_values(cls, values: Dict[str, int]) -> 'CohortStatsData':
+    def from_db_values(cls, values: Dict[str, int]) -> "CohortStatsData":
         return cls(
-            applications=values.get('applications__sum', 0) or 0,
-            online_assessments=values.get('onlineAssessments__sum', 0) or 0,
-            interviews=values.get('interviews__sum', 0) or 0,
-            offers=values.get('offers__sum', 0) or 0,
-            daily_checks=values.get('dailyChecks__sum', 0) or 0
+            applications=values.get("applications__sum", 0) or 0,
+            online_assessments=values.get("onlineAssessments__sum", 0) or 0,
+            interviews=values.get("interviews__sum", 0) or 0,
+            offers=values.get("offers__sum", 0) or 0,
+            daily_checks=values.get("dailyChecks__sum", 0) or 0,
+            streak=values.get("streak__max", 0) or 0,
         )

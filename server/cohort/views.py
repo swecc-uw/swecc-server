@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional, Union
 from django.http import JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Sum
+from django.db.models import Sum, Max
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -15,6 +15,7 @@ from .serializers import (
 )
 from members.models import User
 from engagement.models import CohortStats
+from custom_auth.permissions import IsAdmin
 
 
 def _get_serializer_class(req):
@@ -77,9 +78,8 @@ class CohortRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
         # Update cohort stats for each member accordingly
         # Not deleting old stats since users can use those stats to benchmark progress
         for member_id in member_ids:
-            if member_id not in past_member_ids:
-                member = User.objects.get(pk=member_id)
-                CohortStats.objects.get_or_create(cohort=cohort, member=member)
+            member = User.objects.get(pk=member_id)
+            CohortStats.objects.get_or_create(cohort=cohort, member=member)
 
         return response
 
@@ -162,6 +162,7 @@ class CohortStatsView(APIView):
             Sum("interviews"),
             Sum("offers"),
             Sum("dailyChecks"),
+            Max("streak"),
         )
         return CohortStatsData.from_db_values(stats)
 
@@ -203,3 +204,106 @@ class CohortStatsView(APIView):
             if str(e).startswith("No user found"):
                 raise
             raise ValueError("Invalid ID format provided")
+
+
+class CohortRemoveMemberView(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request):
+        """
+        - Remove a member from a cohort
+        - Remove stats for that member from the cohort
+        """
+        try:
+            member_id = request.data.get("member_id")
+            cohort_id = request.data.get("cohort_id")
+        except KeyError:
+            return Response(
+                {"error": "Please provide both 'member_id' and 'cohort_id'"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            member = User.objects.get(pk=member_id)
+        except User.DoesNotExist:
+            return Response(
+                {"error": f"No user found with id: {member_id}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            cohort = Cohort.objects.get(pk=cohort_id)
+        except Cohort.DoesNotExist:
+            return Response(
+                {"error": f"No cohort found with id: {cohort_id}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        cohort.members.remove(member)
+        CohortStats.objects.filter(member=member, cohort=cohort).delete()
+
+        return Response(
+            {"message": f"Member {member_id} removed from cohort {cohort_id}"},
+            status=status.HTTP_200_OK,
+        )
+
+
+class CohortTransferView(APIView):
+    permission_classes = [IsAdmin]
+
+    def post(self, request):
+        """
+        - Transfer a member from one cohort to another
+        - Update stats for that member accordingly
+        """
+        try:
+            member_id = request.data.get("member_id")
+            from_cohort_id = request.data.get("from_cohort_id")
+            to_cohort_id = request.data.get("to_cohort_id")
+        except KeyError:
+            return Response(
+                {
+                    "error": "Please provide 'member_id', 'from_cohort_id', and 'to_cohort_id'"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            member = User.objects.get(pk=member_id)
+        except User.DoesNotExist:
+            return Response(
+                {"error": f"No user found with id: {member_id}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            from_cohort = Cohort.objects.get(pk=from_cohort_id)
+        except Cohort.DoesNotExist:
+            return Response(
+                {"error": f"No cohort found with id: {from_cohort_id}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            to_cohort = Cohort.objects.get(pk=to_cohort_id)
+        except Cohort.DoesNotExist:
+            return Response(
+                {"error": f"No cohort found with id: {to_cohort_id}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        from_cohort.members.remove(member)
+        to_cohort.members.add(member)
+
+        associated_cohort_stats = CohortStats.objects.filter(
+            member=member, cohort=from_cohort
+        ).first()
+        associated_cohort_stats.cohort = to_cohort
+        associated_cohort_stats.save()
+
+        return Response(
+            {
+                "message": f"Member {member_id} transferred from cohort {from_cohort_id} to cohort {to_cohort_id}"
+            },
+            status=status.HTTP_200_OK,
+        )

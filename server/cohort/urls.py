@@ -9,4 +9,8 @@ urlpatterns = [
         name="cohort-detail",
     ),
     path("stats/", views.CohortStatsView.as_view(), name="cohort-stats-list"),
+    path(
+        "remove/", views.CohortRemoveMemberView.as_view(), name="cohort-remove-member"
+    ),
+    path("transfer/", views.CohortTransferView.as_view(), name="cohort-transfer"),
 ]
