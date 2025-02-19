@@ -200,7 +200,7 @@ class Command(BaseCommand):
                 self.style.SUCCESS(pp(user) + f", Verified: {self.is_verified(user)}")
             )
 
-        if options.get("preview"):
+        if options["preview"]:
             self.preview_email(users[0])
             return
 
