@@ -185,7 +185,7 @@ class Command(BaseCommand):
         )
 
         users, error = self.get_target_users(options)
-        if error:
+        if error is not None:
             self.stdout.write(self.style.ERROR(error))
             return
 
