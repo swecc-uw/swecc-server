@@ -102,6 +102,7 @@ class MessageBuffer:
                             message_count=0,
                         )
                         for discord_id in channel_counts
+                        if discord_id in user_map
                     ]
 
                     DiscordMessageStats.objects.bulk_create(
