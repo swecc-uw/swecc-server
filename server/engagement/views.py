@@ -20,6 +20,8 @@ from .serializers import AttendanceSessionSerializer, MemberSerializer
 from django.db import transaction
 from django.http import JsonResponse
 from .models import CohortStats
+from leaderboard.models import LeetcodeStats, GitHubStats
+from leaderboard.serializers import LeetcodeStatsSerializer, GitHubStatsSerializer
 from .serializers import CohortStatsSerializer
 from cohort.models import Cohort
 
@@ -207,6 +209,24 @@ class InjestMessageEventView(generics.CreateAPIView):
                 {"error": "internal server error"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class GetUserStats(APIView):
+    permission_classes = [IsVerified | IsApiKey]
+
+    def get(self, request, id):
+        user = request.user if not id else get_object_or_404(User, id=id)
+
+        return Response(
+            {
+                "leetcode": LeetcodeStatsSerializer(
+                    LeetcodeStats.objects.get(user=user)
+                ).data,
+                "github": GitHubStatsSerializer(
+                    GitHubStats.objects.get(user=user)
+                ).data,
+            }
+        )
 
 
 class QueryDiscordMessageStats(generics.ListAPIView):
