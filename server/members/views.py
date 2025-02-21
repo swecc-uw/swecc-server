@@ -224,3 +224,24 @@ class AdminList(generics.ListAPIView):
 
     def get_queryset(self):
         return Group.objects.get(name="is_admin").user_set.all()
+
+
+class UpdateDiscordUsername(APIView):
+    permission_classes = [~IsVerified]
+
+    def post(self, request):
+        new_discord_username = request.data.get("new_discord_username")
+        member_id = request.data.get("member_id")
+
+        user = get_object_or_404(User, id=member_id)
+
+        user.discord_username = new_discord_username
+        user.save()
+
+        logger.info(
+            "Updated `discord_username` for user %s with value: %s",
+            user.username,
+            user.discord_username,
+        )
+
+        return Response({"success": True}, status=200)
