@@ -58,4 +58,9 @@ urlpatterns = [
         view=views.UpdateDailyChecksView.as_view(),
         name="cohort-update-daily-check",
     ),
+    path(
+        "user/<int:id>/",
+        views.GetUserStats.as_view(),
+        name="get-user-stats",
+    )
 ]
