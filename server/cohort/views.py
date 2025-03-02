@@ -93,6 +93,7 @@ class CohortStatsView(APIView):
         - if member_id or discord_id is provided, return stats for cohorts where member belongs and has stats
         - only one of cohort_id, member_id, or discord_id can be provided
         - if include_profiles is true, include cohort profiles in the response
+        - if include_individuals is true, include individual member stats in the response
         """
         try:
             cohort_ids, member_id = self.parse_ids(request.query_params)
@@ -101,6 +102,10 @@ class CohortStatsView(APIView):
 
         include_profiles = (
             request.query_params.get("include_profiles", "").lower() == "true"
+        )
+
+        include_individuals = (
+            request.query_params.get("include_individuals", "").lower() == "true"
         )
 
         stats_queryset = self.get_queryset(cohort_ids, member_id)
@@ -117,13 +122,18 @@ class CohortStatsView(APIView):
 
         response = []
         for cohort in cohorts:
-            stats = self.aggregate_stats(stats_queryset, cohort.id)
-            response.append(
-                {
-                    "stats": stats.to_dict(),
-                    "cohort": cohort_serializer(cohort).data,
-                }
-            )
+            aggregate_stats = self.aggregate_stats(stats_queryset, cohort.id)
+
+            cohort_data = {
+                "stats": aggregate_stats.to_dict(),
+                "cohort": cohort_serializer(cohort).data,
+            }
+
+            if include_individuals:
+                member_stats = self.get_member_stats(stats_queryset, cohort.id)
+                cohort_data["member_stats"] = member_stats
+
+            response.append(cohort_data)
 
         return Response(response)
 
@@ -139,7 +149,6 @@ class CohortStatsView(APIView):
     def get_queryset(
         self, cohort_ids: Optional[List[int]] = None, member_id: Optional[int] = None
     ):
-
         queryset = CohortStats.objects.all()
 
         if member_id:
@@ -165,6 +174,43 @@ class CohortStatsView(APIView):
             Max("streak"),
         )
         return CohortStatsData.from_db_values(stats)
+
+    def get_member_stats(self, queryset, cohort_id: int) -> List[dict]:
+        """
+        Get individual stats for each member in the cohort
+        """
+        member_stats = []
+
+        # Get all members' stats for this cohort
+        members_queryset = queryset.filter(cohort_id=cohort_id)
+
+        # Pre-fetch user information for efficiency
+        member_ids = members_queryset.values_list("member_id", flat=True).distinct()
+        users = {user.id: user for user in User.objects.filter(id__in=member_ids)}
+
+        # Group by member_id and aggregate stats for each member
+        for member_id in member_ids:
+            member_queryset = members_queryset.filter(member_id=member_id)
+
+            stats = member_queryset.aggregate(
+                Sum("applications"),
+                Sum("onlineAssessments"),
+                Sum("interviews"),
+                Sum("offers"),
+                Sum("dailyChecks"),
+                Max("streak"),
+            )
+
+            user = users.get(member_id)
+            member_data = {
+                "member_id": member_id,
+                "username": user.username if user else None,
+                "stats": CohortStatsData.from_db_values(stats).to_dict(),
+            }
+
+            member_stats.append(member_data)
+
+        return member_stats
 
     def get_cohorts(
         self, cohort_ids: Optional[List[int]] = None, member_id: Optional[int] = None
