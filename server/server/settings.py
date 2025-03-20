@@ -177,6 +177,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://leaderboard.swecc.org",
     "https://engagement.swecc.org",
     "https://admin.swecc.org",
+    "https://dashboard.swecc.org",
     "https://template.swecc.org",
 ]
 CORS_EXPOSE_HEADERS = ["Content-Type", "X-CSRFToken"]
@@ -194,6 +195,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://leaderboard.swecc.org",
     "https://engagement.swecc.org",
     "https://admin.swecc.org",
+    "https://dashboard.swecc.org",
     "https://template.swecc.org",
 ]
 
