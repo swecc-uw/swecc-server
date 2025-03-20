@@ -2,7 +2,7 @@ from pathlib import Path
 from datetime import timedelta
 import os
 
-DJANGO_DEBUG = os.environ["DJANGO_DEBUG"]
+DJANGO_DEBUG = DEBUG = os.environ["DJANGO_DEBUG"]
 DB_HOST = os.environ["DB_HOST"]
 DB_NAME = os.environ["DB_NAME"]
 DB_PORT = os.environ["DB_PORT"]
@@ -177,6 +177,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://leaderboard.swecc.org",
     "https://engagement.swecc.org",
     "https://admin.swecc.org",
+    "https://template.swecc.org",
 ]
 CORS_EXPOSE_HEADERS = ["Content-Type", "X-CSRFToken"]
 CORS_ALLOW_CREDENTIALS = True
@@ -193,6 +194,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://leaderboard.swecc.org",
     "https://engagement.swecc.org",
     "https://admin.swecc.org",
+    "https://template.swecc.org",
 ]
 
 devclient = "http://localhost:5173"
