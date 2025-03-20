@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 class MetricServerAPI:
     def get_from_metric_service(self, endpoint: str):
         try:
+            logger.info(f"Fetching data from metric service: {endpoint}")
             metric_url = METRIC_SERVER_URL
             response = requests.get(metric_url + endpoint)
             response.raise_for_status() # Raise an exception for 4xx/5xx status codes
