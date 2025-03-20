@@ -17,3 +17,4 @@ beautifulsoup4
 Pillow
 django-redis
 redis
+PyJWT==1.7.1

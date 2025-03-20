@@ -9,5 +9,6 @@ urlpatterns = [
     path('whoami/', views.WhoAmIView.as_view(), name='api-whoami'), 
     path('register/', views.register_view, name='register'),
     path('password-reset-confirm/<uidb64>/<token>/', views.password_reset_confirm, name='password_reset_confirm'),
+    path('jwt/', views.CreateTokenView.as_view(), name='api-jwt'),
     # path('<int:id>/verified/', views.DiscordVerificationView.as_view(), name='api-verified'),
 ]
