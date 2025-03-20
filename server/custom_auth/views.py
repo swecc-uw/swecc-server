@@ -174,18 +174,9 @@ class CreateTokenView(views.APIView):
         payload = {
             "user_id": user_id,
             "username": username,
-            "exp": int(time.time()) + (hour)
+            "exp": int(time.time()) + hour
         }
 
         token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
-        try:
-            # PyJWT < 2.0.0 (returns bytes)
-            if isinstance(token, bytes):
-                return JsonResponse({'token': token.decode()})
-            # PyJWT >= 2.0.0 (returns string)
-            else:
-                return JsonResponse({'token': token})
-        except AttributeError:
-            # in case something horrible happens
-            return JsonResponse({'token': token})
+        return JsonResponse({'token': token.decode()})
