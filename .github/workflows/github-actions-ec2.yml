@@ -61,5 +61,6 @@ jobs:
           -e INTERNSHIP_CHANNEL_ID=${{ secrets.INTERNSHIP_CHANNEL_ID}} \
           -e NEW_GRAD_CHANNEL_ID=${{secrets.NEW_GRAD_CHANNEL_ID}} \
           -e METRIC_SERVER_URL=${{secrets.METRIC_SERVER_URL}} \
+          -e JWT_SECRET=${{secrets.JWT_SECRET}} \
           --restart unless-stopped \
           ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest

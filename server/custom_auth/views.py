@@ -1,7 +1,10 @@
+import jwt
+import time
 import json
 from django.contrib.auth import authenticate, login, logout
 from rest_framework import generics, views
 from .serializers import UserSerializer
+from members.permissions import IsApiKey
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.http import JsonResponse
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
@@ -13,6 +16,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from interview.notification import send_email
+from server.settings import JWT_SECRET
 
 import logging
 
@@ -159,4 +163,29 @@ class WhoAmIView(views.APIView):
 #                 return JsonResponse({'detail': 'User not found.'}, status=404)
 #             return JsonResponse({'detail': 'An error occurred.'}, status=500)
 
+class CreateTokenView(views.APIView):
+    permission_classes = [IsAuthenticated | IsApiKey]
 
+    @staticmethod
+    def get(request, format=None):
+        user_id, username = request.user.id, request.user.username
+        hour = 60 * 60
+
+        payload = {
+            "user_id": user_id,
+            "username": username,
+            "exp": int(time.time()) + (hour)
+        }
+
+        token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
+        try:
+            # PyJWT < 2.0.0 (returns bytes)
+            if isinstance(token, bytes):
+                return JsonResponse({'token': token.decode()})
+            # PyJWT >= 2.0.0 (returns string)
+            else:
+                return JsonResponse({'token': token})
+        except AttributeError:
+            # in case something horrible happens
+            return JsonResponse({'token': token})

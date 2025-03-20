@@ -14,6 +14,7 @@ SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_KEY = os.environ["SUPABASE_KEY"]
 # use for accessing metric from chronos
 METRIC_SERVER_URL = os.environ["METRIC_SERVER_URL"]
+JWT_SECRET = os.environ["JWT_SECRET"]
 
 print(
     {
