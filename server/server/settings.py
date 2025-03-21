@@ -180,6 +180,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://admin.swecc.org",
     "https://dashboard.swecc.org",
     "https://template.swecc.org",
+    "https://rooms.swecc.org",
 ]
 CORS_EXPOSE_HEADERS = ["Content-Type", "X-CSRFToken"]
 CORS_ALLOW_CREDENTIALS = True
@@ -198,6 +199,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://admin.swecc.org",
     "https://dashboard.swecc.org",
     "https://template.swecc.org",
+    "https://rooms.swecc.org",
 ]
 
 devclient = "http://localhost:5173"
