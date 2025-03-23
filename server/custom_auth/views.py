@@ -177,7 +177,7 @@ class CreateTokenView(views.APIView):
         except:
             pass
 
-        groups = [group.name for group in groups]
+        groups = [group.name for group in groups] + ['is_authenticated']
         if is_api_key:
             groups.append('api_key')
 
