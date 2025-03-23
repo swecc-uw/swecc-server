@@ -1,4 +1,4 @@
-name: Push-to-EC2
+name: Deploy Server Service
 on:
   push:
     branches:
@@ -27,8 +27,7 @@ jobs:
           ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest
           ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:${{ github.sha }}
 
-
-  build_self_hosted:
+  deploy_to_swarm:
     runs-on:
       group: EC2
       labels: [self-hosted, deploy]
@@ -39,27 +38,22 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v2
 
-    - name: Deploy application
+    - name: Deploy server service
       run: |
-        docker stop swecc-server-be-container || true
-        docker rm swecc-server-be-container || true
+        # Remove the existing service if it exists
+        docker service rm swecc_stack_server || true
         
-        docker pull ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest
-        
-        docker run -d --name swecc-server-be-container \
-          --network swag-network \
-          -e DJANGO_DEBUG=${{ secrets.DJANGO_DEBUG }} \
-          -e DB_HOST=${{ secrets.DB_HOST }} \
-          -e DB_NAME=${{ secrets.DB_NAME }} \
-          -e DB_PORT=${{ secrets.DB_PORT }} \
-          -e DB_USER=${{ secrets.DB_USER }} \
-          -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-          -e SENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }} \
-          -e SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
-          -e SUPABASE_KEY=${{ secrets.SUPABASE_KEY }} \
-          -e INTERNSHIP_CHANNEL_ID=${{ secrets.INTERNSHIP_CHANNEL_ID}} \
-          -e NEW_GRAD_CHANNEL_ID=${{secrets.NEW_GRAD_CHANNEL_ID}} \
-          -e METRIC_SERVER_URL=${{secrets.METRIC_SERVER_URL}} \
-          -e JWT_SECRET=${{secrets.JWT_SECRET}} \
-          --restart unless-stopped \
+        # Extract environment variables from config
+        docker config inspect server_env --pretty | sed -n '/Data:/,$ p' | sed '1d' > env_file.txt
+
+        # Deploy the service with the env file
+        docker service create \
+          --name swecc_stack_server \
+          --network swecc_stack_swecc-network \
+          --env-file env_file.txt \
+          --replicas 1 \
+          --restart-condition any \
           ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest
+
+        # Clean up
+        rm env_file.txt
