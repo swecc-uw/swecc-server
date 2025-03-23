@@ -170,14 +170,22 @@ class CreateTokenView(views.APIView):
     def get(request, format=None):
         user_id, username = request.user.id, request.user.username
         groups = request.user.groups.all()
+        is_api_key = False
 
-        logger.info('User with groups %s requested token', groups)
+        try:
+            is_api_key = IsApiKey().has_permission(request, None)
+        except:
+            pass
+
+        groups = [group.name for group in groups]
+        if is_api_key:
+            groups.append('api_key')
+
         hour = 60 * 60
-
         payload = {
             "user_id": user_id,
             "username": username,
-            "groups": [group.name for group in groups],
+            "groups": groups,
             "exp": int(time.time()) + hour
         }
 
