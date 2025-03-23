@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    # Allow manual triggering and from API
 
 jobs:
   push_to_dockerhub:
