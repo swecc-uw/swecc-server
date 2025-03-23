@@ -169,11 +169,15 @@ class CreateTokenView(views.APIView):
     @staticmethod
     def get(request, format=None):
         user_id, username = request.user.id, request.user.username
+        groups = request.user.groups.all()
+
+        logger.info('User with groups %s requested token', groups)
         hour = 60 * 60
 
         payload = {
             "user_id": user_id,
             "username": username,
+            "groups": [group.name for group in groups],
             "exp": int(time.time()) + hour
         }
 
