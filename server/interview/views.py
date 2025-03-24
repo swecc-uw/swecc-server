@@ -30,8 +30,8 @@ from .algorithm import CommonAvailabilityStableMatching
 from .notification import (
     interview_paired_notification_html,
     interview_unpaired_notification_html,
-    send_email,
 )
+from email_util.send_email import send_email
 from .models import Interview, InterviewAvailability, InterviewPool
 from .serializers import InterviewSerializer
 

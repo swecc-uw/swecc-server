@@ -5,7 +5,8 @@ import server.settings as settings
 from django.db.models import Q
 import logging
 
-from interview.notification import interview_paired_notification_html, send_email
+from interview.notification import interview_paired_notification_html
+from email_util.send_email import send_email
 from interview.views import INTERVIEW_NOTIFICATION_ADDR
 
 logger = logging.getLogger(__name__)

@@ -17,6 +17,7 @@ class Cohort(models.Model):
     level = models.CharField(
         max_length=64, choices=LEVEL_CHOICES, db_index=True, default="beginner"
     )
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ["name"]

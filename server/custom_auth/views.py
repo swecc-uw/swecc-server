@@ -15,7 +15,7 @@ from django.db import transaction
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
-from interview.notification import send_email
+from email_util.send_email import send_email
 from server.settings import JWT_SECRET
 
 import logging
