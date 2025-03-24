@@ -39,6 +39,8 @@ services:
       - NEW_GRAD_CHANNEL_ID=${NEW_GRAD_CHANNEL_ID}
       - METRIC_SERVER_URL=${METRIC_SERVER_URL}
       - JWT_SECRET=${JWT_SECRET}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     command: python3 server/manage.py runserver 0.0.0.0:8000
 
   db:
