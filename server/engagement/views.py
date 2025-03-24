@@ -24,7 +24,7 @@ from leaderboard.models import LeetcodeStats, GitHubStats
 from leaderboard.serializers import LeetcodeStatsSerializer, GitHubStatsSerializer
 from .serializers import CohortStatsSerializer
 from cohort.models import Cohort
-
+from email_util.send_email import send_email
 logger = logging.getLogger(__name__)
 
 
@@ -304,7 +304,6 @@ class CohortStatsBase(APIView):
         pass
 
     def put(self, request):
-
         user_id, error = self.get_user_id_from_discord(request.data.get("discord_id"))
 
         if error:
@@ -312,29 +311,47 @@ class CohortStatsBase(APIView):
 
         cohort_name = request.data.get("cohort_name")
 
-        if not cohort_name:
-            return JsonResponse({"error": "Cohort name is required"}, status=400)
+        cohort_stats_queryset = CohortStats.objects.filter(
+            member__id=user_id,
+            cohort__is_active=True
+        )
 
-        cohort_obj = Cohort.objects.filter(name=cohort_name).first()
+        if cohort_name:
+            cohort_stats_queryset = cohort_stats_queryset.filter(cohort__name=cohort_name)
+            if not cohort_stats_queryset.exists():
+                return JsonResponse(
+                    {"error": "Active cohort not found with the provided name"},
+                    status=404
+                )
 
-        if not cohort_obj:
-            return JsonResponse({"error": "Cohort not found"}, status=404)
+        cohort_stats_objects = list(cohort_stats_queryset)
 
-        try:
-            cohort_stats_object = CohortStats.objects.get(
-                cohort__name=cohort_name, member__id=user_id
-            )
-        except CohortStats.DoesNotExist:
+        if not cohort_stats_objects:
             return JsonResponse(
-                {"error": "Cohort stats object doesn't exist for this user"}, status=404
+                {"error": "No active cohort stats found for this user"},
+                status=404
             )
 
-        self.update_stats(cohort_stats_object)
+        updated_cohorts = []
+        for stats_obj in cohort_stats_objects:
+            self.update_stats(stats_obj)
+            logger.info(
+                f"{self.__class__.__name__} for {stats_obj.member.username} in cohort {stats_obj.cohort.name}"
+            )
+            updated_cohorts.append(stats_obj.cohort.name)
 
-        serializer = CohortStatsSerializer(cohort_stats_object)
+        if len(updated_cohorts) > 1:
+            msg = f"User {user_id} has multiple active cohorts {updated_cohorts}. Updated all of them, but you might want to look into this."
+            logger.warning(msg)
+            try:
+                send_email('swecc@uw.edu', 'sweccuw@gmail.com', "Multiple active cohorts", f"<p>{msg}</p>")
+            except Exception as e:
+                logger.error(f"Failed to send email: {e}")
 
-        return Response({"cohort_stats": serializer.data}, status=status.HTTP_200_OK)
-
+        return Response(
+            {"updated_cohorts": updated_cohorts},
+            status=status.HTTP_200_OK
+        )
 
 class UpdateApplicationStatsView(CohortStatsBase):
     def update_stats(self, cohort_stats_object):
@@ -382,5 +399,5 @@ class UpdateDailyChecksView(CohortStatsBase):
             cohort_stats_object.save()
         else:
             logging.info(
-                "Daily check occurred more than once within 24 hours. Skipping update."
+                f"Daily check for cohort {cohort_stats_object.cohort.name} occurred more than once within 24 hours. Skipping update."
             )

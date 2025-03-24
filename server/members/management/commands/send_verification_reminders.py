@@ -1,7 +1,7 @@
 from members.models import User
 from django.core.management.base import BaseCommand
 import time
-from interview.notification import send_email
+from email_util.send_email import send_email
 
 SENDER_EMAIL = "swecc@uw.edu"
 COOL_DOWN = 1
