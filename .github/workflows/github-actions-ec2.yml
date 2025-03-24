@@ -43,15 +43,15 @@ jobs:
     - name: Deploy server service
       run: |
         # Remove the existing service if it exists
-        docker service rm swecc_stack_server || true
+        docker service rm swecc-stack-server || true
         
         # Extract environment variables from config
         docker config inspect server_env --pretty | sed -n '/Data:/,$ p' | sed '1d' > env_file.txt
 
         # Deploy the service with the env file
         docker service create \
-          --name swecc_stack_server \
-          --network swecc_stack_swecc-network \
+          --name swecc-stack-server \
+          --network swecc-stack-swecc-network \
           --env-file env_file.txt \
           --replicas 1 \
           --restart-condition any \
