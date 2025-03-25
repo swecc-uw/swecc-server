@@ -51,29 +51,137 @@ jobs:
 
       - name: Deploy server service
         run: |
+          # Extract env file from Docker config
           docker config inspect server_env --pretty | sed -n '/Data:/,$ p' | sed '1d' > env_file.txt || echo "No config found"
 
+          # Parse environment variables from file into array
+          declare -a ENV_VARS
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            # Skip empty lines and comments
+            [[ -z "$line" || "$line" == \#* ]] && continue
+            ENV_VARS+=("--env" "${line}")
+          done < env_file.txt
+
+          # Create a temporary container name
+          TIMESTAMP=$(date +%s)
+          NEW_SERVICE="server_new_${TIMESTAMP}"
+          NETWORK="prod_swecc-network"
+
           if docker service ls | grep -q "server"; then
-            docker service update \
-              --image ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest \
-              --update-parallelism 1 \
-              --update-delay 30s \
-              --update-order start-first \
-              --update-failure-action continue \
+            echo "Existing service found - performing zero-downtime deployment"
+
+            # Create a temporary service with the new image
+            echo "Creating temporary service: $NEW_SERVICE"
+            docker service create \
+              --name "$NEW_SERVICE" \
+              --network $NETWORK \
+              "${ENV_VARS[@]}" \
+              --replicas 1 \
+              --restart-condition any \
               --limit-cpu 0.5 \
               --limit-memory 512M \
               --reserve-cpu 0.1 \
-              --env-file env_file.txt \
               --reserve-memory 128M \
               --with-registry-auth \
-              server
-          else
-            docker service rm server || true
+              ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest
 
+            # Wait for the service to be ready
+            echo "Waiting for new service to be ready..."
+            MAX_ATTEMPTS=30
+            for i in $(seq 1 $MAX_ATTEMPTS); do
+              # Check if service is running with 1/1 replicas
+              REPLICAS=$(docker service ls --filter "name=$NEW_SERVICE" --format "{{.Replicas}}")
+              echo "Current replica status: $REPLICAS"
+              if [[ "$REPLICAS" == "1/1" ]]; then
+                # Check if container is healthy
+                CONTAINER_ID=$(docker ps -q --filter "name=$NEW_SERVICE" | head -n1)
+
+                echo "Checking health status of container $CONTAINER_ID"
+
+                if [[ -n "$CONTAINER_ID" ]]; then
+                  HEALTH=$(docker inspect --format='{{.State.Health.Status}}' "$CONTAINER_ID" 2>/dev/null || echo "unknown")
+                  echo "Health status: $HEALTH"
+                  if [[ "$HEALTH" == "healthy" || "$HEALTH" == "unknown" ]]; then
+                    echo "✅ New service is ready!"
+                    break
+                  fi
+                fi
+              fi
+
+              # Check for errors in the service
+              if docker service ps "$NEW_SERVICE" --filter "desired-state=running" --format "{{.Error}}" | grep -q .; then
+                echo "❌ New service failed to start properly"
+                docker service logs "$NEW_SERVICE"
+                docker service rm "$NEW_SERVICE"
+
+                echo "Falling back to standard deployment"
+                # Use our parsed environment variables
+                docker service update \
+                  --image ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest \
+                  --update-parallelism 1 \
+                  --update-delay 30s \
+                  --update-order start-first \
+                  --update-failure-action continue \
+                  --limit-cpu 0.5 \
+                  --limit-memory 512M \
+                  --reserve-cpu 0.1 \
+                  --reserve-memory 128M \
+                  --with-registry-auth \
+                  server
+
+                exit 0
+              fi
+
+              if [[ $i -eq $MAX_ATTEMPTS ]]; then
+                echo "❌ Health check timeout after $MAX_ATTEMPTS attempts"
+                docker service logs "$NEW_SERVICE"
+                docker service rm "$NEW_SERVICE"
+
+                echo "Falling back to standard deployment"
+                # Use our parsed environment variables
+                docker service update \
+                  --image ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest \
+                  --update-parallelism 1 \
+                  --update-delay 30s \
+                  --update-order start-first \
+                  --update-failure-action continue \
+                  --limit-cpu 0.5 \
+                  --limit-memory 512M \
+                  --reserve-cpu 0.1 \
+                  --reserve-memory 128M \
+                  --with-registry-auth \
+                  "${ENV_VARS[@]}" \
+                  server
+
+                exit 0
+              fi
+
+              echo "Waiting for new service to be ready: attempt $i/$MAX_ATTEMPTS..."
+              sleep 5
+            done
+
+            # If we made it here, the new service is working
+            echo "New service is healthy - removing old service"
+
+            # Save current service logs before removing (optional)
+            docker service logs server > old_service_logs.txt || true
+
+            # Remove the old service
+            docker service rm server
+
+            # Rename the new service to the original service name
+            echo "Renaming service $NEW_SERVICE to server"
+            docker service update \
+              --name server \
+              "$NEW_SERVICE"
+
+            echo "Zero-downtime deployment complete!"
+          else
+            echo "No existing service - creating new service"
             docker service create \
               --name server \
               --network prod_swecc-network \
-              --env-file env_file.txt \
+              "${ENV_VARS[@]}" \
               --replicas 1 \
               --restart-condition any \
               --update-parallelism 1 \
@@ -86,9 +194,9 @@ jobs:
               --reserve-memory 128M \
               --with-registry-auth \
               ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest
-
-            rm env_file.txt || true
           fi
+
+          rm env_file.txt || true
 
       - name: Verify deployment
         run: |
