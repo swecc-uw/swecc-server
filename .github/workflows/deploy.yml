@@ -1,4 +1,4 @@
-name: Deploy Scheduler Service
+name: Deploy Server Service
 on:
   push:
     branches:
