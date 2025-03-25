@@ -35,6 +35,16 @@ jobs:
 
     needs: push_to_dockerhub
 
+    env:
+      SERVICE_NAME: "server"
+      NETWORK: "prod_swecc-network"
+      CPU_LIMIT: "0.3"
+      MEMORY_LIMIT: "256M"
+      CPU_RESERVE: "0.1"
+      MEMORY_RESERVE: "128M"
+      IMAGE: "swecc-server:latest"
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
@@ -47,53 +57,57 @@ jobs:
 
       - name: Pull latest image
         run: |
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest
+          docker pull ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}
 
-      - name: Deploy server service
+      - name: Prepare environment file
         run: |
-          SERVICE_NAME="server"
-          NETWORK="prod_swecc-network"
-
-          echo "Redeploying $SERVICE_NAME service to $NETWORK"
-
           echo "Parsing environment variables..."
           docker config inspect server_env --pretty | sed -n '/Data:/,$ p' | sed '1d' > env_file.txt || echo "No config found"
 
-          echo "Creating staging service..."
-          STAGING_NAME="$SERVICE_NAME-staging"
-
-          if docker service ls | grep -q "$SERVICE_NAME"; then
-            echo "Existing service found - performing zero-downtime deployment"
-
-            echo "Creating temporary service: $STAGING_NAME"
-            docker service create \
-              --name "$STAGING_NAME" \
-              --network $NETWORK \
-              --env-file env_file.txt \
-              --replicas 1 \
-              --restart-condition any \
-              --limit-cpu 0.3 \
-              --limit-memory 256M \
-              --reserve-cpu 0.1 \
-              --reserve-memory 128M \
-              --with-registry-auth \
-              ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest
-
-            echo "New service is healthy - promoting staging service to production"
-            docker service update \
-              --update-parallelism 1 \
-              --hostname $SERVICE_NAME \
-              $STAGING_NAME
-
-            echo "Removing old service"
-            docker service rm $SERVICE_NAME
+      - name: Check for existing service
+        id: check_service
+        run: |
+          if docker service ls | grep -q "${{ env.SERVICE_NAME }}"; then
+            echo "existing_service=true" >> $GITHUB_OUTPUT
           else
-            echo "No existing service - creating new service"
+            echo "existing_service=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Create staging service for zero-downtime deployment
+        if: steps.check_service.outputs.existing_service == 'true'
+        run: |
+          STAGING_NAME="${{ env.SERVICE_NAME }}-staging"
+
+          echo "Creating temporary service: $STAGING_NAME"
           docker service create \
-            --name $SERVICE_NAME \
-            --network $NETWORK \
+            --name "$STAGING_NAME" \
+            --network ${{ env.NETWORK }} \
+            --env-file env_file.txt \
+            --replicas 1 \
+            --restart-condition any \
+            --limit-cpu ${{ env.CPU_LIMIT }} \
+            --limit-memory ${{ env.MEMORY_LIMIT }} \
+            --reserve-cpu ${{ env.CPU_RESERVE }} \
+            --reserve-memory ${{ env.MEMORY_RESERVE }} \
+            --with-registry-auth \
+            ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}
+
+          echo "New service is healthy - promoting staging service to production"
+          docker service update \
+            --update-parallelism 1 \
+            --hostname ${{ env.SERVICE_NAME }} \
+            $STAGING_NAME
+
+          echo "Removing old service"
+          docker service rm ${{ env.SERVICE_NAME }}
+
+      - name: Create new service
+        if: steps.check_service.outputs.existing_service == 'false'
+        run: |
+          echo "No existing service - creating new service"
+          docker service create \
+            --name ${{ env.SERVICE_NAME }} \
+            --network ${{ env.NETWORK }} \
             --env-file env_file.txt \
             --replicas 1 \
             --restart-condition any \
@@ -101,46 +115,13 @@ jobs:
             --update-delay 30s \
             --update-order start-first \
             --update-failure-action continue \
-            --limit-cpu 0.3 \
-            --limit-memory 256M \
-            --reserve-cpu 0.1 \
-            --reserve-memory 128M \
+            --limit-cpu ${{ env.CPU_LIMIT }} \
+            --limit-memory ${{ env.MEMORY_LIMIT }} \
+            --reserve-cpu ${{ env.CPU_RESERVE }} \
+            --reserve-memory ${{ env.MEMORY_RESERVE }} \
             --with-registry-auth \
-            ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest
+            ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}
 
-          rm env_file.txt || true
-
-      - name: Verify deployment
+      - name: Cleanup
         run: |
-          echo "Verifying deployment..."
-          timeout=300
-          elapsed=0
-
-          echo "Waiting 3 seconds before starting verification..."
-          sleep 3
-
-          while [ $elapsed -lt $timeout ]; do
-            REPLICAS=$(docker service ls --filter "name=server" --format "{{.Replicas}}")
-            echo "Current replica status: $REPLICAS"
-
-            if [ "$REPLICAS" == "1/1" ]; then
-              echo "✅ Service deployed successfully"
-              exit 0
-            fi
-
-            echo "⏳ Waiting for service to be fully deployed... ($elapsed/$timeout seconds)"
-            sleep 10
-            elapsed=$((elapsed + 10))
-
-            echo "Current service status:"
-            docker service ps server --no-trunc
-
-            if docker service ps server --filter "desired-state=running" --format "{{.Error}}" | grep -q .; then
-              echo "⚠️ Deployment showing errors, but continuing to wait..."
-            fi
-          done
-
-          echo "❌ Deployment verification timed out after $timeout seconds"
-          echo "Final service status:"
-          docker service ps server --no-trunc
-          exit 1
+          rm env_file.txt || true
