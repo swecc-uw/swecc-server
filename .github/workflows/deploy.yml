@@ -107,7 +107,7 @@ jobs:
       - name: Create new service
         if: steps.check_service.outputs.existing_service == 'false' || steps.create_staging.outputs.staging_success == 'true'
         run: |
-          echo "No existing service - creating new service"
+          echo "Creating new prod service for ${{ env.SERVICE_NAME }}"
           docker service create \
             --name ${{ env.SERVICE_NAME }} \
             --network ${{ env.NETWORK }} \
@@ -127,4 +127,5 @@ jobs:
 
       - name: Cleanup
         run: |
+          docker service rm ${{ env.SERVICE_NAME }}-staging || true
           rm env_file.txt || true
