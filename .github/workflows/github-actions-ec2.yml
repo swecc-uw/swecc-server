@@ -99,9 +99,9 @@ jobs:
                 echo "Checking health status of container $CONTAINER_ID"
 
                 if [[ -n "$CONTAINER_ID" ]]; then
-                  HEALTH=$(docker inspect --format='{{.State.Health.Status}}' "$CONTAINER_ID" 2>/dev/null || echo "unknown")
+                  HEALTH=$(docker inspect "$CONTAINER_ID" | jq '.[0].State.Running'  2>/dev/null || echo "unknown")
                   echo "Health status: $HEALTH"
-                  if [[ "$HEALTH" == "healthy" || "$HEALTH" == "unknown" ]]; then
+                  if [[ "$HEALTH" == "true" ]]; then
                     echo "✅ New service is ready!"
                     break
                   fi
