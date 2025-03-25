@@ -8,6 +8,7 @@ from rest_framework import status
 from aws.s3 import S3Client
 from server.settings import AWS_BUCKET_NAME
 from django.utils.crypto import get_random_string
+from django.db import IntegrityError
 
 # Create your views here.
 
@@ -30,14 +31,6 @@ class ResumeUploadView(APIView):
                 {"error": "File size too large."}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        existing_file_with_name = Resume.objects.filter(file_name=file_name).first()
-
-        if existing_file_with_name:
-            return Response(
-                {"error": "File with name already exists."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         resume_count = Resume.objects.filter(member=request.user).count()
 
         if resume_count >= MAX_RESUME_COUNT:
@@ -48,9 +41,15 @@ class ResumeUploadView(APIView):
             )
             oldest_resume.delete()
 
-        added_resume = Resume.objects.create(
-            member=request.user, file_name=file_name, file_size=file_size
-        )
+        try:
+            added_resume = Resume.objects.create(
+                member=request.user, file_name=file_name, file_size=file_size
+            )
+            added_resume.save()
+        except IntegrityError:
+            return Response(
+                {"error": "Duplicate file name."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         presigned_url = S3Client().get_presigned_url(
             bucket=AWS_BUCKET_NAME, key=added_resume.file_name
@@ -59,7 +58,7 @@ class ResumeUploadView(APIView):
         return Response(
             {
                 "presigned_url": presigned_url,
-                "key": f"{request.user.id}-{added_resume.id}-{get_random_string(length=20)}",
+                "key": f"{request.user.id}-{added_resume.id}-{file_name}",
             },
             status=status.HTTP_201_CREATED,
         )
