@@ -63,7 +63,7 @@ jobs:
       - name: Prepare environment file
         run: |
           echo "Parsing environment variables..."
-          docker config inspect ${{ env.CONFIG }} --pretty | sed -n '/Data:/,$ p' | sed '1d' > env_file.txt || echo "No config found"
+          docker config inspect ${{ env.CONFIG_NAME }} --pretty | sed -n '/Data:/,$ p' | sed '1d' > env_file.txt || echo "No config found"
 
       - name: Check for existing service
         id: check_service
