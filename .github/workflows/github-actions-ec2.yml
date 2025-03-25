@@ -51,6 +51,8 @@ jobs:
 
       - name: Deploy server service
         run: |
+          docker config inspect server_env --pretty | sed -n '/Data:/,$ p' | sed '1d' > env_file.txt || echo "No config found"
+
           if docker service ls | grep -q "server"; then
             docker service update \
               --image ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest \
@@ -61,13 +63,12 @@ jobs:
               --limit-cpu 0.5 \
               --limit-memory 512M \
               --reserve-cpu 0.1 \
+              --env-file env_file.txt \
               --reserve-memory 128M \
               --with-registry-auth \
               server
           else
             docker service rm server || true
-
-            docker config inspect server_env --pretty | sed -n '/Data:/,$ p' | sed '1d' > env_file.txt || echo "No config found"
 
             docker service create \
               --name server \
