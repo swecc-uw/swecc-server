@@ -1,9 +1,20 @@
-name: Deploy Server Service
+name: Deploy Scheduler Service
 on:
   push:
     branches:
       - main
   workflow_dispatch:
+
+env:
+  SERVICE_NAME: "server"
+  NETWORK: "prod_swecc-network"
+  CPU_LIMIT: "0.3"
+  MEMORY_LIMIT: "256M"
+  CPU_RESERVE: "0.1"
+  MEMORY_RESERVE: "128M"
+  IMAGE: "swecc-server"
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  CONFIG_NAME: "server_env"
 
 jobs:
   push_to_dockerhub:
@@ -25,8 +36,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/swecc-server:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:${{ github.sha }}
 
   deploy_to_swarm:
     runs-on:
@@ -34,16 +45,6 @@ jobs:
       labels: [self-hosted, deploy]
 
     needs: push_to_dockerhub
-
-    env:
-      SERVICE_NAME: "server"
-      NETWORK: "prod_swecc-network"
-      CPU_LIMIT: "0.3"
-      MEMORY_LIMIT: "256M"
-      CPU_RESERVE: "0.1"
-      MEMORY_RESERVE: "128M"
-      IMAGE: "swecc-server:latest"
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
 
     steps:
       - name: Checkout Repository
@@ -57,12 +58,12 @@ jobs:
 
       - name: Pull latest image
         run: |
-          docker pull ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}
+          docker pull ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:latest
 
       - name: Prepare environment file
         run: |
           echo "Parsing environment variables..."
-          docker config inspect server_env --pretty | sed -n '/Data:/,$ p' | sed '1d' > env_file.txt || echo "No config found"
+          docker config inspect ${{ env.CONFIG }} --pretty | sed -n '/Data:/,$ p' | sed '1d' > env_file.txt || echo "No config found"
 
       - name: Check for existing service
         id: check_service
@@ -91,7 +92,7 @@ jobs:
             --reserve-cpu ${{ env.CPU_RESERVE }} \
             --reserve-memory ${{ env.MEMORY_RESERVE }} \
             --with-registry-auth \
-            ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}
+            ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:latest
 
           echo "New service is healthy - promoting staging service to production"
           docker service update \
@@ -123,7 +124,7 @@ jobs:
             --reserve-cpu ${{ env.CPU_RESERVE }} \
             --reserve-memory ${{ env.MEMORY_RESERVE }} \
             --with-registry-auth \
-            ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}
+            ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:latest
 
       - name: Cleanup
         run: |
