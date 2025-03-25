@@ -83,6 +83,45 @@ services:
     volumes:
       - redis_insight_volume_data:/db
 
+  rabbitmq-dev:
+    image: 'rabbitmq:3-management'
+    container_name: rabbitmq-dev
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    restart: always
+    networks:
+      - swecc-default
+
+  rabbitmq_listener:
+    build: .
+    container_name: rabbit_mq_listener
+    command: python3 rabbitmq_listener.py
+    environment:
+      - DJANGO_DEBUG=${DJANGO_DEBUG}
+      - DB_HOST=db
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - INTERNSHIP_CHANNEL_ID=${INTERNSHIP_CHANNEL_ID}
+      - NEW_GRAD_CHANNEL_ID=${NEW_GRAD_CHANNEL_ID}
+      - METRIC_SERVER_URL=${METRIC_SERVER_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
+      - RABBITMQ_HOST=rabbitmq-dev
+    depends_on:
+      - rabbitmq-dev
+      - web
+    networks:
+      - swecc-default
+    restart: always
+
 volumes:
   postgres_data:
   redis_volume_data:
