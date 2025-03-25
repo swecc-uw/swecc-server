@@ -74,6 +74,7 @@ jobs:
           fi
 
       - name: Create staging service for zero-downtime deployment
+        id: create_staging
         if: steps.check_service.outputs.existing_service == 'true'
         run: |
           STAGING_NAME="${{ env.SERVICE_NAME }}-staging"
@@ -101,8 +102,10 @@ jobs:
           echo "Removing old service"
           docker service rm ${{ env.SERVICE_NAME }}
 
+          echo "staging_success=true" >> $GITHUB_OUTPUT
+
       - name: Create new service
-        if: steps.check_service.outputs.existing_service == 'false'
+        if: steps.check_service.outputs.existing_service == 'false' || steps.create_staging.outputs.staging_success == 'true'
         run: |
           echo "No existing service - creating new service"
           docker service create \
