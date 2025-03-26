@@ -16,13 +16,41 @@ env:
   CONFIG_NAME: 'server_env'
 
 jobs:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      swecc_server: ${{ steps.filter.outputs.swecc-server }}
+      rabbit_listener: ${{ steps.filter.outputs.swecc-server-rabbit-listener }}
+    steps:
+      - name: Check changed files
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            swecc-server:
+              - '!server/rabbitmq_listener.py'
+            swecc-server-rabbit-listener:
+              - 'server/rabbitmq_listener.py'
+
   push_to_dockerhub:
+    needs: filter
     runs-on: ubuntu-latest
     strategy:
       matrix:
         image: ['swecc-server', 'swecc-server-rabbit-listener']
 
     steps:
+      - name: Check if this service should run
+        run: |
+          if [[ "${{ matrix.image }}" == "service1" && "${{ needs.filter.outputs.swecc_server }}" == "true" ]]; then
+            echo "Deploying swecc-server"
+          elif [[ "${{ matrix.image }}" == "service2" && "${{ needs.filter.outputs.rabbit_listener }}" == "true" ]]; then
+            echo "Deploying swecc-server-rabbit-listener"
+          else
+            echo "Skipping ${{ matrix.image }}"
+            # Dynamically skip a job
+            exit 78
+          fi
       - name: Checkout Repository
         uses: actions/checkout@v2
 
