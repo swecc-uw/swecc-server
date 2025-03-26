@@ -26,6 +26,12 @@ class ResumeUploadView(APIView):
         file_name = request.data.get("file_name")
         file_size = request.data.get("file_size")
 
+        if not file_name or not file_size:
+            return Response(
+                {"error": "File name or file size not provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if file_size > MAX_FILE_SIZE:
             return Response(
                 {"error": "File size too large."}, status=status.HTTP_400_BAD_REQUEST
