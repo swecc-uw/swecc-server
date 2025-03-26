@@ -1,0 +1,17 @@
+FROM python:3.9
+
+WORKDIR /app
+COPY rabbit_listener_requirements.txt .
+RUN pip install -r rabbit_listener_requirements.txt
+
+COPY server/ /app/server/
+
+RUN mkdir -p logs
+RUN touch logs/django.log
+
+COPY wait-for-it.sh /app/wait-for-it.sh
+RUN chmod +x /app/wait-for-it.sh
+
+ENV DJANGO_SETTINGS_MODULE=server.settings
+
+CMD ["./wait-for-it.sh", "rabbitmq-host:5672", "--", "python", "server/rabbitmq_listener.py"]
