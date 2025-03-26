@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths:
-      - 'server/rabbit_listener.py'
+      - 'server/rabbitmq_listener.py'
   workflow_dispatch:
 
 env:
