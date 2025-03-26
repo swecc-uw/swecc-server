@@ -10,6 +10,7 @@ from supabase import Client, create_client
 
 from server import settings
 from custom_auth.permissions import IsVerified
+from custom_auth.views import create_password_reset_creds
 from .models import User
 from .serializers import UserSerializer
 from .permissions import IsApiKey
@@ -212,8 +213,7 @@ class PasswordResetRequest(APIView):
         discord_id = request.data.get("discord_id")
         user = get_object_or_404(User, discord_id=discord_id)
 
-        token = default_token_generator.make_token(user)
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        uuid, token = create_password_reset_creds(user)
 
         return Response({"uid": uid, "token": token}, status=200)
 

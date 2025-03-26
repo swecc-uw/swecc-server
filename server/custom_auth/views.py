@@ -1,6 +1,7 @@
 import jwt
 import time
 import json
+import secrets
 from django.contrib.auth import authenticate, login, logout
 from rest_framework import generics, views
 from .serializers import UserSerializer
@@ -51,7 +52,6 @@ def login_view(request):
     login(request, user)
 
     logger.info('User %s logged in', username)
-    logger.info('User %s logged in', username)
     return JsonResponse({'detail': 'Successfully logged in.'})
 
 @require_POST
@@ -72,62 +72,101 @@ def password_reset_confirm(request, uidb64, token):
 
     except (User.DoesNotExist, ValueError):
         return JsonResponse({'detail': 'Invalid request.'}, status=400)
+
+def create_password_reset_creds(user):
+    token = default_token_generator.make_token(user)
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    return uid, token
+
+def validate_user_data(data, include_password=True):
+    first_name = data.get('first_name', '').strip()
+    last_name = data.get('last_name', '').strip()
+    username = data.get('username', '').strip()
+    email = data.get('email', '').strip()
+    discord_username = data.get('discord_username', '').strip()
     
+    required_fields = ['username', 'email', 'first_name', 'last_name', 'discord_username']
+    if include_password:
+        required_fields.append('password')
+
+    field_values = {
+        'username': username,
+        'email': email,
+        'first_name': first_name,
+        'last_name': last_name,
+        'discord_username': discord_username
+    }
+
+    if include_password:
+        field_values['password'] = data.get('password', '').strip()
+
+    missing_fields = [field for field in required_fields if not field_values.get(field)]
+
+    if missing_fields:
+        missing_fields_str = ', '.join(missing_fields)
+        return None, f"Please provide {missing_fields_str}."
+
+    return field_values, None
+
+def check_existing_user(field_values, source="registration"):
+    username = field_values.get('username')
+    email = field_values.get('email')
+    discord_username = field_values.get('discord_username')
+
+    if User.objects.filter(username__iexact=username).exists():
+        logger.error(f'Error {source}: username already exists')
+        return 'Username already exists.'
+
+    if User.objects.filter(discord_username__iexact=discord_username).exists():
+        logger.error(f'Error {source}: discord username already exists')
+        return 'Discord username already exists.'
+
+    if User.objects.filter(email__iexact=email).exists():
+        logger.error(f'Error {source}: email already exists')
+        return 'Email already exists.'
+
+    return None
 
 @require_POST
 def register_view(request):
     data = json.loads(request.body)
-    first_name = data.get('first_name').strip()
-    last_name = data.get('last_name').strip()
-    username = data.get('username').strip()
-    email = data.get('email').strip()
-    password = data.get('password').strip()
-    discord_username = data.get('discord_username')
 
-    if not username or not password or not discord_username or not email or not first_name or not last_name:
-        logger.error('Error registering: username, email, password, first name, last name, or discord username not provided')
-        return JsonResponse({'detail': 'Please provide username, email, password, first name, last name, and discord username.'}, status=400)
+    field_values, error_message = validate_user_data(data)
+    if error_message:
+        logger.error(f'Error registering: {error_message}')
+        return JsonResponse({'detail': error_message}, status=400)
 
     try:
         with transaction.atomic():
-            if User.objects.filter(username__iexact=username).exists():
-                logger.error('Error registering: username already exists')
-                return JsonResponse({'detail': 'Username already exists.'}, status=400)
-            if User.objects.filter(discord_username__iexact=discord_username).exists():
-                logger.error('Error registering: discord username already exists')
-                return JsonResponse({'detail': 'Discord username already exists.'}, status=400)
-            if User.objects.filter(email__iexact=email).exists():
-                logger.error('Error registering: email already exists')
-                return JsonResponse({'detail': 'Email already exists.'}, status=400)
+            error = check_existing_user(field_values)
+            if error:
+                return JsonResponse({'detail': error}, status=400)
             
             user = User.objects.create_user(
-                username=username,
-                email=email,
-                password=password,
-                discord_username=discord_username,
-                first_name=first_name,
-                last_name=last_name
+                username=field_values['username'],
+                email=field_values['email'],
+                password=field_values['password'],
+                discord_username=field_values['discord_username'],
+                first_name=field_values['first_name'],
+                last_name=field_values['last_name']
             )
 
-            logger.info('User %s registered', username)
+            logger.info('User %s registered', field_values['username'])
             return JsonResponse({'detail': 'Successfully registered.', 'id': user.id}, status=201)
 
     except Exception as e:
         logger.error('Error registering: %s', str(e))
-        logger.error('Error registering: %s', str(e))
         return JsonResponse({'detail': 'An error occurred during registration.', 'error': str(e)}, status=500)
-
 
 def logout_view(request):
     if not request.user.is_authenticated:
         logger.error('Error logging out: user not logged in')
         return JsonResponse({'detail': 'You\'re not logged in.'}, status=400)
 
+    username = request.user.username
     logout(request)
-    logger.info('User %s logged out', request.user.username)
-    logger.info('User %s logged out', request.user.username)
+    logger.info('User %s logged out', username)
     return JsonResponse({'detail': 'Successfully logged out.'})
-
 
 class SessionView(views.APIView):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
@@ -144,24 +183,6 @@ class WhoAmIView(views.APIView):
     @staticmethod
     def get(request, format=None):
         return JsonResponse({'username': request.user.username})
-
-# endpoint for checking if a user's account is verified through
-# Discord. Essentially, if they have a Discord ID associated with
-# their account. user does not need to be logged in to access this view
-# class DiscordVerificationView(views.APIView):
-#     authentication_classes = [SessionAuthentication, BasicAuthentication]
-#     permission_classes = [AllowAny]
-
-#     @staticmethod
-#     def get(request, id, format=None):
-#         try:
-#             user = User.objects.get(id=id)
-#             member = Member.objects.get(user=user)
-#             return JsonResponse({'verified': bool(member.discord_id)})
-#         except Exception as e:
-#             if type(e) == User.DoesNotExist or type(e) == Member.DoesNotExist:
-#                 return JsonResponse({'detail': 'User not found.'}, status=404)
-#             return JsonResponse({'detail': 'An error occurred.'}, status=500)
 
 class CreateTokenView(views.APIView):
     permission_classes = [IsAuthenticated | IsApiKey]
@@ -192,3 +213,47 @@ class CreateTokenView(views.APIView):
         token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
         return JsonResponse({'token': token.decode()})
+
+class RegisterWithApiKeyView(views.APIView):
+    permission_classes = [IsApiKey]
+
+    @staticmethod
+    def post(request):
+        data = json.loads(request.body)
+
+        field_values, error_message = validate_user_data(data, include_password=False)
+        if error_message:
+            logger.error(f'Error registering with API: {error_message}')
+            return JsonResponse({'detail': error_message}, status=400)
+
+        try:
+            with transaction.atomic():
+                error = check_existing_user(field_values, source="registering with API")
+                if error:
+                    return JsonResponse({'detail': error}, status=400)
+
+                temp_password = secrets.token_urlsafe(32)
+                field_values['password'] = temp_password
+
+                user = User.objects.create_user(
+                    username=field_values['username'],
+                    email=field_values['email'],
+                    password=temp_password,
+                    discord_username=field_values['discord_username'],
+                    first_name=field_values['first_name'],
+                    last_name=field_values['last_name']
+                )
+
+                uid, token = create_password_reset_creds(user)
+                reset_url = f'https://engagement.swecc.org/#/password-reset-confirm/{uid}/{token}'
+
+                logger.info('User %s registered via API', field_values['username'])
+                return JsonResponse({
+                    'detail': 'Successfully registered.',
+                    'id': user.id,
+                    'reset_password_url': reset_url
+                }, status=201)
+
+        except Exception as e:
+            logger.error('Error registering with API: %s', str(e))
+            return JsonResponse({'detail': 'An error occurred during registration.', 'error': str(e)}, status=500)
