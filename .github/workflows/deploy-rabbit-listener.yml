@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  SERVICE_NAME: 'rabbitmq-host'
+  SERVICE_NAME: 'server-rabbitmq-listener'
   NETWORK: 'prod_swecc-network'
   CPU_LIMIT: '0.3'
   MEMORY_LIMIT: '256M'
@@ -36,7 +36,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
-          context: .
+          context: Dockerfile.listener
           push: true
           tags: |
             ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:latest
