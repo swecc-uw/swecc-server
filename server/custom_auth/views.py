@@ -73,10 +73,10 @@ def password_reset_confirm(request, uidb64, token):
     except (User.DoesNotExist, ValueError):
         return JsonResponse({'detail': 'Invalid request.'}, status=400)
 
-def create_password_reset_url(user):
+def create_password_reset_creds(user):
     token = default_token_generator.make_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
-    return f'https://engagement.swecc.org/#/password-reset-confirm/{uid}/{token}'
+    return uid, token
 
 def validate_user_data(data, include_password=True):
     first_name = data.get('first_name', '').strip()
@@ -244,7 +244,8 @@ class RegisterWithApiKeyView(views.APIView):
                     last_name=field_values['last_name']
                 )
 
-                reset_url = create_password_reset_url(user)
+                uid, token = create_password_reset_creds(user)
+                reset_url = f'https://engagement.swecc.org/#/password-reset-confirm/{uid}/{token}'
 
                 logger.info('User %s registered via API', field_values['username'])
                 return JsonResponse({
