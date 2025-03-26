@@ -10,6 +10,7 @@ django.setup()
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq-host")
 
 
+# Sample callback, will fill in later
 def callback(ch, method, properties, body):
     data = json.loads(body)
     print("Received:", data)
