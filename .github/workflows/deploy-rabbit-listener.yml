@@ -36,7 +36,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
-          context: Dockerfile.listener
+          context: .
+          file: ./Dockerfile.listener
           push: true
           tags: |
             ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:latest
