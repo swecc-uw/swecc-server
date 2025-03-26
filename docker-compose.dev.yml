@@ -83,9 +83,9 @@ services:
     volumes:
       - redis_insight_volume_data:/db
 
-  rabbitmq-dev:
+  rabbitmq-host:
     image: 'rabbitmq:3-management'
-    container_name: rabbitmq-dev
+    container_name: rabbitmq-host
     ports:
       - '5672:5672'
       - '15672:15672'
@@ -94,9 +94,10 @@ services:
       - swecc-default
 
   rabbitmq_listener:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.listener
     container_name: rabbit_mq_listener
-    command: python3 rabbitmq_listener.py
     environment:
       - DJANGO_DEBUG=${DJANGO_DEBUG}
       - DB_HOST=db
@@ -114,9 +115,9 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
-      - RABBITMQ_HOST=rabbitmq-dev
+      - RABBITMQ_HOST=rabbitmq-host
     depends_on:
-      - rabbitmq-dev
+      - rabbitmq-host
       - web
     networks:
       - swecc-default

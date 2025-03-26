@@ -1,21 +1,20 @@
-name: Deploy Server Service
+name: Deploy Rabbit Listener Service
 on:
   push:
     branches:
       - main
-    paths-ignore:
+    paths:
       - 'server/rabbit_listener.py'
-
   workflow_dispatch:
 
 env:
-  SERVICE_NAME: 'server'
+  SERVICE_NAME: 'rabbitmq-host'
   NETWORK: 'prod_swecc-network'
   CPU_LIMIT: '0.3'
   MEMORY_LIMIT: '256M'
   CPU_RESERVE: '0.1'
   MEMORY_RESERVE: '128M'
-  IMAGE: 'swecc-server'
+  IMAGE: 'swecc-server-rabbit-listener'
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
   CONFIG_NAME: 'server_env'
