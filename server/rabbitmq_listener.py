@@ -31,20 +31,20 @@ def callback(ch, method, properties, body):
             if field not in data:
                 raise ValueError(f"Field {field} not found in message")
     except json.JSONDecodeError as e:
-        logging.error(f"Error decoding JSON: {e}")
+        logger.error(f"Error decoding JSON: {e}")
         return
     except ValueError as e:
-        logging.error(f"Error validating message: {e}")
+        logger.error(f"Error validating message: {e}")
         return
 
     if data["error"]:
-        logging.info(f"Received error message: {data['error']}")
+        logger.info(f"Received error message: {data['error']}")
         return
 
     resume_object = Resume.objects.filter(id=data["resume_id"]).first()
 
     if not resume_object:
-        logging.error(
+        logger.error(
             f"Resume with ID {data['resume_id']} not found"
         )  # Technically unreachable, though can't hurt to check for
         return
@@ -52,7 +52,7 @@ def callback(ch, method, properties, body):
     resume_object.feedback = data["feedback"]
     resume_object.save()
 
-    logging.info(
+    logger.info(
         f"Feedback for resume {data['resume_id']} updated with value {data['feedback']}"
     )
 
@@ -64,5 +64,5 @@ queue_name = "reviewed-feedback"
 channel.queue_declare(queue=queue_name, durable=True)
 channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
 
-logging.info("Listening for messages...")
+logger.info("Listening for messages...")
 channel.start_consuming()
