@@ -6,19 +6,21 @@ on:
   workflow_dispatch:
 
 env:
-  SERVICE_NAME: "server"
-  NETWORK: "prod_swecc-network"
-  CPU_LIMIT: "0.3"
-  MEMORY_LIMIT: "256M"
-  CPU_RESERVE: "0.1"
-  MEMORY_RESERVE: "128M"
-  IMAGE: "swecc-server"
+  NETWORK: 'prod_swecc-network'
+  CPU_LIMIT: '0.3'
+  MEMORY_LIMIT: '256M'
+  CPU_RESERVE: '0.1'
+  MEMORY_RESERVE: '128M'
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-  CONFIG_NAME: "server_env"
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  CONFIG_NAME: 'server_env'
 
 jobs:
   push_to_dockerhub:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: ['swecc-server', 'swecc-server-rabbit-listener']
 
     steps:
       - name: Checkout Repository
@@ -27,8 +29,8 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v1
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
@@ -36,8 +38,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.IMAGE }}:latest
+            ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.IMAGE }}:${{ github.sha }}
 
   deploy_to_swarm:
     runs-on:
@@ -45,6 +47,14 @@ jobs:
       labels: [self-hosted, deploy]
 
     needs: push_to_dockerhub
+    strategy:
+      matrix:
+        image: ['swecc-server', 'swecc-server-rabbit-listener']
+        include:
+          - image: 'swecc-server'
+            service_name: 'server'
+          - image: 'swecc-server-rabbit-listener'
+            service_name: 'rabbitmq-host'
 
     steps:
       - name: Checkout Repository
@@ -53,12 +63,12 @@ jobs:
       - name: Login to Docker Hub on deployment server
         uses: docker/login-action@v1
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
 
       - name: Pull latest image
         run: |
-          docker pull ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:latest
+          docker pull ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.image }}:latest
 
       - name: Prepare environment file
         run: |
@@ -68,7 +78,7 @@ jobs:
       - name: Check for existing service
         id: check_service
         run: |
-          if docker service ls | grep -q "${{ env.SERVICE_NAME }}"; then
+          if docker service ls | grep -q "${{ matrix.service_name }}"; then
             echo "existing_service=true" >> $GITHUB_OUTPUT
           else
             echo "existing_service=false" >> $GITHUB_OUTPUT
@@ -78,7 +88,7 @@ jobs:
         id: create_staging
         if: steps.check_service.outputs.existing_service == 'true'
         run: |
-          STAGING_NAME="${{ env.SERVICE_NAME }}-staging"
+          STAGING_NAME="${{ matrix.service_name }}-staging"
 
           echo "Creating temporary service: $STAGING_NAME"
           docker service create \
@@ -92,25 +102,25 @@ jobs:
             --reserve-cpu ${{ env.CPU_RESERVE }} \
             --reserve-memory ${{ env.MEMORY_RESERVE }} \
             --with-registry-auth \
-            ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:latest
+            ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.image }}:latest
 
           echo "New service is healthy - promoting staging service to production"
           docker service update \
             --update-parallelism 1 \
-            --hostname ${{ env.SERVICE_NAME }} \
+            --hostname ${{ matrix.service_name }} \
             $STAGING_NAME
 
           echo "Removing old service"
-          docker service rm ${{ env.SERVICE_NAME }}
+          docker service rm ${{ matrix.service_name }}
 
           echo "staging_success=true" >> $GITHUB_OUTPUT
 
       - name: Create new service
         if: steps.check_service.outputs.existing_service == 'false' || steps.create_staging.outputs.staging_success == 'true'
         run: |
-          echo "Creating new prod service for ${{ env.SERVICE_NAME }}"
+          echo "Creating new prod service for ${{ matrix.service_name }}"
           docker service create \
-            --name ${{ env.SERVICE_NAME }} \
+            --name ${{ matrix.service_name }} \
             --network ${{ env.NETWORK }} \
             --env-file env_file.txt \
             --replicas 1 \
@@ -124,9 +134,9 @@ jobs:
             --reserve-cpu ${{ env.CPU_RESERVE }} \
             --reserve-memory ${{ env.MEMORY_RESERVE }} \
             --with-registry-auth \
-            ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:latest
+            ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.image }}:latest
 
       - name: Cleanup
         run: |
-          docker service rm ${{ env.SERVICE_NAME }}-staging || true
+          docker service rm ${{ matrix.service_name }}-staging || true
           rm env_file.txt || true
