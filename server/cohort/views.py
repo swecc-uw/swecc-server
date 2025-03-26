@@ -9,8 +9,9 @@ from rest_framework.views import APIView
 from members.permissions import IsApiKey
 from .models import Cohort, CohortStatsData
 from .serializers import (
-    CohortHydratedPublicSerializer,
+    CohortPublicSerializer,
     CohortSerializer,
+    CohortHydratedPublicSerializer,
     CohortHydratedSerializer,
 )
 from members.models import User
@@ -22,9 +23,15 @@ def _get_serializer_class(req):
 
     is_admin = req.user.groups.filter(name="is_admin").exists()
     is_readonly = req.method == "GET"
+    include_profiles = req.query_params.get("include_profiles", True)
 
     if not is_admin and not is_readonly:
         raise PermissionError("You do not have permission to perform this action")
+
+    if not include_profiles:
+        return (
+            CohortPublicSerializer if not is_admin else CohortSerializer
+        )
 
     if is_readonly:
         return (

@@ -4,11 +4,16 @@ from members.serializers import UserSerializer
 from .models import Cohort
 
 
+class CohortPublicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Cohort
+        fields = ["id", "name", "members"]
+
+
 class CohortSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cohort
         fields = ["id", "name", "members", "level"]
-
 
 class CohortHydratedSerializer(serializers.ModelSerializer):
     members = UserSerializer(many=True, read_only=True)
