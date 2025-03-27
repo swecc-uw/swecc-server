@@ -92,6 +92,8 @@ services:
     restart: always
     networks:
       - swecc-default
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
 
   rabbitmq_listener:
     build:
@@ -127,6 +129,7 @@ volumes:
   postgres_data:
   redis_volume_data:
   redis_insight_volume_data:
+  rabbitmq_data:
 
 networks:
   swecc-default:
