@@ -33,4 +33,9 @@ urlpatterns = [
         views.VerifySchoolEmailRequest.as_view(),
         name="verify-school-email",
     ),
+    path(
+        "verify-school-email/<str:token>/",
+        views.ConfirmVerifySchoolEmail.as_view(),
+        name="verify-school-email-token",
+    ),
 ]

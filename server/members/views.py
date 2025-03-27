@@ -273,3 +273,25 @@ class VerifySchoolEmailRequest(APIView):
         token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
         return Response({"token": token}, status=200)
+
+
+class ConfirmVerifySchoolEmail(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, token):
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            return Response(
+                {"detail": "Token has expired"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        except jwt.InvalidTokenError:
+            return Response(
+                {"detail": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = get_object_or_404(User, id=payload["user_id"])
+        user.school_email = payload["email"]
+        user.save()
+
+        return Response({"detail": "School email verified"}, status=200)
