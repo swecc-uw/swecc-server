@@ -8,6 +8,10 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from supabase import Client, create_client
 
+import jwt
+import time
+from server.settings import JWT_SECRET
+
 from server import settings
 from custom_auth.permissions import IsVerified
 from custom_auth.views import create_password_reset_creds
@@ -241,3 +245,69 @@ class UpdateDiscordUsername(APIView):
         )
 
         return Response({"success": True}, status=200)
+
+
+class VerifySchoolEmailRequest(APIView):
+    permission_classes = [IsApiKey | IsVerified]
+
+    def post(self, request):
+        discord_id = request.data.get("discord_id")
+        user_id = request.data.get("user_id")
+        school_email = request.data.get("school_email")
+
+        if not discord_id and not user_id:
+            return Response(
+                {"detail": "Discord ID or user ID is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not school_email:
+            return Response(
+                {"detail": "School email is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not IsApiKey().has_permission(request, self) and request.user.id != user_id:
+            return Response({"detail": "Provided user does not match."}, status=403)
+
+        user = (
+            get_object_or_404(User, discord_id=discord_id)
+            if discord_id
+            else get_object_or_404(User, id=user_id)
+        )
+
+        hour = 60 * 60
+        payload = {
+            "user_id": user.id,
+            "username": user.username,
+            "exp": int(time.time()) + hour,
+            "email": school_email,
+        }
+
+        token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
+        return Response({"token": token}, status=200)
+
+
+class ConfirmVerifySchoolEmail(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, token):
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            return Response(
+                {"detail": "Token has expired"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        except jwt.InvalidTokenError:
+            return Response(
+                {"detail": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if request.user.id != payload["user_id"]:
+            return Response({"detail": "User does not match token"}, status=403)
+
+        request.user.school_email = payload["email"]
+        request.user.save()
+
+        return Response({"detail": "School email verified"}, status=200)

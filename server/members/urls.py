@@ -28,4 +28,14 @@ urlpatterns = [
         views.UpdateDiscordUsername.as_view(),
         name="update-discord-username",
     ),
+    path(
+        "verify-school-email/",
+        views.VerifySchoolEmailRequest.as_view(),
+        name="verify-school-email",
+    ),
+    path(
+        "verify-school-email/<str:token>/",
+        views.ConfirmVerifySchoolEmail.as_view(),
+        name="verify-school-email-token",
+    ),
 ]
