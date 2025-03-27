@@ -46,6 +46,7 @@ class User(AbstractUser):
     bio = models.TextField(blank=True, null=True)
     discord_id = models.BigIntegerField(null=True, blank=True)
     profile_picture_url = models.URLField(blank=True, null=True)
+    school_email = models.EmailField(blank=True, null=True)
 
     objects = CustomUserManager()
 
