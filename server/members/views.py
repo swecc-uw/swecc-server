@@ -248,19 +248,30 @@ class UpdateDiscordUsername(APIView):
 
 
 class VerifySchoolEmailRequest(APIView):
-    permission_classes = [IsApiKey]
+    permission_classes = [IsApiKey | IsVerified]
 
     def post(self, request):
         discord_id = request.data.get("discord_id")
+        user_id = request.data.get("user_id")
         school_email = request.data.get("school_email")
 
-        if not discord_id or not school_email:
+        if not discord_id and not user_id:
             return Response(
-                {"detail": "Discord ID and school email are required"},
+                {"detail": "Either discord_id or user_id is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        user = get_object_or_404(User, discord_id=discord_id)
+        if not school_email:
+            return Response(
+                {"detail": "School email is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = (
+            get_object_or_404(User, discord_id=discord_id)
+            if discord_id
+            else get_object_or_404(User, id=user_id)
+        )
 
         hour = 60 * 60
         payload = {
