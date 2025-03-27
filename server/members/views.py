@@ -8,6 +8,10 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from supabase import Client, create_client
 
+import jwt
+import time
+from server.settings import JWT_SECRET
+
 from server import settings
 from custom_auth.permissions import IsVerified
 from custom_auth.views import create_password_reset_creds
@@ -241,3 +245,31 @@ class UpdateDiscordUsername(APIView):
         )
 
         return Response({"success": True}, status=200)
+
+
+class VerifySchoolEmailRequest(APIView):
+    permission_classes = [IsApiKey]
+
+    def post(self, request):
+        discord_id = request.data.get("discord_id")
+        school_email = request.data.get("school_email")
+
+        if not discord_id or not school_email:
+            return Response(
+                {"detail": "Discord ID and school email are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = get_object_or_404(User, discord_id=discord_id)
+
+        hour = 60 * 60
+        payload = {
+            "user_id": user.id,
+            "username": user.username,
+            "exp": int(time.time()) + hour,
+            "email": school_email,
+        }
+
+        token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
+        return Response({"token": token}, status=200)
