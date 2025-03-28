@@ -3,6 +3,7 @@ from django.urls import path, include
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .views import ManagementCommandView
+from .settings import DJANGO_DEBUG
 
 urlpatterns = [
     path("auth/", include("custom_auth.urls")),
@@ -21,6 +22,8 @@ urlpatterns = [
     path("resume/", include("resume_review.urls")),
 ]
 
+if DJANGO_DEBUG:
+    urlpatterns += [path('silk/', include('silk.urls', namespace='silk'))]
 
 import logging
 
