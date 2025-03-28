@@ -21,6 +21,8 @@ services:
       - swecc-default
     volumes:
       - .:/app
+    ports:
+      - '8000:8000' # exposed for profiler, not used in production
     expose:
       - '8000'
     depends_on:

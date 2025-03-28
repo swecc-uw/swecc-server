@@ -16,6 +16,7 @@ from .serializers import (
 from members.models import User
 from engagement.models import CohortStats
 from custom_auth.permissions import IsAdmin
+from django.db.models import Prefetch
 
 
 def _get_serializer_class(req):
@@ -36,11 +37,28 @@ def _get_serializer_class(req):
 
 # When assigning a user to a cohort, make sure to create a `CohortStats` object specific to that user and the cohort they're assigned to
 class CohortListCreateView(generics.ListCreateAPIView):
-    queryset = Cohort.objects.all()
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
         return _get_serializer_class(self.request)
+
+    def get_queryset(self):
+        return Cohort.objects.prefetch_related(
+            Prefetch("members", queryset=User.objects.prefetch_related("groups", "user_permissions")),
+        ).all()
+
+    def get(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+
+        is_admin = request.user.groups.filter(name="is_admin").exists()
+        serializer = (
+            CohortHydratedSerializer if is_admin else CohortHydratedPublicSerializer
+        )
+
+        return Response(
+            serializer(queryset, many=True).data,
+            status=status.HTTP_200_OK,
+        )
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -48,12 +66,21 @@ class CohortListCreateView(generics.ListCreateAPIView):
         if not response.status_code == 201:
             return response
 
-        # Create cohort stats for each member when cohort is created
         member_ids = request.data.get("members", [])
-        for member_id in member_ids:
-            member = User.objects.get(pk=member_id)
-            cohort = Cohort.objects.get(name=request.data.get("name"))
-            CohortStats.objects.get_or_create(cohort=cohort, member=member)
+        cohort_name = request.data.get("name")
+        members = User.objects.filter(pk__in=member_ids)
+
+        cohort = Cohort.objects.get(name=cohort_name)
+
+        cohort_stats_objects = [
+            CohortStats(cohort=cohort, member=member)
+            for member in members
+        ]
+
+        CohortStats.objects.bulk_create(
+            cohort_stats_objects,
+            ignore_conflicts=True
+        )
 
         return response
 

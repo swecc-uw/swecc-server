@@ -81,6 +81,17 @@ INSTALLED_APPS = [
     "rest_framework_api_key",
 ]
 
+if DJANGO_DEBUG:
+    INSTALLED_APPS += [
+        "silk",
+    ]
+
+    SILKY_PYTHON_PROFILER = True  # Enable Python profiler
+    SILKY_ANALYZE_QUERIES = True  # Analyze SQL queries
+    SILKY_MAX_RECORDED_REQUESTS = 10000  # Max number of recorded requests to store
+
+
+
 FILE_UPLOAD_HANDLERS = [
     "django.core.files.uploadhandler.MemoryFileUploadHandler",
     "django.core.files.uploadhandler.TemporaryFileUploadHandler",
@@ -96,6 +107,9 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+if DJANGO_DEBUG:
+    MIDDLEWARE = ["silk.middleware.SilkyMiddleware"] + MIDDLEWARE
 
 ROOT_URLCONF = "server.urls"
 
