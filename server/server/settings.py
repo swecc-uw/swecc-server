@@ -2,7 +2,7 @@ from pathlib import Path
 from datetime import timedelta
 import os
 
-DJANGO_DEBUG = DEBUG = os.environ["DJANGO_DEBUG"]
+DJANGO_DEBUG = DEBUG = os.environ["DJANGO_DEBUG"].lower() == "true"
 DB_HOST = os.environ["DB_HOST"]
 DB_NAME = os.environ["DB_NAME"]
 DB_PORT = os.environ["DB_PORT"]
@@ -82,6 +82,7 @@ INSTALLED_APPS = [
 ]
 
 if DJANGO_DEBUG:
+    print("DEBUG is enabled, adding debug apps")
     INSTALLED_APPS += [
         "silk",
     ]
@@ -109,6 +110,7 @@ MIDDLEWARE = [
 ]
 
 if DJANGO_DEBUG:
+    print("DEBUG is enabled, adding debug middleware")
     MIDDLEWARE = ["silk.middleware.SilkyMiddleware"] + MIDDLEWARE
 
 ROOT_URLCONF = "server.urls"

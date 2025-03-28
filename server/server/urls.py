@@ -5,6 +5,10 @@ from rest_framework.response import Response
 from .views import ManagementCommandView
 from .settings import DJANGO_DEBUG
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 urlpatterns = [
     path("auth/", include("custom_auth.urls")),
     path("questions/", include("questions.urls")),
@@ -23,11 +27,10 @@ urlpatterns = [
 ]
 
 if DJANGO_DEBUG:
+    logger.info("DEBUG is enabled, adding debug urls")
     urlpatterns += [path('silk/', include('silk.urls', namespace='silk'))]
 
-import logging
 
-logger = logging.getLogger(__name__)
 
 
 @api_view(["GET"])

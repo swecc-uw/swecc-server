@@ -20,4 +20,3 @@ redis
 PyJWT==1.7.1
 boto3
 pika
-django-silk
