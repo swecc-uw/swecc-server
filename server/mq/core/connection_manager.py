@@ -53,6 +53,7 @@ class ConnectionManager:
         logger.info(f"Connection opened for {self._url}")
         self._ready.set()
         self._connected = True
+        logger.info(self.is_connected())
 
     def on_connection_open_error(self, connection, err):
         logger.error(f"Failed to open connection: {err}")
@@ -60,8 +61,8 @@ class ConnectionManager:
         self._connected = False
 
     def _build_amqp_url(self) -> str:
-        user = os.getenv("BOT_RABBIT_USER", "guest")
-        password = os.getenv("BOT_RABBIT_PASS", "guest")
+        user = os.getenv("SERVER_RABBIT_USER", "guest")
+        password = os.getenv("SERVER_RABBIT_PASS", "guest")
         host = os.getenv("RABBIT_HOST", "rabbitmq-host")
         port = os.getenv("RABBIT_PORT", "5672")
         vhost = os.getenv("RABBIT_VHOST", "/")
@@ -89,5 +90,6 @@ class ConnectionManager:
 
     def __new__(cls):
         if cls.instance is None:
+            logger.info(f"Creating a new instance of {cls.__name__}")
             cls.instance = super(ConnectionManager, cls).__new__(cls)
         return cls.instance

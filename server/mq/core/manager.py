@@ -6,7 +6,6 @@ from typing import Dict, List, Optional, Callable, Any, Coroutine
 
 import pika
 from pika.exchange_type import ExchangeType
-from discord.ext import commands
 
 from .consumer import AsyncRabbitConsumer
 from .producer import AsyncRabbitProducer
@@ -25,13 +24,9 @@ class RabbitMQManager:
 
         self.producer_factories: Dict[str, Callable] = {}
 
-    def set_context(self, client, bot_context):
-        self.client = client
-        self.bot_context = bot_context
-
     def _build_amqp_url(self) -> str:
-        user = os.getenv("BOT_RABBIT_USER", "guest")
-        password = os.getenv("BOT_RABBIT_PASS", "guest")
+        user = os.getenv("SERVER_RABBIT_USER", "guest")
+        password = os.getenv("SERVER_RABBIT_PASS", "guest")
         host = os.getenv("RABBIT_HOST", "rabbitmq-host")
         port = os.getenv("RABBIT_PORT", "5672")
         vhost = os.getenv("RABBIT_VHOST", "/")
@@ -45,7 +40,6 @@ class RabbitMQManager:
         queue,
         routing_key,
         exchange_type=ExchangeType.topic,
-        needs_context=False,  # whether the callback needs client/bot_context
     ):
         def decorator(callback):
             name = f"{callback.__module__}.{callback.__name__}"
@@ -57,7 +51,6 @@ class RabbitMQManager:
                 "routing_key": routing_key,
                 "exchange_type": exchange_type,
                 "declare_exchange": declare_exchange,
-                "needs_context": needs_context,
             }
 
             return callback
@@ -69,7 +62,6 @@ class RabbitMQManager:
         exchange,
         exchange_type=ExchangeType.topic,
         routing_key=None,
-        needs_context=False,
     ):
         def decorator(func):
             producer_name = f"{func.__module__}.{func.__name__}"
@@ -81,15 +73,7 @@ class RabbitMQManager:
                     producer_name, exchange, exchange_type, routing_key
                 )
 
-                if needs_context:
-                    assert (
-                        self.client and self.bot_context
-                    ), "Producer needs context but no client or bot_context set"
-                    processed_message = await func(
-                        message, self.client, self.bot_context
-                    )
-                else:
-                    processed_message = await func(message)
+                processed_message = await func(message)
 
                 actual_routing_key = routing_key_override or routing_key
 
@@ -120,21 +104,9 @@ class RabbitMQManager:
 
         for name, config in self.callbacks.items():
 
-            if config["needs_context"] and self.client and self.bot_context:
-                original_callback = config["callback"]
-
-                async def context_callback(body, properties):
-                    return await original_callback(
-                        body, properties, self.client, self.bot_context
-                    )
-
-                callback = context_callback
-            else:
-                callback = config["callback"]
-
             self.add_consumer(
                 name=name,
-                callback=callback,
+                callback=config["callback"],
                 exchange=config["exchange"],
                 queue=config["queue"],
                 routing_key=config["routing_key"],
@@ -207,20 +179,20 @@ class RabbitMQManager:
                 LOGGER.info(f"Connecting producer: {name}")
                 await producer.connect(loop=loop)
 
-    async def start_health_monitor(self, bot):
+    async def start_health_monitor(self, loop):
 
         LOGGER.info("Starting RabbitMQ connection health monitor")
 
         async def health_monitor():
             while True:
                 try:
-
+                    LOGGER.info(ConnectionManager().is_connected())
                     if not ConnectionManager().is_connected():
                         LOGGER.warning(
                             "RabbitMQ connection lost, attempting to reconnect"
                         )
                         try:
-                            await ConnectionManager().connect(loop=bot.loop)
+                            await ConnectionManager().connect(loop=loop)
                         except Exception as e:
                             LOGGER.error(f"Failed to reconnect: {str(e)}")
                             await asyncio.sleep(20)
@@ -232,7 +204,7 @@ class RabbitMQManager:
                                 f"Consumer {name} disconnected, attempting to reconnect"
                             )
                             try:
-                                await consumer.connect(loop=bot.loop)
+                                await consumer.connect(loop=loop)
                             except Exception as e:
                                 LOGGER.error(
                                     f"Failed to reconnect consumer {name}: {str(e)}"
@@ -244,7 +216,7 @@ class RabbitMQManager:
                                 f"Producer {name} disconnected, attempting to reconnect"
                             )
                             try:
-                                await producer.connect(loop=bot.loop)
+                                await producer.connect(loop=loop)
                             except Exception as e:
                                 LOGGER.error(
                                     f"Failed to reconnect producer {name}: {str(e)}"
@@ -255,4 +227,4 @@ class RabbitMQManager:
                     LOGGER.error(f"Error in health monitor: {str(e)}")
                     await asyncio.sleep(60)
 
-        bot.loop.create_task(health_monitor())
+        loop.create_task(health_monitor())

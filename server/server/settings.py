@@ -92,7 +92,6 @@ if DJANGO_DEBUG:
     SILKY_MAX_RECORDED_REQUESTS = 10000  # Max number of recorded requests to store
 
 
-
 FILE_UPLOAD_HANDLERS = [
     "django.core.files.uploadhandler.MemoryFileUploadHandler",
     "django.core.files.uploadhandler.TemporaryFileUploadHandler",
