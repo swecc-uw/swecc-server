@@ -160,7 +160,7 @@ class CohortStatsView(APIView):
     def get_all_cohort_stats(self, cohort_ids, member_id=None):
         queryset = CohortStats.objects.filter(cohort_id__in=cohort_ids)
 
-        if member_id:
+        if member_id is not None:
             queryset = queryset.filter(member_id=member_id)
 
         stats = queryset.values("cohort_id").annotate(
@@ -212,7 +212,7 @@ class CohortStatsView(APIView):
         try:
             if cohort_ids:
                 return [int(cid) for cid in cohort_ids], None
-            if member_id:
+            if member_id is not None:
                 return None, int(member_id)
             if discord_id:
                 member_id = self.get_member_id_from_discord_id(discord_id)
