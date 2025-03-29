@@ -191,11 +191,8 @@ class CohortStatsView(APIView):
     def get_cohorts(self, cohort_ids=None, member_id=None):
         queryset = Cohort.objects.all().order_by("name")
 
-        if member_id:
-            member_cohorts = Cohort.objects.filter(
-                members__id=member_id, id=OuterRef("pk")
-            )
-            queryset = queryset.filter(Exists(member_cohorts))
+        if member_id is not None:
+            queryset = queryset.filter(members__id=member_id)
 
         if cohort_ids:
             queryset = queryset.filter(id__in=cohort_ids)
