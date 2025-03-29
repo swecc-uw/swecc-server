@@ -1,7 +1,9 @@
 from typing import Dict, List, Optional, Union
 from django.http import JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Sum, Max
+from django.db.models import Prefetch, Exists, OuterRef, Sum, Max, Value, IntegerField
+from django.db.models.functions import Coalesce
+from django.db import connection
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -14,11 +16,10 @@ from .serializers import (
     CohortHydratedSerializer,
     CohortNoMembersSerializer,
 )
+from .queries import COHORT_DASHBOARD_QUERY
 from members.models import User
 from engagement.models import CohortStats
 from custom_auth.permissions import IsAdmin
-from django.db.models import Prefetch, Exists, OuterRef, Sum, Max, Value, IntegerField
-from django.db.models.functions import Coalesce
 
 
 def _get_serializer_class(req):
@@ -329,3 +330,73 @@ class CohortTransferView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class CohortDashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        user = request.user
+
+        with connection.cursor() as cursor:
+            cursor.execute(COHORT_DASHBOARD_QUERY, [user.id])
+
+            rows = cursor.fetchall()
+
+        user_cohorts = []
+        aggregate_stats = None
+
+        columns = [col[0] for col in cursor.description]
+
+        for row in rows:
+            row_dict = dict(zip(columns, row))
+
+            if row_dict["type"] == "user_cohorts":
+                user_cohorts.append(
+                    {
+                        "id": row_dict["cohort_id"],
+                        "name": row_dict["name"],
+                        "level": row_dict["level"],
+                        "stats": {
+                            "applications": row_dict["applications"] or 0,
+                            "onlineAssessments": row_dict["onlineAssessments"] or 0,
+                            "interviews": row_dict["interviews"] or 0,
+                            "offers": row_dict["offers"] or 0,
+                            "dailyChecks": row_dict["dailyChecks"] or 0,
+                            "streak": row_dict["streak"] or 0,
+                        },
+                    }
+                )
+            else:
+                aggregate_stats = row_dict
+
+        response_data = {
+            "your_cohorts": user_cohorts,
+            "cohorts_aggregated_stats_total": {
+                "applications": aggregate_stats.get("applications_sum", 0),
+                "onlineAssessments": aggregate_stats.get("online_assessments_sum", 0),
+                "interviews": aggregate_stats.get("interviews_sum", 0),
+                "offers": aggregate_stats.get("offers_sum", 0),
+                "dailyChecks": aggregate_stats.get("daily_checks_sum", 0),
+                "streak": aggregate_stats.get("streak_sum", 0),
+            },
+            "cohorts_aggregated_stats_max": {
+                "applications": aggregate_stats.get("applications_max", 0),
+                "onlineAssessments": aggregate_stats.get("online_assessments_max", 0),
+                "interviews": aggregate_stats.get("interviews_max", 0),
+                "offers": aggregate_stats.get("offers_max", 0),
+                "dailyChecks": aggregate_stats.get("daily_checks_max", 0),
+                "streak": aggregate_stats.get("streak_max", 0),
+            },
+            "cohorts_aggregated_stats_avg": {
+                "applications": aggregate_stats.get("applications_avg", 0),
+                "onlineAssessments": aggregate_stats.get("online_assessments_avg", 0),
+                "interviews": aggregate_stats.get("interviews_avg", 0),
+                "offers": aggregate_stats.get("offers_avg", 0),
+                "dailyChecks": aggregate_stats.get("daily_checks_avg", 0),
+                "streak": aggregate_stats.get("streak_avg", 0),
+            },
+        }
+
+        return Response(response_data)
