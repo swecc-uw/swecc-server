@@ -64,6 +64,20 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    networks:
+      - swecc-default
+    ports:
+      - '5050:80'
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=elimelt@uw.edu
+      - PGADMIN_DEFAULT_PASSWORD=password
+    depends_on:
+      - db
+
   redis:
     image: redis:6.0.7
     container_name: swecc-redis-instance
@@ -74,6 +88,7 @@ services:
       - redis_volume_data:/data
     ports:
       - 6379:6379
+
   redis_insight:
     image: redislabs/redisinsight:1.14.0
     container_name: redis_insight
