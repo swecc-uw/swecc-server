@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
     queue="reviewed-feedback",
     routing_key="reviewed-feedback",
     exchange="swecc-server-exchange",
-    exchange_type=mq.ExchangeType.topic,
 )
 async def reviewed_feedback_callback(
     body,

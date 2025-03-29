@@ -2,12 +2,13 @@ import os
 
 import django
 import asyncio
-import mq
 
 # Set up Django environment
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "server.settings")
 django.setup()
 
+import mq.consumers
+import mq
 
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)

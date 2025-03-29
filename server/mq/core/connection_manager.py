@@ -13,12 +13,14 @@ class ConnectionManager:
     instance = None
 
     def __init__(self):
-        self._connection = None
-        self._closing = False
-        self._ready = asyncio.Event()
-        self._connected = False
-        self._loop = None
-        self._url = self._build_amqp_url()
+        if not ConnectionManager.instance._initialized:
+            self._connection = None
+            self._closing = False
+            self._ready = asyncio.Event()
+            self._connected = False
+            self._loop = None
+            self._url = self._build_amqp_url()
+            self._initialized = True
 
     async def connect(self, loop=None):
         logger.info(f"Connecting to {self._url}.")
@@ -90,6 +92,6 @@ class ConnectionManager:
 
     def __new__(cls):
         if cls.instance is None:
-            logger.info(f"Creating a new instance of {cls.__name__}")
             cls.instance = super(ConnectionManager, cls).__new__(cls)
+            cls.instance._initialized = False
         return cls.instance
