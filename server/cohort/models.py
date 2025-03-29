@@ -50,10 +50,10 @@ class CohortStatsData:
     @classmethod
     def from_db_values(cls, values: Dict[str, int]) -> "CohortStatsData":
         return cls(
-            applications=values.get("applications__sum", 0) or 0,
-            online_assessments=values.get("onlineAssessments__sum", 0) or 0,
-            interviews=values.get("interviews__sum", 0) or 0,
-            offers=values.get("offers__sum", 0) or 0,
-            daily_checks=values.get("dailyChecks__sum", 0) or 0,
-            streak=values.get("streak__max", 0) or 0,
+            applications=values.get("applications_sum", 0) or 0,
+            online_assessments=values.get("online_assessments_sum", 0) or 0,
+            interviews=values.get("interviews_sum", 0) or 0,
+            offers=values.get("offers_sum", 0) or 0,
+            daily_checks=values.get("daily_checks_sum", 0) or 0,
+            streak=values.get("streak_max", 0) or 0,
         )
