@@ -11,10 +11,10 @@ on:
 env:
   SERVICE_NAME: 'server'
   NETWORK: 'prod_swecc-network'
-  CPU_LIMIT: '0.3'
-  MEMORY_LIMIT: '256M'
-  CPU_RESERVE: '0.1'
-  MEMORY_RESERVE: '128M'
+  CPU_LIMIT: '0.5'
+  MEMORY_LIMIT: '512M'
+  CPU_RESERVE: '0.3'
+  MEMORY_RESERVE: '256M'
   IMAGE: 'swecc-server'
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
