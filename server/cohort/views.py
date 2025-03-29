@@ -12,11 +12,13 @@ from .serializers import (
     CohortHydratedPublicSerializer,
     CohortSerializer,
     CohortHydratedSerializer,
+    CohortNoMembersSerializer,
 )
 from members.models import User
 from engagement.models import CohortStats
 from custom_auth.permissions import IsAdmin
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Exists, OuterRef, Sum, Max, Value, IntegerField
+from django.db.models.functions import Coalesce
 
 
 def _get_serializer_class(req):
@@ -44,7 +46,10 @@ class CohortListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         return Cohort.objects.prefetch_related(
-            Prefetch("members", queryset=User.objects.prefetch_related("groups", "user_permissions")),
+            Prefetch(
+                "members",
+                queryset=User.objects.prefetch_related("groups", "user_permissions"),
+            ),
         ).all()
 
     def get(self, request, *args, **kwargs):
@@ -73,14 +78,10 @@ class CohortListCreateView(generics.ListCreateAPIView):
         cohort = Cohort.objects.get(name=cohort_name)
 
         cohort_stats_objects = [
-            CohortStats(cohort=cohort, member=member)
-            for member in members
+            CohortStats(cohort=cohort, member=member) for member in members
         ]
 
-        CohortStats.objects.bulk_create(
-            cohort_stats_objects,
-            ignore_conflicts=True
-        )
+        CohortStats.objects.bulk_create(cohort_stats_objects, ignore_conflicts=True)
 
         return response
 
@@ -119,138 +120,86 @@ class CohortStatsView(APIView):
         - if cohort_id is provided, return stats for specified cohorts
         - if member_id or discord_id is provided, return stats for cohorts where member belongs and has stats
         - only one of cohort_id, member_id, or discord_id can be provided
-        - if include_profiles is true, include cohort profiles in the response
-        - if include_individuals is true, include individual member stats in the response
         """
         try:
             cohort_ids, member_id = self.parse_ids(request.query_params)
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        include_profiles = (
-            request.query_params.get("include_profiles", "").lower() == "true"
-        )
+        cohorts = self.get_cohorts(cohort_ids, member_id)
 
-        include_individuals = (
-            request.query_params.get("include_individuals", "").lower() == "true"
-        )
+        if not cohorts:
+            return Response([])
 
-        stats_queryset = self.get_queryset(cohort_ids, member_id)
+        target_cohort_ids = [cohort.id for cohort in cohorts]
 
-        if member_id:
-            cohort_ids = stats_queryset.values_list("cohort_id", flat=True).distinct()
-            cohorts = self.get_cohorts(cohort_ids, member_id=member_id)
-        else:
-            cohorts = self.get_cohorts(cohort_ids)
-
-        cohort_serializer = (
-            _get_serializer_class(request) if include_profiles else CohortSerializer
-        )
+        all_stats = self.get_all_cohort_stats(target_cohort_ids, member_id)
 
         response = []
         for cohort in cohorts:
-            aggregate_stats = self.aggregate_stats(stats_queryset, cohort.id)
-
-            cohort_data = {
-                "stats": aggregate_stats.to_dict(),
-                "cohort": cohort_serializer(cohort).data,
-            }
-
-            if include_individuals:
-                member_stats = self.get_member_stats(stats_queryset, cohort.id)
-                cohort_data["member_stats"] = member_stats
-
-            response.append(cohort_data)
+            if cohort.id in all_stats:
+                cohort_data = {
+                    "stats": all_stats[cohort.id],
+                    "cohort": CohortNoMembersSerializer(cohort).data,
+                }
+                response.append(cohort_data)
 
         return Response(response)
 
     def get_member_id_from_discord_id(self, discord_id: str) -> Optional[int]:
         try:
-            user = User.objects.get(discord_id=discord_id)
-            return user.id
-        except ObjectDoesNotExist:
-            return None
+            return (
+                User.objects.filter(discord_id=discord_id)
+                .values_list("id", flat=True)
+                .first()
+            )
         except ValueError:
             raise ValueError("Invalid discord_id format")
 
-    def get_queryset(
-        self, cohort_ids: Optional[List[int]] = None, member_id: Optional[int] = None
-    ):
-        queryset = CohortStats.objects.all()
+    def get_all_cohort_stats(self, cohort_ids, member_id=None):
+        queryset = CohortStats.objects.filter(cohort_id__in=cohort_ids)
 
         if member_id:
-            member_cohort_ids = Cohort.objects.filter(
-                members__id=member_id
-            ).values_list("id", flat=True)
+            queryset = queryset.filter(member_id=member_id)
 
-            queryset = queryset.filter(
-                member_id=member_id, cohort_id__in=member_cohort_ids
-            )
-        elif cohort_ids:
-            queryset = queryset.filter(cohort_id__in=cohort_ids)
-
-        return queryset
-
-    def aggregate_stats(self, queryset, cohort_id: int) -> CohortStatsData:
-        stats = queryset.filter(cohort_id=cohort_id).aggregate(
-            Sum("applications"),
-            Sum("onlineAssessments"),
-            Sum("interviews"),
-            Sum("offers"),
-            Sum("dailyChecks"),
-            Max("streak"),
+        stats = queryset.values("cohort_id").annotate(
+            applications_sum=Coalesce(
+                Sum("applications"), Value(0), output_field=IntegerField()
+            ),
+            online_assessments_sum=Coalesce(
+                Sum("onlineAssessments"), Value(0), output_field=IntegerField()
+            ),
+            interviews_sum=Coalesce(
+                Sum("interviews"), Value(0), output_field=IntegerField()
+            ),
+            offers_sum=Coalesce(Sum("offers"), Value(0), output_field=IntegerField()),
+            daily_checks_sum=Coalesce(
+                Sum("dailyChecks"), Value(0), output_field=IntegerField()
+            ),
+            streak_max=Coalesce(Max("streak"), Value(0), output_field=IntegerField()),
         )
-        return CohortStatsData.from_db_values(stats)
 
-    def get_member_stats(self, queryset, cohort_id: int) -> List[dict]:
-        """
-        Get individual stats for each member in the cohort
-        """
-        member_stats = []
+        result = {}
+        for stat in stats:
+            cohort_id = stat["cohort_id"]
+            after = CohortStatsData.from_db_values(stat).to_dict()
+            result[cohort_id] = after
 
-        # Get all members' stats for this cohort
-        members_queryset = queryset.filter(cohort_id=cohort_id)
+        return result
 
-        # Pre-fetch user information for efficiency
-        member_ids = members_queryset.values_list("member_id", flat=True).distinct()
-        users = {user.id: user for user in User.objects.filter(id__in=member_ids)}
-
-        # Group by member_id and aggregate stats for each member
-        for member_id in member_ids:
-            member_queryset = members_queryset.filter(member_id=member_id)
-
-            stats = member_queryset.aggregate(
-                Sum("applications"),
-                Sum("onlineAssessments"),
-                Sum("interviews"),
-                Sum("offers"),
-                Sum("dailyChecks"),
-                Max("streak"),
-            )
-
-            user = users.get(member_id)
-            member_data = {
-                "member_id": member_id,
-                "username": user.username if user else None,
-                "stats": CohortStatsData.from_db_values(stats).to_dict(),
-            }
-
-            member_stats.append(member_data)
-
-        return member_stats
-
-    def get_cohorts(
-        self, cohort_ids: Optional[List[int]] = None, member_id: Optional[int] = None
-    ):
-        queryset = Cohort.objects.all()
+    def get_cohorts(self, cohort_ids=None, member_id=None):
+        queryset = Cohort.objects.all().order_by("name")
 
         if member_id:
-            queryset = queryset.filter(members__id=member_id)
+            member_cohorts = Cohort.objects.filter(
+                members__id=member_id, id=OuterRef("pk")
+            )
+            queryset = queryset.filter(Exists(member_cohorts))
 
         if cohort_ids:
             queryset = queryset.filter(id__in=cohort_ids)
 
-        return queryset
+        return queryset.only("id", "name", "level")
 
     def parse_ids(self, params: dict) -> tuple[Optional[List[int]], Optional[int]]:
         cohort_ids = params.getlist("cohort_id", [])
