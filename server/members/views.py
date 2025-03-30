@@ -275,10 +275,10 @@ class VerifySchoolEmailRequest(APIView):
         if not IsApiKey().has_permission(request, self) and request.user.id != user_id:
             return Response({"detail": "Provided user does not match."}, status=403)
 
-        exisiting_user_with_email = User.objects.filter(
+        existing_user_with_email = User.objects.filter(
             school_email=school_email
         ).first()
-        if exisiting_user_with_email:
+        if existing_user_with_email:
             return Response(
                 {"detail": "Email already in use."},
                 status=status.HTTP_400_BAD_REQUEST,
