@@ -186,7 +186,6 @@ class RabbitMQManager:
         async def health_monitor():
             while True:
                 try:
-                    LOGGER.info(ConnectionManager().is_connected())
                     if not ConnectionManager().is_connected():
                         LOGGER.warning(
                             "RabbitMQ connection lost, attempting to reconnect"
