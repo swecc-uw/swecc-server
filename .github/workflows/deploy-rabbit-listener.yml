@@ -4,17 +4,17 @@ on:
     branches:
       - main
     paths:
-      - 'server/rabbitmq_listener.py'
+      - 'server/rabbitmq.py'
   workflow_dispatch:
 
 env:
-  SERVICE_NAME: 'server-rabbitmq-listener'
+  SERVICE_NAME: 'server-rabbitmq-manager'
   NETWORK: 'prod_swecc-network'
   CPU_LIMIT: '0.3'
   MEMORY_LIMIT: '256M'
   CPU_RESERVE: '0.1'
   MEMORY_RESERVE: '128M'
-  IMAGE: 'swecc-server-rabbit-listener'
+  IMAGE: 'swecc-server-rabbit-manager'
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
   CONFIG_NAME: 'server_env'
@@ -37,7 +37,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ./Dockerfile.listener
+          file: ./Dockerfile.manager
           push: true
           tags: |
             ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE }}:latest

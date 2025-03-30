@@ -1,8 +1,8 @@
 FROM python:3.9
 
 WORKDIR /app
-COPY rabbit_listener.requirements.txt .
-RUN pip install -r rabbit_listener.requirements.txt
+COPY rabbit.requirements.txt .
+RUN pip install -r rabbit.requirements.txt
 
 COPY server/ /app/server/
 
@@ -14,4 +14,4 @@ RUN chmod +x /app/wait-for-it.sh
 
 ENV DJANGO_SETTINGS_MODULE=server.settings
 
-CMD ["./wait-for-it.sh", "rabbitmq-host:5672", "--", "python", "server/rabbitmq_listener.py"]
+CMD ["./wait-for-it.sh", "rabbitmq-host:5672", "--", "python", "server/rabbitmq.py"]

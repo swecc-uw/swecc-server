@@ -1,27 +1,21 @@
-import os
-
-import django
-
-# Set up Django environment
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "server.settings")
-django.setup()
-
-import pika
-import json
 import logging
+import mq
+from pika import BasicProperties
+import json
 from resume_review.models import Resume
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
 logger = logging.getLogger(__name__)
 
 
-RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq-host")
-
-
-# Sample callback, will fill in later
-def callback(ch, method, properties, body):
+@mq.consumer(
+    queue="reviewed-feedback",
+    routing_key="reviewed-feedback",
+    exchange="swecc-server-exchange",
+)
+async def reviewed_feedback_callback(
+    body,
+    properties: BasicProperties,
+):
     expected_fields = ["user_id", "resume_id", "feedback", "error"]
 
     # Validate body
@@ -55,14 +49,3 @@ def callback(ch, method, properties, body):
     logger.info(
         f"Feedback for resume {data['resume_id']} updated with value {data['feedback']}"
     )
-
-
-connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST))
-channel = connection.channel()
-
-queue_name = "reviewed-feedback"
-channel.queue_declare(queue=queue_name, durable=True)
-channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
-
-logger.info("Listening for messages...")
-channel.start_consuming()
