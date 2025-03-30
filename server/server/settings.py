@@ -16,6 +16,7 @@ SUPABASE_KEY = os.environ["SUPABASE_KEY"]
 METRIC_SERVER_URL = os.environ["METRIC_SERVER_URL"]
 JWT_SECRET = os.environ["JWT_SECRET"]
 AWS_BUCKET_NAME = os.environ["AWS_BUCKET_NAME"]
+VERIFICATION_EMAIL_ADDR = os.environ.get("VERIFICATION_EMAIL_ADDR", "swecc@uw.edu")
 
 print(
     {

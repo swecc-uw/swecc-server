@@ -12,7 +12,7 @@ from .notification import verify_school_email_html
 
 import jwt
 import time
-from server.settings import JWT_SECRET
+from server.settings import JWT_SECRET, VERIFICATION_EMAIL_ADDR
 
 from server import settings
 from custom_auth.permissions import IsVerified
@@ -249,9 +249,6 @@ class UpdateDiscordUsername(APIView):
         return Response({"success": True}, status=200)
 
 
-VERIFY_SCHOOL_EMAIL_ADDR = "swecc@uw.edu"
-
-
 class VerifySchoolEmailRequest(APIView):
     permission_classes = [IsApiKey | IsVerified]
 
@@ -301,7 +298,7 @@ class VerifySchoolEmailRequest(APIView):
         token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
         send_email(
-            from_email=VERIFY_SCHOOL_EMAIL_ADDR,
+            from_email=VERIFICATION_EMAIL_ADDR,
             to_email=school_email,
             subject="SWECC Verification: Verify your school email",
             html_content=verify_school_email_html(token),
