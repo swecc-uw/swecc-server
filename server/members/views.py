@@ -7,10 +7,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from supabase import Client, create_client
+from email_util.send_email import send_email
+from .notification import verify_school_email_html
 
 import jwt
 import time
-from server.settings import JWT_SECRET
+from server.settings import JWT_SECRET, VERIFICATION_EMAIL_ADDR
 
 from server import settings
 from custom_auth.permissions import IsVerified
@@ -24,6 +26,7 @@ import logging
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
+from django.db import IntegrityError
 
 from custom_auth.permissions import IsAdmin
 
@@ -270,6 +273,15 @@ class VerifySchoolEmailRequest(APIView):
         if not IsApiKey().has_permission(request, self) and request.user.id != user_id:
             return Response({"detail": "Provided user does not match."}, status=403)
 
+        existing_user_with_email = User.objects.filter(
+            school_email=school_email
+        ).first()
+        if existing_user_with_email:
+            return Response(
+                {"detail": "Email already in use."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         user = (
             get_object_or_404(User, discord_id=discord_id)
             if discord_id
@@ -285,6 +297,13 @@ class VerifySchoolEmailRequest(APIView):
         }
 
         token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
+        send_email(
+            from_email=VERIFICATION_EMAIL_ADDR,
+            to_email=school_email,
+            subject="SWECC Verification: Verify your school email",
+            html_content=verify_school_email_html(token),
+        )
 
         return Response({"token": token}, status=200)
 
@@ -307,7 +326,13 @@ class ConfirmVerifySchoolEmail(APIView):
         if request.user.id != payload["user_id"]:
             return Response({"detail": "User does not match token"}, status=403)
 
-        request.user.school_email = payload["email"]
-        request.user.save()
+        try:
+            request.user.school_email = payload["email"]
+            request.user.save()
+        except IntegrityError:
+            return Response(
+                {"detail": "Email already in use."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         return Response({"detail": "School email verified"}, status=200)
