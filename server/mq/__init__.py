@@ -48,8 +48,6 @@ async def initialize_rabbitmq(loop):
 
     await ConnectionManager().connect(loop=loop)
 
-    print("Done?")
-
     _manager.create_consumers()
     try:
         await _manager.start_consumers(loop)

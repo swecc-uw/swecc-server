@@ -7,8 +7,13 @@ import asyncio
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "server.settings")
 django.setup()
 
+# Import consumers so that the decorator runs.
+# If you want to define callbacks elsewhere, make sure to import them here.
 import mq.consumers
 import mq
+import logging
+
+logger = logging.getLogger(__name__)
 
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
@@ -16,9 +21,9 @@ asyncio.set_event_loop(loop)
 loop.create_task(mq.initialize_rabbitmq(loop))
 
 try:
-    print("Running event loop")
+    logger.info("Running event loop")
     loop.run_forever()
 except KeyboardInterrupt:
-    print("Stopping event loop")
+    logger.info("Stopping event loop")
 finally:
     loop.run_until_complete(mq.shutdown_rabbitmq())
