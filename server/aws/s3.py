@@ -6,6 +6,9 @@ class S3Client:
     instance = None
 
     def __init__(self):
+        if S3Client.instance.initialized:
+            return
+
         self.access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", None)
         self.secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
 
@@ -18,10 +21,12 @@ class S3Client:
             aws_secret_access_key=self.secret_access_key,
         )
 
+        self.initialized = True
+
     def __new__(cls):
         if cls.instance is None:
             cls.instance = super(S3Client, cls).__new__(cls)
-            cls.instance.__init__()
+            cls.instance.initialized = False
         return cls.instance
 
     def get_presigned_url(self, bucket, key, expiration=3600):
