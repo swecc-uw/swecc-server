@@ -7,9 +7,10 @@ import asyncio
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "server.settings")
 django.setup()
 
-# Import consumers so that the decorator runs.
+# Import consumers/producers so that the decorator runs.
 # If you want to define callbacks elsewhere, make sure to import them here.
 import mq.consumers
+import mq.producers
 import mq
 import logging
 

@@ -9,6 +9,8 @@ from rest_framework.permissions import IsAuthenticated
 from supabase import Client, create_client
 from email_util.send_email import send_email
 from .notification import verify_school_email_html
+from mq.producers import publish_verified_user
+import asyncio
 
 import jwt
 import time
@@ -334,5 +336,10 @@ class ConfirmVerifySchoolEmail(APIView):
                 {"detail": "Email already in use."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(publish_verified_user(loop, request.user.discord_id))
+        loop.close()
 
         return Response({"detail": "School email verified"}, status=200)

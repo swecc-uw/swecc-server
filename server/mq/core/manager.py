@@ -67,18 +67,20 @@ class RabbitMQManager:
             producer_name = f"{func.__module__}.{func.__name__}"
 
             async def producer_factory(
-                message, routing_key_override=None, properties=None
+                loop, *args, routing_key_override=None, properties=None
             ):
+
                 producer = self.get_or_create_producer(
-                    producer_name, exchange, exchange_type, routing_key
+                    producer_name, exchange, exchange_type, routing_key, loop=loop
                 )
 
-                processed_message = await func(message)
+                await producer.connect(loop)
+                processed_message = await func(*args)
 
                 actual_routing_key = routing_key_override or routing_key
 
                 return await producer.publish(
-                    processed_message,
+                    str(processed_message),
                     routing_key=actual_routing_key,
                     properties=properties,
                 )
@@ -88,13 +90,16 @@ class RabbitMQManager:
 
         return decorator
 
-    def get_or_create_producer(self, name, exchange, exchange_type, routing_key=None):
+    def get_or_create_producer(
+        self, name, exchange, exchange_type, routing_key=None, loop=None
+    ):
         if name not in self.producers:
             producer = AsyncRabbitProducer(
                 amqp_url=self.default_amqp_url,
                 exchange=exchange,
                 exchange_type=exchange_type,
                 routing_key=routing_key,
+                loop=loop,
             )
             self.producers[name] = producer
 

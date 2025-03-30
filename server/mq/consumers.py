@@ -49,3 +49,15 @@ async def reviewed_feedback_callback(
     logger.info(
         f"Feedback for resume {data['resume_id']} updated with value {data['feedback']}"
     )
+
+
+@mq.consumer(
+    queue="verified-school-email-loopback",
+    exchange="swecc-server-exchange",
+    routing_key="server.verified-school-email",
+)
+async def verified_school_email_callback(
+    body,
+    properties: BasicProperties,
+):
+    logger.info(f"Received body: {body}")
