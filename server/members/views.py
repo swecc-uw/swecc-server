@@ -275,10 +275,10 @@ class VerifySchoolEmailRequest(APIView):
         if not IsApiKey().has_permission(request, self) and request.user.id != user_id:
             return Response({"detail": "Provided user does not match."}, status=403)
 
-        exsiting_user_with_email = User.objects.filter(
+        exisiting_user_with_email = User.objects.filter(
             school_email=school_email
         ).first()
-        if exsiting_user_with_email:
+        if exisiting_user_with_email:
             return Response(
                 {"detail": "Email already in use."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -303,7 +303,7 @@ class VerifySchoolEmailRequest(APIView):
         send_email(
             from_email=VERIFY_SCHOOL_EMAIL_ADDR,
             to_email=school_email,
-            subject="SWECC Verfication: Verify your school email",
+            subject="SWECC Verification: Verify your school email",
             html_content=verify_school_email_html(token),
         )
 
