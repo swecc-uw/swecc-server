@@ -26,6 +26,7 @@ import logging
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
+from django.db import IntegrityError
 
 from custom_auth.permissions import IsAdmin
 
@@ -325,7 +326,13 @@ class ConfirmVerifySchoolEmail(APIView):
         if request.user.id != payload["user_id"]:
             return Response({"detail": "User does not match token"}, status=403)
 
-        request.user.school_email = payload["email"]
-        request.user.save()
+        try:
+            request.user.school_email = payload["email"]
+            request.user.save()
+        except IntegrityError:
+            return Response(
+                {"detail": "Email already in use."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         return Response({"detail": "School email verified"}, status=200)
