@@ -1,34 +1,32 @@
+import logging
 import os
+import time
 import uuid
-from django.http import JsonResponse
-from django.shortcuts import render
-from rest_framework import generics, status
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
-from supabase import Client, create_client
-from email_util.send_email import send_email
-from .notification import verify_school_email_html
 
 import jwt
-import time
-from server.settings import JWT_SECRET, VERIFICATION_EMAIL_ADDR
+from custom_auth.permissions import IsAdmin, IsVerified
+from custom_auth.views import create_password_reset_creds
+from django.contrib.auth.models import Group
+from django.contrib.auth.tokens import default_token_generator
+from django.db import IntegrityError
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, render
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from email_util.send_email import send_email
+from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from supabase import Client, create_client
 
 from server import settings
-from custom_auth.permissions import IsVerified
-from custom_auth.views import create_password_reset_creds
-from .models import User
-from .serializers import UserSerializer
-from .permissions import IsApiKey
-from django.shortcuts import get_object_or_404
-from django.contrib.auth.models import Group
-import logging
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
-from django.db import IntegrityError
+from server.settings import JWT_SECRET, VERIFICATION_EMAIL_ADDR
 
-from custom_auth.permissions import IsAdmin
+from .models import User
+from .notification import verify_school_email_html
+from .permissions import IsApiKey
+from .serializers import UserSerializer
 
 logger = logging.getLogger(__name__)
 

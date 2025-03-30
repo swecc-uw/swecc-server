@@ -1,11 +1,12 @@
+import logging
 import time
-from django.utils import timezone
+
 import requests
 from django.core.management.base import BaseCommand
-from members.models import User
-from leaderboard.models import LeetcodeStats
 from django.db import transaction
-import logging
+from django.utils import timezone
+from leaderboard.models import LeetcodeStats
+from members.models import User
 
 logger = logging.getLogger(__name__)
 

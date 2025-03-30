@@ -1,10 +1,34 @@
+import logging
 import os
-from django.http import Http404
-from django.shortcuts import get_object_or_404
-from rest_framework import generics
+from datetime import timedelta
 
-from members.permissions import IsApiKey
+from cache import CachedView, DjangoCacheHandler
+from django.core.paginator import Paginator
+from django.db import transaction
+from django.db.models import ExpressionWrapper, F, FloatField, Window
+from django.db.models.functions import RowNumber
+from django.http import Http404, JsonResponse
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from engagement.models import AttendanceSessionStats, CohortStats
+from engagement.serializers import (
+    AttendanceStatsSerializer,
+    CohortStatsLeaderboardSerializer,
+)
 from members.models import User
+from members.permissions import IsApiKey
+from rest_framework import generics, status
+from rest_framework.exceptions import ValidationError
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .managers import (
+    AttendanceLeaderboardManager,
+    CohortStatsLeaderboardManager,
+    GitHubLeaderboardManager,
+    LeetcodeLeaderboardManager,
+)
 from .models import (
     GitHubStats,
     InternshipApplicationStats,
@@ -17,31 +41,6 @@ from .serializers import (
     LeetcodeStatsSerializer,
     NewGradApplicationStatsSerializer,
 )
-from django.db import transaction
-from django.db.models import F, ExpressionWrapper, FloatField
-from rest_framework.exceptions import ValidationError
-from django.utils import timezone
-from datetime import timedelta
-import logging
-from rest_framework.response import Response
-from rest_framework import status
-from engagement.serializers import AttendanceStatsSerializer
-from engagement.models import AttendanceSessionStats
-from rest_framework.pagination import PageNumberPagination
-from django.core.paginator import Paginator
-from rest_framework.views import APIView
-from django.db.models import Window
-from django.db.models.functions import RowNumber
-from cache import CachedView, DjangoCacheHandler
-from .managers import (
-    AttendanceLeaderboardManager,
-    LeetcodeLeaderboardManager,
-    GitHubLeaderboardManager,
-)
-from django.http import JsonResponse
-from engagement.serializers import CohortStatsLeaderboardSerializer
-from engagement.models import CohortStats
-from .managers import CohortStatsLeaderboardManager
 
 logger = logging.getLogger(__name__)
 INTERNSHIP_CHANNEL_ID = int(os.getenv("INTERNSHIP_CHANNEL_ID"))

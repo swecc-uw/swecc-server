@@ -1,11 +1,12 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from custom_auth.permissions import IsAdmin
-from members.permissions import IsApiKey
-from django.core.management import call_command
 import io
 import sys
-from typing import List, Dict
+from typing import Dict, List
+
+from custom_auth.permissions import IsAdmin
+from django.core.management import call_command
+from members.permissions import IsApiKey
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 
 class ManagementCommandView(APIView):

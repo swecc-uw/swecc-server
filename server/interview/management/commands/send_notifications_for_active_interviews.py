@@ -1,13 +1,14 @@
-from django.core.management.base import BaseCommand
-from django.utils import timezone
-from interview.models import Interview
-import server.settings as settings
-from django.db.models import Q
 import logging
 
-from interview.notification import interview_paired_notification_html
+from django.core.management.base import BaseCommand
+from django.db.models import Q
+from django.utils import timezone
 from email_util.send_email import send_email
+from interview.models import Interview
+from interview.notification import interview_paired_notification_html
 from interview.views import INTERVIEW_NOTIFICATION_ADDR
+
+import server.settings as settings
 
 logger = logging.getLogger(__name__)
 

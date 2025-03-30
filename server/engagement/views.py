@@ -1,30 +1,38 @@
-import pydantic
-from collections import defaultdict
-from typing import Dict, List
-from rest_framework import generics
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from datetime import datetime
 import logging
+from collections import defaultdict
+from datetime import datetime
+from typing import Dict, List
+
+import pydantic
+from cohort.models import Cohort
+from custom_auth.permissions import IsAdmin, IsVerified
+from django.db import transaction
 from django.db.models import F
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from custom_auth.permissions import IsAdmin, IsVerified
-from members.permissions import IsApiKey
-from members.models import User
-from members.serializers import UserSerializer
-from .buffer import MessageBuffer, Message
-from .models import AttendanceSession, DiscordMessageStats, AttendanceSessionStats
-from .serializers import AttendanceSessionSerializer, MemberSerializer
-from django.db import transaction
-from django.http import JsonResponse
-from .models import CohortStats
-from leaderboard.models import LeetcodeStats, GitHubStats
-from leaderboard.serializers import LeetcodeStatsSerializer, GitHubStatsSerializer
-from .serializers import CohortStatsSerializer
-from cohort.models import Cohort
 from email_util.send_email import send_email
+from leaderboard.models import GitHubStats, LeetcodeStats
+from leaderboard.serializers import GitHubStatsSerializer, LeetcodeStatsSerializer
+from members.models import User
+from members.permissions import IsApiKey
+from members.serializers import UserSerializer
+from rest_framework import generics, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .buffer import Message, MessageBuffer
+from .models import (
+    AttendanceSession,
+    AttendanceSessionStats,
+    CohortStats,
+    DiscordMessageStats,
+)
+from .serializers import (
+    AttendanceSessionSerializer,
+    CohortStatsSerializer,
+    MemberSerializer,
+)
 
 logger = logging.getLogger(__name__)
 

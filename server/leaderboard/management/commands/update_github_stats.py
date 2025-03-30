@@ -1,12 +1,13 @@
-from django.utils import timezone
-from django.core.management.base import BaseCommand
-from members.models import User
-from leaderboard.models import GitHubStats
-from django.db import transaction
 import logging
+import time
+
 import requests
 from bs4 import BeautifulSoup
-import time
+from django.core.management.base import BaseCommand
+from django.db import transaction
+from django.utils import timezone
+from leaderboard.models import GitHubStats
+from members.models import User
 
 logger = logging.getLogger(__name__)
 

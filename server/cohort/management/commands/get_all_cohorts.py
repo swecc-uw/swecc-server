@@ -1,6 +1,6 @@
-from django.core.management.base import BaseCommand
 from cohort.models import Cohort
 from cohort.serializers import CohortSerializer
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):

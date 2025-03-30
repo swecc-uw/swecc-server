@@ -1,10 +1,10 @@
 import asyncio
+import logging
 import os
 import urllib
-import logging
-from pika.adapters.asyncio_connection import AsyncioConnection
-import pika
 
+import pika
+from pika.adapters.asyncio_connection import AsyncioConnection
 
 logger = logging.getLogger(__name__)
 

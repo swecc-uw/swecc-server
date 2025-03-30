@@ -1,13 +1,14 @@
+import logging
 import threading
 import time
-import logging
 from collections import defaultdict
 from typing import Dict
-from pydantic import BaseModel
+
 from django.db import transaction
 from django.db.models import F
-from members.models import User
 from engagement.models import DiscordMessageStats
+from members.models import User
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 

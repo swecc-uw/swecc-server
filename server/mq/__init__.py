@@ -1,8 +1,9 @@
 import logging
 from typing import Callable
-from pika.exchange_type import ExchangeType
-from mq.core.manager import RabbitMQManager
+
 from mq.core.connection_manager import ConnectionManager
+from mq.core.manager import RabbitMQManager
+from pika.exchange_type import ExchangeType
 
 LOGGER = logging.getLogger(__name__)
 

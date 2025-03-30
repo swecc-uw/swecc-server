@@ -1,9 +1,10 @@
-from django.core.management.base import BaseCommand
-from django.utils import timezone
-from django.db.models import Q
 import random
-from interview.models import InterviewPool, InterviewAvailability, Interview
+
+from django.core.management.base import BaseCommand
+from django.db.models import Q
+from django.utils import timezone
 from interview.algorithm import CommonAvailabilityStableMatching
+from interview.models import Interview, InterviewAvailability, InterviewPool
 
 algorithm = CommonAvailabilityStableMatching()
 

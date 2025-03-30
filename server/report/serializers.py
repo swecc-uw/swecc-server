@@ -1,12 +1,13 @@
+from interview.models import Interview
+from interview.serializers import InterviewMemberSerializer
+from members.models import User
+from members.serializers import UserSerializer
+from questions.models import TechnicalQuestion
+from questions.serializers import TechnicalQuestionSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from members.models import User
-from interview.models import Interview
-from questions.models import TechnicalQuestion
+
 from .models import Report
-from members.serializers import UserSerializer
-from interview.serializers import InterviewMemberSerializer
-from questions.serializers import TechnicalQuestionSerializer
 
 
 class ReportSerializer(serializers.ModelSerializer):

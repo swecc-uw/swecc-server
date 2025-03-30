@@ -1,6 +1,7 @@
-from rest_framework import serializers
-from .models import TechnicalQuestion, QuestionTopic, BehavioralQuestion
 from members.serializers import UsernameSerializer
+from rest_framework import serializers
+
+from .models import BehavioralQuestion, QuestionTopic, TechnicalQuestion
 
 
 class QuestionTopicSerializer(serializers.ModelSerializer):

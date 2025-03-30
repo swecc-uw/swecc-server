@@ -1,12 +1,13 @@
 import asyncio
-import logging
 import functools
-from typing import Callable, Dict, List, Optional, Any, Coroutine
+import logging
+from typing import Any, Callable, Coroutine, Dict, List, Optional
 
 import pika
 import pika.exceptions
 from pika.adapters.asyncio_connection import AsyncioConnection
 from pika.exchange_type import ExchangeType
+
 from .connection_manager import ConnectionManager
 
 LOGGER = logging.getLogger(__name__)

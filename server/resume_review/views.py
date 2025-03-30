@@ -1,14 +1,15 @@
-from django.shortcuts import render
-from rest_framework.permissions import IsAuthenticated
+from aws.s3 import S3Client
 from custom_auth.permissions import IsVerified
+from django.db import IntegrityError
+from django.shortcuts import render
+from django.utils.crypto import get_random_string
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from resume_review.models import Resume
-from rest_framework.response import Response
-from rest_framework import status
-from aws.s3 import S3Client
+
 from server.settings import AWS_BUCKET_NAME
-from django.utils.crypto import get_random_string
-from django.db import IntegrityError
 
 # Create your views here.
 

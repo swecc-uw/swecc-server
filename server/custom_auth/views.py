@@ -1,25 +1,27 @@
-import jwt
-import time
 import json
+import logging
 import secrets
+import time
+
+import jwt
 from django.contrib.auth import authenticate, login, logout
-from rest_framework import generics, views
-from .serializers import UserSerializer
-from members.permissions import IsApiKey
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from django.http import JsonResponse
-from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from django.middleware.csrf import get_token
-from django.views.decorators.http import require_POST
-from members.models import User
-from django.db import transaction
 from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.db import transaction
+from django.http import JsonResponse
+from django.middleware.csrf import get_token
 from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.views.decorators.http import require_POST
 from email_util.send_email import send_email
+from members.models import User
+from members.permissions import IsApiKey
+from rest_framework import generics, views
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
+from rest_framework.permissions import AllowAny, IsAuthenticated
+
 from server.settings import JWT_SECRET
 
-import logging
+from .serializers import UserSerializer
 
 logger = logging.getLogger(__name__)
 

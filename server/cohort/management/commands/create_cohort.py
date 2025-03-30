@@ -1,5 +1,5 @@
-from django.core.management.base import BaseCommand
 from cohort.models import Cohort
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):

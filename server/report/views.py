@@ -1,21 +1,17 @@
 import time
-from django.shortcuts import render
 
-from rest_framework.response import Response
-from rest_framework.views import APIView
 from custom_auth.permissions import IsAdmin, IsVerified
-from rest_framework.permissions import IsAuthenticated
-
+from django.shortcuts import render
 from interview.models import Interview
 from members.models import User
-from rest_framework import permissions
-
 from questions.models import TechnicalQuestion
+from rest_framework import permissions, status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .serializers import ReportSerializer
 from .models import Report
-
-from rest_framework import status
+from .serializers import ReportSerializer
 
 
 class ReportOwnerPermission(permissions.BasePermission):

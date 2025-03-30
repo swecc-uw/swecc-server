@@ -1,8 +1,10 @@
+import logging
 import os
+
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
-from server.settings import SENDGRID_API_KEY, DJANGO_DEBUG
-import logging
+
+from server.settings import DJANGO_DEBUG, SENDGRID_API_KEY
 
 logger = logging.getLogger(__name__)
 

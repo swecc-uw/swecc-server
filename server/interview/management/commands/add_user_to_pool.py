@@ -1,10 +1,11 @@
-from django.core.management.base import BaseCommand, CommandParser
-from django.utils import timezone
-from django.db.models import Q
-from members.models import User
 import random
-from interview.models import InterviewPool, InterviewAvailability, Interview
+
+from django.core.management.base import BaseCommand, CommandParser
+from django.db.models import Q
+from django.utils import timezone
 from interview.algorithm import CommonAvailabilityStableMatching
+from interview.models import Interview, InterviewAvailability, InterviewPool
+from members.models import User
 
 algorithm = CommonAvailabilityStableMatching()
 

@@ -1,11 +1,12 @@
+import logging
+
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .views import ManagementCommandView
-from .settings import DJANGO_DEBUG
 
-import logging
+from .settings import DJANGO_DEBUG
+from .views import ManagementCommandView
 
 logger = logging.getLogger(__name__)
 

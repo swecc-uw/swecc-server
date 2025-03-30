@@ -1,20 +1,22 @@
-from django.http import JsonResponse
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
+import logging
+import random
+from datetime import date
+
+from cache import CachedView, DjangoCacheHandler
+from custom_auth.permissions import IsAdmin, IsVerified
 from django.core.cache import cache
 from django.db.models import Q
+from django.http import JsonResponse
 from members.models import User
-from .serializers import (
-    RegularDirectoryMemberSerializer,
-    AdminDirectoryMemberSerializer,
-)
-from custom_auth.permissions import IsAdmin, IsVerified
-import logging
-from datetime import date
-import random
-from cache import CachedView, DjangoCacheHandler
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from .managers import DirectoryManager
+from .serializers import (
+    AdminDirectoryMemberSerializer,
+    RegularDirectoryMemberSerializer,
+)
 
 logger = logging.getLogger(__name__)
 

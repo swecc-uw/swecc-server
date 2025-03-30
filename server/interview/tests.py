@@ -1,9 +1,9 @@
+import random
 import unittest
+
+import numpy as np
 from django.test import TestCase
 from django.utils import timezone
-import random
-import numpy as np
-
 from interview.algorithm import CommonAvailabilityStableMatching
 
 

@@ -1,7 +1,9 @@
-from cache import CacheHandler, DjangoCacheHandler
-from .serializers import RegularDirectoryMemberSerializer
-from members.models import User
 import logging
+
+from cache import CacheHandler, DjangoCacheHandler
+from members.models import User
+
+from .serializers import RegularDirectoryMemberSerializer
 
 logger = logging.getLogger(__name__)
 
