@@ -8,27 +8,47 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('cohort', '0001_initial'),
+        ("cohort", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='cohort',
-            options={'ordering': ['name'], 'verbose_name': 'Cohort', 'verbose_name_plural': 'Cohorts'},
+            name="cohort",
+            options={
+                "ordering": ["name"],
+                "verbose_name": "Cohort",
+                "verbose_name_plural": "Cohorts",
+            },
         ),
         migrations.AlterField(
-            model_name='cohort',
-            name='id',
-            field=models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+            model_name="cohort",
+            name="id",
+            field=models.BigAutoField(
+                auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+            ),
         ),
         migrations.AlterField(
-            model_name='cohort',
-            name='level',
-            field=models.CharField(choices=[('beginner', 'Beginner'), ('intermediate', 'Intermediate'), ('advanced', 'Advanced')], db_index=True, default='beginner', max_length=64),
+            model_name="cohort",
+            name="level",
+            field=models.CharField(
+                choices=[
+                    ("beginner", "Beginner"),
+                    ("intermediate", "Intermediate"),
+                    ("advanced", "Advanced"),
+                ],
+                db_index=True,
+                default="beginner",
+                max_length=64,
+            ),
         ),
         migrations.AlterField(
-            model_name='cohort',
-            name='members',
-            field=models.ManyToManyField(blank=True, db_table='cohort_members', related_name='cohorts', to=settings.AUTH_USER_MODEL),
+            model_name="cohort",
+            name="members",
+            field=models.ManyToManyField(
+                blank=True,
+                db_table="cohort_members",
+                related_name="cohorts",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]

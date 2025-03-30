@@ -6,6 +6,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def send_email(from_email, to_email, subject, html_content, force_send=False):
     """
     plz catch exceptions in the caller

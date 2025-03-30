@@ -7,18 +7,37 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='DiscordChannel',
+            name="DiscordChannel",
             fields=[
-                ('channel_id', models.BigIntegerField(db_index=True, primary_key=True, serialize=False)),
-                ('channel_name', models.CharField(max_length=255)),
-                ('category_id', models.BigIntegerField(blank=True, db_index=True, null=True)),
-                ('channel_type', models.CharField(choices=[('TEXT', 'Text Channel'), ('VOICE', 'Voice Channel'), ('CATEGORY', 'Category'), ('STAGE', 'Stage Channel'), ('FORUM', 'Forum Channel')], max_length=255)),
-                ('guild_id', models.BigIntegerField(db_index=True)),
+                (
+                    "channel_id",
+                    models.BigIntegerField(
+                        db_index=True, primary_key=True, serialize=False
+                    ),
+                ),
+                ("channel_name", models.CharField(max_length=255)),
+                (
+                    "category_id",
+                    models.BigIntegerField(blank=True, db_index=True, null=True),
+                ),
+                (
+                    "channel_type",
+                    models.CharField(
+                        choices=[
+                            ("TEXT", "Text Channel"),
+                            ("VOICE", "Voice Channel"),
+                            ("CATEGORY", "Category"),
+                            ("STAGE", "Stage Channel"),
+                            ("FORUM", "Forum Channel"),
+                        ],
+                        max_length=255,
+                    ),
+                ),
+                ("guild_id", models.BigIntegerField(db_index=True)),
             ],
         ),
     ]

@@ -9,10 +9,11 @@ class CohortSerializer(serializers.ModelSerializer):
         model = Cohort
         fields = ["id", "name", "members", "level"]
 
+
 class CohortNoMembersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cohort
-        fields = ['id', 'name', 'level']
+        fields = ["id", "name", "level"]
 
 
 class CohortHydratedSerializer(serializers.ModelSerializer):
@@ -21,6 +22,7 @@ class CohortHydratedSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cohort
         fields = ["id", "name", "members", "level"]
+
 
 class CohortHydratedPublicSerializer(serializers.ModelSerializer):
     members = UserSerializer(many=True, read_only=True)

@@ -8,35 +8,57 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('questions', '0005_behavioralquestionqueue'),
+        ("questions", "0005_behavioralquestionqueue"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('report', '0003_rename_reported_user_id_report_reporter_user_id'),
+        ("report", "0003_rename_reported_user_id_report_reporter_user_id"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='report',
-            old_name='associated_id',
-            new_name='associated_interview',
+            model_name="report",
+            old_name="associated_id",
+            new_name="associated_interview",
         ),
         migrations.AddField(
-            model_name='report',
-            name='associated_member',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='reported_user', to=settings.AUTH_USER_MODEL),
+            model_name="report",
+            name="associated_member",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="reported_user",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='report',
-            name='associated_question',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='questions.technicalquestion'),
+            model_name="report",
+            name="associated_question",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="questions.technicalquestion",
+            ),
         ),
         migrations.AlterField(
-            model_name='report',
-            name='reporter_user_id',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='reporter', to=settings.AUTH_USER_MODEL),
+            model_name="report",
+            name="reporter_user_id",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="reporter",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AlterField(
-            model_name='report',
-            name='type',
-            field=models.CharField(choices=[('interview', 'Interview'), ('question', 'Question'), ('member', 'Member')], max_length=50),
+            model_name="report",
+            name="type",
+            field=models.CharField(
+                choices=[
+                    ("interview", "Interview"),
+                    ("question", "Question"),
+                    ("member", "Member"),
+                ],
+                max_length=50,
+            ),
         ),
     ]

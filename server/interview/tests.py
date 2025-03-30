@@ -6,6 +6,7 @@ import numpy as np
 
 from interview.algorithm import CommonAvailabilityStableMatching
 
+
 class TestCommonAvailabilityStableMatching(TestCase):
     def setUp(self):
         self.algorithm = CommonAvailabilityStableMatching()
@@ -14,35 +15,40 @@ class TestCommonAvailabilityStableMatching(TestCase):
         availability1 = np.array([[False] * 48 for _ in range(7)], dtype=bool)
         availability2 = np.array([[False] * 48 for _ in range(7)], dtype=bool)
         self.assertEqual(
-            self.algorithm.calculate_common_slots_numpy(availability1, availability2),
-            0
+            self.algorithm.calculate_common_slots_numpy(availability1, availability2), 0
         )
 
         availability1 = np.array([[True] * 48 for _ in range(7)], dtype=bool)
         availability2 = np.array([[True] * 48 for _ in range(7)], dtype=bool)
         self.assertEqual(
             self.algorithm.calculate_common_slots_numpy(availability1, availability2),
-            7 * 48
+            7 * 48,
         )
 
-        availability1 = np.array([([True] * 24) + ([False] * 24) for _ in range(7)], dtype=bool)
-        availability2 = np.array([([True] * 12) + ([False] * 36) for _ in range(7)], dtype=bool)
+        availability1 = np.array(
+            [([True] * 24) + ([False] * 24) for _ in range(7)], dtype=bool
+        )
+        availability2 = np.array(
+            [([True] * 12) + ([False] * 36) for _ in range(7)], dtype=bool
+        )
         self.assertEqual(
             self.algorithm.calculate_common_slots_numpy(availability1, availability2),
-            7 * 12
+            7 * 12,
         )
 
         availability1 = np.array([[True] * 48 for _ in range(7)], dtype=bool)
-        availability2 = np.array([[True] * 48 for _ in range(6)] + [[False] * 48], dtype=bool)
+        availability2 = np.array(
+            [[True] * 48 for _ in range(6)] + [[False] * 48], dtype=bool
+        )
         self.assertEqual(
             self.algorithm.calculate_common_slots_numpy(availability1, availability2),
-            6 * 48
+            6 * 48,
         )
 
     def test_stable_matching_two_members(self):
         availabilities = {
             0: [[True] * 48 for _ in range(7)],
-            1: [[True] * 48 for _ in range(7)]
+            1: [[True] * 48 for _ in range(7)],
         }
         self.algorithm.set_availabilities(availabilities)
         result = self.algorithm.pair([0, 1])

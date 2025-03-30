@@ -50,6 +50,7 @@ class BehavioralQuestionSerializer(serializers.ModelSerializer):
             "approved_by": {"read_only": True},
         }
 
+
 class UpdateQueueSerializer(serializers.Serializer):
     question_queue = serializers.ListField(
         child=serializers.UUIDField(), allow_empty=True

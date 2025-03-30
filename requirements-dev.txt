@@ -1,0 +1,21 @@
+-r requirements-server.txt
+-r requirements-rabbit.txt
+
+black
+isort
+
+# linting
+flake8
+flake8-docstrings
+flake8-quotes
+flake8-bugbear
+
+# type checking
+mypy
+django-stubs
+djangorestframework-stubs
+types-requests
+
+# misc
+pre-commit
+codespell

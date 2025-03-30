@@ -25,6 +25,7 @@ from leaderboard.serializers import LeetcodeStatsSerializer, GitHubStatsSerializ
 from .serializers import CohortStatsSerializer
 from cohort.models import Cohort
 from email_util.send_email import send_email
+
 logger = logging.getLogger(__name__)
 
 
@@ -312,24 +313,24 @@ class CohortStatsBase(APIView):
         cohort_name = request.data.get("cohort_name")
 
         cohort_stats_queryset = CohortStats.objects.filter(
-            member__id=user_id,
-            cohort__is_active=True
+            member__id=user_id, cohort__is_active=True
         )
 
         if cohort_name:
-            cohort_stats_queryset = cohort_stats_queryset.filter(cohort__name=cohort_name)
+            cohort_stats_queryset = cohort_stats_queryset.filter(
+                cohort__name=cohort_name
+            )
             if not cohort_stats_queryset.exists():
                 return JsonResponse(
                     {"error": "Active cohort not found with the provided name"},
-                    status=404
+                    status=404,
                 )
 
         cohort_stats_objects = list(cohort_stats_queryset)
 
         if not cohort_stats_objects:
             return JsonResponse(
-                {"error": "No active cohort stats found for this user"},
-                status=404
+                {"error": "No active cohort stats found for this user"}, status=404
             )
 
         updated_cohorts = []
@@ -344,14 +345,17 @@ class CohortStatsBase(APIView):
             msg = f"User {user_id} has multiple active cohorts {updated_cohorts}. Updated all of them, but you might want to look into this."
             logger.warning(msg)
             try:
-                send_email('swecc@uw.edu', 'sweccuw@gmail.com', "Multiple active cohorts", f"<p>{msg}</p>")
+                send_email(
+                    "swecc@uw.edu",
+                    "sweccuw@gmail.com",
+                    "Multiple active cohorts",
+                    f"<p>{msg}</p>",
+                )
             except Exception as e:
                 logger.error(f"Failed to send email: {e}")
 
-        return Response(
-            {"updated_cohorts": updated_cohorts},
-            status=status.HTTP_200_OK
-        )
+        return Response({"updated_cohorts": updated_cohorts}, status=status.HTTP_200_OK)
+
 
 class UpdateApplicationStatsView(CohortStatsBase):
     def update_stats(self, cohort_stats_object):

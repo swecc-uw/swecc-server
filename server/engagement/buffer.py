@@ -115,7 +115,8 @@ class MessageBuffer:
                     ).values("channel_id", "member_id", "id")
 
                     stats_map = {
-                        (int(s["member_id"]), int(s["channel_id"])): int(s["id"]) for s in stats
+                        (int(s["member_id"]), int(s["channel_id"])): int(s["id"])
+                        for s in stats
                     }
 
                     update_batch = [

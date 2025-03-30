@@ -62,5 +62,5 @@ urlpatterns = [
         "user/<int:id>/",
         views.GetUserStats.as_view(),
         name="get-user-stats",
-    )
+    ),
 ]

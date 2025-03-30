@@ -6,12 +6,12 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('leaderboard', '0002_githubstats'),
+        ("leaderboard", "0002_githubstats"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='githubstats',
-            name='public_repos',
+            model_name="githubstats",
+            name="public_repos",
         ),
     ]

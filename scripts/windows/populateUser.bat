@@ -14,4 +14,3 @@ for /L %%i in (1, 1, %numUsers%) do (
 )
 
 echo Users created successfully.
-

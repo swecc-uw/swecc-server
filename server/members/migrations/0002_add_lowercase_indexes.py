@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('members', '0001_initial'),
+        ("members", "0001_initial"),
     ]
 
     operations = [
@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             """,
             reverse_sql="""
             DROP INDEX IF EXISTS idx_lower_discord_username;
-            """
+            """,
         ),
         migrations.RunSQL(
             """
@@ -26,6 +26,6 @@ class Migration(migrations.Migration):
             """,
             reverse_sql="""
             DROP INDEX IF EXISTS idx_lower_username;
-            """
+            """,
         ),
     ]

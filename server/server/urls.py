@@ -28,9 +28,7 @@ urlpatterns = [
 
 if DJANGO_DEBUG:
     logger.info("DEBUG is enabled, adding debug urls")
-    urlpatterns += [path('silk/', include('silk.urls', namespace='silk'))]
-
-
+    urlpatterns += [path("silk/", include("silk.urls", namespace="silk"))]
 
 
 @api_view(["GET"])

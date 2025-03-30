@@ -11,18 +11,19 @@ from interview.views import INTERVIEW_NOTIFICATION_ADDR
 
 logger = logging.getLogger(__name__)
 
+
 class Command(BaseCommand):
-    help = 'Resends email notifications for all pending interviews'
+    help = "Resends email notifications for all pending interviews"
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--dry',
-            action='store_true',
-            help='Perform a dry run without sending emails'
+            "--dry",
+            action="store_true",
+            help="Perform a dry run without sending emails",
         )
 
     def handle(self, *args, **options):
-        is_dry_run = options['dry']
+        is_dry_run = options["dry"]
 
         today = timezone.now()
         last_monday = today - timezone.timedelta(days=today.weekday())
@@ -34,9 +35,7 @@ class Command(BaseCommand):
         )
 
         if not pending_interviews.exists():
-            self.stdout.write(
-                self.style.WARNING("No pending interviews found")
-            )
+            self.stdout.write(self.style.WARNING("No pending interviews found"))
             return
 
         self.stdout.write(f"Found {pending_interviews.count()} pending interviews")
@@ -65,7 +64,11 @@ class Command(BaseCommand):
                     )
                 except Exception as e:
                     failed_emails.append(
-                        (str(interview.interview_id), interview.interviewer.email, str(e))
+                        (
+                            str(interview.interview_id),
+                            interview.interviewer.email,
+                            str(e),
+                        )
                     )
                     self.stdout.write(
                         self.style.ERROR(
@@ -90,7 +93,11 @@ class Command(BaseCommand):
                     )
                 except Exception as e:
                     failed_emails.append(
-                        (str(interview.interview_id), interview.interviewee.email, str(e))
+                        (
+                            str(interview.interview_id),
+                            interview.interviewee.email,
+                            str(e),
+                        )
                     )
                     self.stdout.write(
                         self.style.ERROR(
@@ -100,11 +107,13 @@ class Command(BaseCommand):
 
             if failed_emails:
                 self.stdout.write(
-                    self.style.ERROR(f"\nFailed to send {len(failed_emails)} notifications:")
+                    self.style.ERROR(
+                        f"\nFailed to send {len(failed_emails)} notifications:"
+                    )
                 )
                 for interview_id, email, error in failed_emails:
                     self.stdout.write(f"  - Interview {interview_id}, {email}: {error}")
-            
+
             self.stdout.write(
                 self.style.SUCCESS(
                     f"\nSuccessfully processed {pending_interviews.count()} interviews "
@@ -117,7 +126,7 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.SUCCESS("\nDry run completed - no notifications were sent")
             )
-            
+
             # what would have been sent
             for interview in pending_interviews:
                 self.stdout.write(

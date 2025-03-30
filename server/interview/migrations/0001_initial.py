@@ -8,17 +8,35 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Interview',
+            name="Interview",
             fields=[
-                ('interview_id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('status', models.CharField(choices=[('pending', 'Pending'), ('active', 'Active'), ('inactive', 'Inactive')], default='pending', max_length=10)),
-                ('date_effective', models.DateTimeField()),
-                ('date_completed', models.DateTimeField(blank=True, null=True)),
+                (
+                    "interview_id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Pending"),
+                            ("active", "Active"),
+                            ("inactive", "Inactive"),
+                        ],
+                        default="pending",
+                        max_length=10,
+                    ),
+                ),
+                ("date_effective", models.DateTimeField()),
+                ("date_completed", models.DateTimeField(blank=True, null=True)),
             ],
         ),
     ]
