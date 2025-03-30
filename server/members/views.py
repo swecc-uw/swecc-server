@@ -7,6 +7,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from supabase import Client, create_client
+from email_util.send_email import send_email
+from .notification import verify_school_email_html
 
 import jwt
 import time
@@ -247,6 +249,9 @@ class UpdateDiscordUsername(APIView):
         return Response({"success": True}, status=200)
 
 
+VERIFY_SCHOOL_EMAIL_ADDR = "swecc@uw.edu"
+
+
 class VerifySchoolEmailRequest(APIView):
     permission_classes = [IsApiKey | IsVerified]
 
@@ -270,6 +275,15 @@ class VerifySchoolEmailRequest(APIView):
         if not IsApiKey().has_permission(request, self) and request.user.id != user_id:
             return Response({"detail": "Provided user does not match."}, status=403)
 
+        exsiting_user_with_email = User.objects.filter(
+            school_email=school_email
+        ).first()
+        if exsiting_user_with_email:
+            return Response(
+                {"detail": "Email already in use."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         user = (
             get_object_or_404(User, discord_id=discord_id)
             if discord_id
@@ -285,6 +299,13 @@ class VerifySchoolEmailRequest(APIView):
         }
 
         token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
+        send_email(
+            from_email=VERIFY_SCHOOL_EMAIL_ADDR,
+            to_email=school_email,
+            subject="SWECC Verfication: Verify your school email",
+            html_content=verify_school_email_html(token),
+        )
 
         return Response({"token": token}, status=200)
 
