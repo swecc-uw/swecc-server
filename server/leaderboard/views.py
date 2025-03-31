@@ -5,12 +5,10 @@ from datetime import timedelta
 from cache import CachedView, DjangoCacheHandler
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import ExpressionWrapper, F, FloatField, Window
-from django.db.models.functions import RowNumber
+from django.db.models import F
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from engagement.models import AttendanceSessionStats, CohortStats
 from engagement.serializers import (
     AttendanceStatsSerializer,
     CohortStatsLeaderboardSerializer,
@@ -29,12 +27,7 @@ from .managers import (
     GitHubLeaderboardManager,
     LeetcodeLeaderboardManager,
 )
-from .models import (
-    GitHubStats,
-    InternshipApplicationStats,
-    LeetcodeStats,
-    NewGradApplicationStats,
-)
+from .models import InternshipApplicationStats, NewGradApplicationStats
 from .serializers import (
     GitHubStatsSerializer,
     InternshipApplicationStatsSerializer,
@@ -267,7 +260,6 @@ class InjestReactionEventView(generics.CreateAPIView):
     def post(self, request, *args, **kwargs):
         discord_id = request.data.get("discord_id")
         channel_id = request.data.get("channel_id")
-        emoji = request.data.get("emoji")
 
         try:
             user_id = self._get_user_id(discord_id)

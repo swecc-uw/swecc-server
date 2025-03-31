@@ -29,7 +29,7 @@ class ConnectionManager:
             if self._connection and not (
                 self._connection.is_closed or self._connection.is_closing
             ):
-                logger.info(f"Using existing connection.")
+                logger.info("Using existing connection.")
                 return self._connection
 
             self._ready.clear()
@@ -74,13 +74,13 @@ class ConnectionManager:
     def on_connection_closed(self, connection, reason):
         self._connected = False
         if self._closing:
-            logger.info(f"Connection to RabbitMQ closed.")
+            logger.info("Connection to RabbitMQ closed.")
         else:
             logger.warning(f"Connection closed unexpectedly: {reason}")
 
     async def close(self):
         self._closing = True
-        logger.info(f"Closing connection...")
+        logger.info("Closing connection...")
         if self._connection and not (
             self._connection.is_closing or self._connection.is_closed
         ):

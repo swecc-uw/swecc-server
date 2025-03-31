@@ -1,8 +1,4 @@
-import random
-
 from django.core.management.base import BaseCommand
-from django.db.models import Q
-from django.utils import timezone
 from interview.models import InterviewPool
 
 

@@ -1,6 +1,6 @@
 import logging
 
-from cache import CacheHandler, DjangoCacheHandler
+from cache import CacheHandler
 from members.models import User
 
 from .serializers import RegularDirectoryMemberSerializer

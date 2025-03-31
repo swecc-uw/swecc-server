@@ -1,7 +1,7 @@
 FROM python:3.9 AS development
 
 WORKDIR /app
-COPY requirements.txt .
+COPY requirements-server.txt .
 RUN apt-get update && apt-get install -y \
     gunicorn \
     && rm -rf /var/lib/apt/lists/*

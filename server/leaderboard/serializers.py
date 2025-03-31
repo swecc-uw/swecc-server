@@ -1,4 +1,3 @@
-from members.serializers import UsernameSerializer
 from rest_framework import serializers
 
 from .models import (

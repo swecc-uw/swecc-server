@@ -1,7 +1,4 @@
-import time
-
 from custom_auth.permissions import IsAdmin, IsVerified
-from django.shortcuts import render
 from interview.models import Interview
 from members.models import User
 from questions.models import TechnicalQuestion

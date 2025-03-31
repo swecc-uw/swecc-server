@@ -12,7 +12,6 @@ from django.middleware.csrf import get_token
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.http import require_POST
-from email_util.send_email import send_email
 from members.models import User
 from members.permissions import IsApiKey
 from rest_framework import generics, views
@@ -224,7 +223,7 @@ class CreateTokenView(views.APIView):
 
         try:
             is_api_key = IsApiKey().has_permission(request, None)
-        except:
+        except Exception:
             pass
 
         groups = [group.name for group in groups] + ["is_authenticated"]

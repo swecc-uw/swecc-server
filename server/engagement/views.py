@@ -4,10 +4,8 @@ from datetime import datetime
 from typing import Dict, List
 
 import pydantic
-from cohort.models import Cohort
 from custom_auth.permissions import IsAdmin, IsVerified
 from django.db import transaction
-from django.db.models import F
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -28,11 +26,7 @@ from .models import (
     CohortStats,
     DiscordMessageStats,
 )
-from .serializers import (
-    AttendanceSessionSerializer,
-    CohortStatsSerializer,
-    MemberSerializer,
-)
+from .serializers import AttendanceSessionSerializer, MemberSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +79,7 @@ class CreateAttendanceSession(APIView):
             )
 
         except ValueError as e:
+            logger.error(f"ValueError: {e}")
             return Response(
                 {"error": "Invalid date or timestamp format"},
                 status=status.HTTP_400_BAD_REQUEST,

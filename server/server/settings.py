@@ -1,5 +1,4 @@
 import os
-from datetime import timedelta
 from pathlib import Path
 
 DJANGO_DEBUG = DEBUG = os.environ["DJANGO_DEBUG"].lower() == "true"

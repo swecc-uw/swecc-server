@@ -1,5 +1,4 @@
 import random
-import unittest
 
 import numpy as np
 from django.test import TestCase

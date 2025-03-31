@@ -1,6 +1,6 @@
 import logging
 import random
-from datetime import datetime, timedelta
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from custom_auth.permissions import IsAdmin, IsVerified
@@ -26,8 +26,6 @@ from rest_framework import generics, permissions, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-import server.settings as settings
 
 from .algorithm import CommonAvailabilityStableMatching
 from .models import Interview, InterviewAvailability, InterviewPool
@@ -84,7 +82,7 @@ def get_next_cutoff(user_timezone="America/Los_Angeles", force_current_week=Fals
 
     # By default, return the previous Sunday
     # If force_current_week, return next Sunday
-    if force_current_week == "true" or force_current_week == True:
+    if force_current_week == "true" or force_current_week:
         return last_sunday + timezone.timedelta(days=7)  # One week ahead
     return last_sunday  # Most recent Sunday
 
@@ -106,7 +104,7 @@ def get_previous_cutoff(
 
     # By default, return the Sunday before last
     # If force_current_week, return the previous Sunday
-    if force_current_week == "true" or force_current_week == True:
+    if force_current_week == "true" or force_current_week:
         return last_sunday  # Most recent Sunday
     return last_sunday - timezone.timedelta(days=7)  # Week before last Sunday
 
@@ -359,8 +357,6 @@ class PairInterview(APIView):
             if i < j:  # Avoid creating duplicate interviews
                 p1 = pool_members[i].member
                 p2 = pool_members[j].member
-
-                common_slots_count = matching_result.common_slots[i, j]
 
                 interview1 = Interview.objects.create(
                     interviewer=p1,

@@ -1,9 +1,7 @@
 import logging
-import os
 
 import requests
 from custom_auth.permissions import IsAdmin
-from django.conf import settings
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response

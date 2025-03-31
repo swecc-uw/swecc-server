@@ -2,9 +2,8 @@ import asyncio
 import logging
 import os
 import urllib.parse
-from typing import Any, Callable, Coroutine, Dict, List, Optional
+from typing import Any, Callable, Coroutine, Dict, Optional
 
-import pika
 from pika.exchange_type import ExchangeType
 
 from .connection_manager import ConnectionManager

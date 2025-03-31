@@ -1,11 +1,9 @@
-from typing import Dict, List, Optional, Union
+from typing import List, Optional
 
 from custom_auth.permissions import IsAdmin
-from django.core.exceptions import ObjectDoesNotExist
 from django.db import connection
-from django.db.models import Exists, IntegerField, Max, OuterRef, Prefetch, Sum, Value
+from django.db.models import IntegerField, Max, Prefetch, Sum, Value
 from django.db.models.functions import Coalesce
-from django.http import JsonResponse
 from engagement.models import CohortStats
 from members.models import User
 from members.permissions import IsApiKey
@@ -104,7 +102,6 @@ class CohortRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
         member_ids = request.data.get("members", [])
         cohort = Cohort.objects.get(name=request.data.get("name"))
-        past_member_ids = cohort.members.values_list("id", flat=True)
 
         # Update cohort stats for each member accordingly
         # Not deleting old stats since users can use those stats to benchmark progress

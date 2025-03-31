@@ -4,8 +4,6 @@ from datetime import date
 
 from cache import CachedView, DjangoCacheHandler
 from custom_auth.permissions import IsAdmin, IsVerified
-from django.core.cache import cache
-from django.db.models import Q
 from django.http import JsonResponse
 from members.models import User
 from rest_framework.pagination import PageNumberPagination

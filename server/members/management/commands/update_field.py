@@ -68,7 +68,7 @@ class Command(BaseCommand):
             )
             return
 
-        if not field_type in self.allowed_types:
+        if field_type not in self.allowed_types:
             self.stdout.write(
                 self.style.ERROR(
                     f"Cannot write to type {Command.output_info(field_type)}."

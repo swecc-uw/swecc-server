@@ -1,18 +1,14 @@
 import logging
 import os
 import time
-import uuid
 
 import jwt
 from custom_auth.permissions import IsAdmin, IsVerified
 from custom_auth.views import create_password_reset_creds
 from django.contrib.auth.models import Group
-from django.contrib.auth.tokens import default_token_generator
 from django.db import IntegrityError
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
-from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_encode
+from django.shortcuts import get_object_or_404
 from email_util.send_email import send_email
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
@@ -220,7 +216,7 @@ class PasswordResetRequest(APIView):
 
         uuid, token = create_password_reset_creds(user)
 
-        return Response({"uid": uid, "token": token}, status=200)
+        return Response({"uid": uuid, "token": token}, status=200)
 
 
 class AdminList(generics.ListAPIView):

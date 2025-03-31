@@ -6,7 +6,6 @@ isort
 
 # linting
 flake8
-flake8-docstrings
 flake8-quotes
 flake8-bugbear
 
