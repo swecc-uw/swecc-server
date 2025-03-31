@@ -1,10 +1,12 @@
-from django.test import TestCase
-from rest_framework.test import APIClient
-from django.utils import timezone
-from datetime import timedelta, datetime
-from .models import AttendanceSession
-from members.models import User
+from datetime import timedelta
 from unittest.mock import patch
+
+from django.test import TestCase
+from django.utils import timezone
+from members.models import User
+from rest_framework.test import APIClient
+
+from .models import AttendanceSession
 
 
 class AuthenticatedTestCase(TestCase):

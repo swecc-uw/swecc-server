@@ -1,9 +1,10 @@
-from django.core.management.base import BaseCommand
-from members.models import User
 from collections import defaultdict
-from engagement.models import AttendanceSessionStats
+
+from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
+from engagement.models import AttendanceSessionStats
+from members.models import User
 
 
 class Command(BaseCommand):

@@ -1,7 +1,9 @@
+import asyncio
+import logging
 import os
 
 import django
-import asyncio
+import mq
 
 # Set up Django environment
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "server.settings")
@@ -9,9 +11,7 @@ django.setup()
 
 # Import consumers so that the decorator runs.
 # If you want to define callbacks elsewhere, make sure to import them here.
-import mq.consumers
-import mq
-import logging
+import mq.consumers  # noqa: F401, E402 (no unused imports, module level import not at top of file)
 
 logger = logging.getLogger(__name__)
 

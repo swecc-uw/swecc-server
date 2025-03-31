@@ -1,8 +1,8 @@
 FROM python:3.9
 
 WORKDIR /app
-COPY rabbit.requirements.txt .
-RUN pip install -r rabbit.requirements.txt
+COPY requirements-rabbit.txt .
+RUN pip install -r requirements-rabbit.txt
 
 COPY server/ /app/server/
 

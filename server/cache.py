@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+
 from django.core.cache import cache
 
 

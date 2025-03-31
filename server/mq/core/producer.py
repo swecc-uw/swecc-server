@@ -1,8 +1,6 @@
 import asyncio
 import logging
-import pika
-from pika.adapters.asyncio_connection import AsyncioConnection
-from typing import Any, Dict, Optional, Union
+
 from .connection_manager import ConnectionManager
 
 LOGGER = logging.getLogger(__name__)
@@ -90,7 +88,7 @@ class AsyncRabbitProducer:
                 connected = await self.connect()
                 if not connected:
                     LOGGER.warning(
-                        f"Failed to connect to RabbitMQ for publishing to {self._exchange}, attempt {retry_count+1}/{MAX_RETRIES}"
+                        f"Failed to connect to RabbitMQ for publishing to {self._exchange}, attempt {retry_count + 1}/{MAX_RETRIES}"
                     )
                     retry_count += 1
                     await asyncio.sleep(1)

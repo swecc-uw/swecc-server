@@ -1,8 +1,8 @@
-from django.core.management.base import BaseCommand
 from cohort.models import Cohort
-from members.models import User
+from django.core.management.base import BaseCommand
 from engagement.models import CohortStats
 from engagement.serializers import CohortStatsSerializer
+from members.models import User
 
 
 class Command(BaseCommand):

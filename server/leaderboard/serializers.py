@@ -1,11 +1,11 @@
 from rest_framework import serializers
+
 from .models import (
     GitHubStats,
     InternshipApplicationStats,
     LeetcodeStats,
     NewGradApplicationStats,
 )
-from members.serializers import UsernameSerializer
 
 
 class LeetcodeStatsSerializer(serializers.ModelSerializer):

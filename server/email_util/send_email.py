@@ -1,10 +1,12 @@
-import os
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
-from server.settings import SENDGRID_API_KEY, DJANGO_DEBUG
 import logging
 
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
+from server.settings import DJANGO_DEBUG, SENDGRID_API_KEY
+
 logger = logging.getLogger(__name__)
+
 
 def send_email(from_email, to_email, subject, html_content, force_send=False):
     """

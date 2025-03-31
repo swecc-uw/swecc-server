@@ -11,45 +11,85 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('interview', '0001_initial'),
-        ('members', '0001_initial'),
-        ('questions', '0001_initial'),
+        ("interview", "0001_initial"),
+        ("members", "0001_initial"),
+        ("questions", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='InterviewAvailability',
+            name="InterviewAvailability",
             fields=[
-                ('member', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, serialize=False, to=settings.AUTH_USER_MODEL)),
-                ('interview_availability_slots', models.JSONField(default=interview.models.default_availability, validators=[interview.models.validate_availability])),
-                ('mentor_availability_slots', models.JSONField(default=interview.models.default_availability, validators=[interview.models.validate_availability])),
+                (
+                    "member",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        primary_key=True,
+                        serialize=False,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "interview_availability_slots",
+                    models.JSONField(
+                        default=interview.models.default_availability,
+                        validators=[interview.models.validate_availability],
+                    ),
+                ),
+                (
+                    "mentor_availability_slots",
+                    models.JSONField(
+                        default=interview.models.default_availability,
+                        validators=[interview.models.validate_availability],
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='InterviewPool',
+            name="InterviewPool",
             fields=[
-                ('member', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, serialize=False, to=settings.AUTH_USER_MODEL)),
+                (
+                    "member",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        primary_key=True,
+                        serialize=False,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
-            model_name='interview',
-            name='behavioral_questions',
-            field=models.ManyToManyField(to='questions.behavioralquestion'),
+            model_name="interview",
+            name="behavioral_questions",
+            field=models.ManyToManyField(to="questions.behavioralquestion"),
         ),
         migrations.AddField(
-            model_name='interview',
-            name='interviewee',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='interviews_as_interviewee', to=settings.AUTH_USER_MODEL),
+            model_name="interview",
+            name="interviewee",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="interviews_as_interviewee",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='interview',
-            name='interviewer',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='interviews_as_interviewer', to=settings.AUTH_USER_MODEL),
+            model_name="interview",
+            name="interviewer",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="interviews_as_interviewer",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='interview',
-            name='technical_question',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='questions.technicalquestion'),
+            model_name="interview",
+            name="technical_question",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="questions.technicalquestion",
+            ),
         ),
     ]

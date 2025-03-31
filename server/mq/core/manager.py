@@ -1,15 +1,14 @@
-import os
-import urllib.parse
 import asyncio
 import logging
-from typing import Dict, List, Optional, Callable, Any, Coroutine
+import os
+import urllib.parse
+from typing import Any, Callable, Coroutine, Dict, Optional
 
-import pika
 from pika.exchange_type import ExchangeType
 
+from .connection_manager import ConnectionManager
 from .consumer import AsyncRabbitConsumer
 from .producer import AsyncRabbitProducer
-from .connection_manager import ConnectionManager
 
 LOGGER = logging.getLogger(__name__)
 

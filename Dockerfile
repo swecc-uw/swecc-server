@@ -1,11 +1,11 @@
 FROM python:3.9 AS development
 
 WORKDIR /app
-COPY server.requirements.txt .
+COPY requirements-server.txt .
 RUN apt-get update && apt-get install -y \
     gunicorn \
     && rm -rf /var/lib/apt/lists/*
-RUN pip install -r server.requirements.txt
+RUN pip install -r requirements-server.txt
 COPY . .
 
 FROM development AS production

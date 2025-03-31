@@ -9,21 +9,41 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('cohort', '0002_alter_cohort_options_alter_cohort_id_and_more'),
+        ("cohort", "0002_alter_cohort_options_alter_cohort_id_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='CohortStats',
+            name="CohortStats",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('applications', models.IntegerField()),
-                ('onlineAssessments', models.IntegerField()),
-                ('interviews', models.IntegerField()),
-                ('offers', models.IntegerField()),
-                ('dailyChecks', models.IntegerField()),
-                ('cohort', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cohort.cohort')),
-                ('member', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='cohort_member_stats', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("applications", models.IntegerField()),
+                ("onlineAssessments", models.IntegerField()),
+                ("interviews", models.IntegerField()),
+                ("offers", models.IntegerField()),
+                ("dailyChecks", models.IntegerField()),
+                (
+                    "cohort",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="cohort.cohort"
+                    ),
+                ),
+                (
+                    "member",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="cohort_member_stats",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

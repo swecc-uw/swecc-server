@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from .models import TechnicalQuestion, QuestionTopic, BehavioralQuestion
-from members.serializers import UsernameSerializer
+
+from .models import BehavioralQuestion, QuestionTopic, TechnicalQuestion
 
 
 class QuestionTopicSerializer(serializers.ModelSerializer):
@@ -49,6 +49,7 @@ class BehavioralQuestionSerializer(serializers.ModelSerializer):
             "created_by": {"read_only": True},
             "approved_by": {"read_only": True},
         }
+
 
 class UpdateQueueSerializer(serializers.Serializer):
     question_queue = serializers.ListField(

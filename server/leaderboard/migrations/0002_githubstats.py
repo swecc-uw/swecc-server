@@ -10,24 +10,42 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('leaderboard', '0001_initial'),
+        ("leaderboard", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='GitHubStats',
+            name="GitHubStats",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('total_prs', models.IntegerField(default=0)),
-                ('total_commits', models.IntegerField(default=0)),
-                ('public_repos', models.IntegerField(default=0)),
-                ('followers', models.IntegerField(default=0)),
-                ('last_updated', models.DateTimeField(default=django.utils.timezone.now)),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='github_stats', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("total_prs", models.IntegerField(default=0)),
+                ("total_commits", models.IntegerField(default=0)),
+                ("public_repos", models.IntegerField(default=0)),
+                ("followers", models.IntegerField(default=0)),
+                (
+                    "last_updated",
+                    models.DateTimeField(default=django.utils.timezone.now),
+                ),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="github_stats",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name_plural': 'GitHub Stats',
-                'ordering': ['-total_commits', '-total_prs'],
+                "verbose_name_plural": "GitHub Stats",
+                "ordering": ["-total_commits", "-total_prs"],
             },
         ),
     ]

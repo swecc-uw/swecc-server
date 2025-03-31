@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('members', '0002_add_lowercase_indexes'),
+        ("members", "0002_add_lowercase_indexes"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='profile_picture_url',
+            model_name="user",
+            name="profile_picture_url",
             field=models.URLField(blank=True, null=True),
         ),
     ]

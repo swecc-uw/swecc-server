@@ -14,12 +14,27 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Cohort',
+            name="Cohort",
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=255)),
-                ('level', models.CharField(choices=[('beginner', 'Beginner'), ('intermediate', 'Intermediate'), ('advanced', 'Advanced')], max_length=64)),
-                ('members', models.ManyToManyField(related_name='cohorts', to=settings.AUTH_USER_MODEL)),
+                ("id", models.AutoField(primary_key=True, serialize=False)),
+                ("name", models.CharField(max_length=255)),
+                (
+                    "level",
+                    models.CharField(
+                        choices=[
+                            ("beginner", "Beginner"),
+                            ("intermediate", "Intermediate"),
+                            ("advanced", "Advanced"),
+                        ],
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "members",
+                    models.ManyToManyField(
+                        related_name="cohorts", to=settings.AUTH_USER_MODEL
+                    ),
+                ),
             ],
         ),
     ]

@@ -1,25 +1,25 @@
-from typing import Dict, List, Optional, Union
-from django.http import JsonResponse
-from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Prefetch, Exists, OuterRef, Sum, Max, Value, IntegerField
-from django.db.models.functions import Coalesce
+from typing import List, Optional
+
+from custom_auth.permissions import IsAdmin
 from django.db import connection
+from django.db.models import IntegerField, Max, Prefetch, Sum, Value
+from django.db.models.functions import Coalesce
+from engagement.models import CohortStats
+from members.models import User
+from members.permissions import IsApiKey
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from members.permissions import IsApiKey
+
 from .models import Cohort, CohortStatsData
+from .queries import COHORT_DASHBOARD_QUERY
 from .serializers import (
     CohortHydratedPublicSerializer,
-    CohortSerializer,
     CohortHydratedSerializer,
     CohortNoMembersSerializer,
+    CohortSerializer,
 )
-from .queries import COHORT_DASHBOARD_QUERY
-from members.models import User
-from engagement.models import CohortStats
-from custom_auth.permissions import IsAdmin
 
 
 def _get_serializer_class(req):
@@ -102,7 +102,6 @@ class CohortRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
         member_ids = request.data.get("members", [])
         cohort = Cohort.objects.get(name=request.data.get("name"))
-        past_member_ids = cohort.members.values_list("id", flat=True)
 
         # Update cohort stats for each member accordingly
         # Not deleting old stats since users can use those stats to benchmark progress

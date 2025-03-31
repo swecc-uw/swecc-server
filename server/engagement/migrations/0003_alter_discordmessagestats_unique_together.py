@@ -8,12 +8,12 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('engagement', '0002_alter_attendancesession_key'),
+        ("engagement", "0002_alter_attendancesession_key"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='discordmessagestats',
-            unique_together={('member', 'channel_id')},
+            name="discordmessagestats",
+            unique_together={("member", "channel_id")},
         ),
     ]

@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
+from collections import deque
 from dataclasses import dataclass
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional, Tuple
+
 import numpy as np
 from numpy.typing import NDArray
-from collections import deque
 
 # to run tests, exec into docker container and run:
 # `python server/manage.py test interview`

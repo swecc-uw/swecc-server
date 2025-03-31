@@ -7,20 +7,35 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('questions', '0004_technicalquestionqueue'),
+        ("questions", "0004_technicalquestionqueue"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='BehavioralQuestionQueue',
+            name="BehavioralQuestionQueue",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('position', models.IntegerField()),
-                ('added_at', models.DateTimeField(auto_now_add=True)),
-                ('question', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='queue_position', to='questions.behavioralquestion')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("position", models.IntegerField()),
+                ("added_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "question",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="queue_position",
+                        to="questions.behavioralquestion",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['position'],
+                "ordering": ["position"],
             },
         ),
     ]

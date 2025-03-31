@@ -1,13 +1,16 @@
+import logging
 import time
-from django.utils import timezone
+
 import requests
 from django.core.management.base import BaseCommand
-from members.models import User
-from leaderboard.models import LeetcodeStats
 from django.db import transaction
-import logging
+from django.utils import timezone
+from leaderboard.models import LeetcodeStats
+from members.models import User
 
 logger = logging.getLogger(__name__)
+
+
 class Command(BaseCommand):
     help = "Updates leetcode statistics for all users"
 
@@ -57,16 +60,48 @@ class Command(BaseCommand):
                     data = response.json()
                     if "errors" in data:
                         return None
-                    stats = data["data"]["matchedUser"]["submitStats"]["acSubmissionNum"]
+                    stats = data["data"]["matchedUser"]["submitStats"][
+                        "acSubmissionNum"
+                    ]
                     return {
-                        "solvedProblem": next((item["count"] for item in stats if item["difficulty"] == "All"), 0),
-                        "easySolved": next((item["count"] for item in stats if item["difficulty"] == "Easy"), 0),
-                        "mediumSolved": next((item["count"] for item in stats if item["difficulty"] == "Medium"), 0),
-                        "hardSolved": next((item["count"] for item in stats if item["difficulty"] == "Hard"), 0),
+                        "solvedProblem": next(
+                            (
+                                item["count"]
+                                for item in stats
+                                if item["difficulty"] == "All"
+                            ),
+                            0,
+                        ),
+                        "easySolved": next(
+                            (
+                                item["count"]
+                                for item in stats
+                                if item["difficulty"] == "Easy"
+                            ),
+                            0,
+                        ),
+                        "mediumSolved": next(
+                            (
+                                item["count"]
+                                for item in stats
+                                if item["difficulty"] == "Medium"
+                            ),
+                            0,
+                        ),
+                        "hardSolved": next(
+                            (
+                                item["count"]
+                                for item in stats
+                                if item["difficulty"] == "Hard"
+                            ),
+                            0,
+                        ),
                     }
                 else:
                     self.stdout.write(
-                        self.style.ERROR(f"Error fetching data for {username}: {response.text}")
+                        self.style.ERROR(
+                            f"Error fetching data for {username}: {response.text}"
+                        )
                     )
                 return None
             except Exception as e:

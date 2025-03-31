@@ -1,11 +1,11 @@
-from rest_framework import serializers
 from members.serializers import UserSerializer
-
 from questions.serializers import (
     BehavioralQuestionSerializer,
     TechnicalQuestionSerializer,
 )
-from .models import InterviewPool, Interview, InterviewAvailability
+from rest_framework import serializers
+
+from .models import Interview, InterviewAvailability, InterviewPool
 
 
 class AvailabilitySerializer(serializers.Serializer):

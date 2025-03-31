@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cohort', '0005_delete_cohortstats'),
+        ("cohort", "0005_delete_cohortstats"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='cohort',
-            name='name',
+            model_name="cohort",
+            name="name",
             field=models.CharField(max_length=255, unique=True),
         ),
     ]

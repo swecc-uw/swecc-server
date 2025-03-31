@@ -1,5 +1,5 @@
-from resume_review.models import Resume
 from django.core.management.base import BaseCommand
+from resume_review.models import Resume
 
 
 class Command(BaseCommand):

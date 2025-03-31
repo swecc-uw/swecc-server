@@ -1,7 +1,7 @@
-from members.models import User
+from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.core.management.base import BaseCommand
 from django.db import models
-from django.core.exceptions import ValidationError, FieldDoesNotExist
+from members.models import User
 
 
 class Command(BaseCommand):
@@ -68,7 +68,7 @@ class Command(BaseCommand):
             )
             return
 
-        if not field_type in self.allowed_types:
+        if field_type not in self.allowed_types:
             self.stdout.write(
                 self.style.ERROR(
                     f"Cannot write to type {Command.output_info(field_type)}."

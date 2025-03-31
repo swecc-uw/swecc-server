@@ -1,24 +1,21 @@
+import random
+
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from django.db.models import Q
-import random
-from interview.models import (
-    InterviewPool,
-    InterviewAvailability,
-    Interview
-)
 from interview.algorithm import CommonAvailabilityStableMatching
+from interview.models import Interview, InterviewAvailability, InterviewPool
 
 algorithm = CommonAvailabilityStableMatching()
 
+
 class Command(BaseCommand):
-    help = 'Pairs members for mock interviews based on availability'
+    help = "Pairs members for mock interviews based on availability"
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--dry',
-            action='store_true',
-            help='Perform a dry run without creating pairs or sending emails'
+            "--dry",
+            action="store_true",
+            help="Perform a dry run without creating pairs or sending emails",
         )
 
     def get_pool_members(self):
@@ -43,16 +40,14 @@ class Command(BaseCommand):
                 InterviewAvailability.objects.get(
                     member=member.member
                 ).interview_availability_slots
-                if InterviewAvailability.objects.filter(
-                    member=member.member
-                ).exists()
+                if InterviewAvailability.objects.filter(member=member.member).exists()
                 else [[False] * 48 for _ in range(7)]
             )
             for member in pool_members
         }
 
     def handle(self, *args, **options):
-        is_dry_run = options['dry']
+        is_dry_run = options["dry"]
 
         # get pool members
         pool_members = self.get_pool_members()
@@ -88,7 +83,11 @@ class Command(BaseCommand):
 
         # if not a dry run, create interviews and send notifications
         if not is_dry_run:
-            self.stdout.write(self.style.WARNING("\nThis is a live run - creating pairs and sending notifications..."))
+            self.stdout.write(
+                self.style.WARNING(
+                    "\nThis is a live run - creating pairs and sending notifications..."
+                )
+            )
 
             # delete existing interviews for this period
             today = timezone.now()
@@ -97,8 +96,7 @@ class Command(BaseCommand):
             next_next_monday = last_monday + timezone.timedelta(days=14)
 
             deleted_count = Interview.objects.filter(
-                date_effective__gte=last_monday,
-                date_effective__lte=next_next_monday
+                date_effective__gte=last_monday, date_effective__lte=next_next_monday
             ).delete()
 
             self.stdout.write(f"Deleted {deleted_count[0]} existing interviews")
@@ -131,19 +129,21 @@ class Command(BaseCommand):
                     InterviewPool.objects.filter(member__in=[p1, p2]).delete()
 
             self.stdout.write(
-                self.style.SUCCESS(f"\nSuccessfully created {len(paired_interviews)} interviews")
+                self.style.SUCCESS(
+                    f"\nSuccessfully created {len(paired_interviews)} interviews"
+                )
             )
 
             # display remaining unpaired members
             unpaired_members = InterviewPool.objects.all()
             if unpaired_members.exists():
-                self.stdout.write(
-                    self.style.WARNING("\nUnpaired members:")
-                )
+                self.stdout.write(self.style.WARNING("\nUnpaired members:"))
                 for member in unpaired_members:
                     self.stdout.write(f"  - {member.member.username}")
 
         else:
             self.stdout.write(
-                self.style.SUCCESS("\nDry run completed - no interviews were created or emails sent")
+                self.style.SUCCESS(
+                    "\nDry run completed - no interviews were created or emails sent"
+                )
             )

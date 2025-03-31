@@ -1,30 +1,33 @@
-import pydantic
-from collections import defaultdict
-from typing import Dict, List
-from rest_framework import generics
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from datetime import datetime
 import logging
-from django.db.models import F
-from django.shortcuts import get_object_or_404
-from django.utils import timezone
+from collections import defaultdict
+from datetime import datetime
+from typing import Dict, List
+
+import pydantic
 from custom_auth.permissions import IsAdmin, IsVerified
-from members.permissions import IsApiKey
-from members.models import User
-from members.serializers import UserSerializer
-from .buffer import MessageBuffer, Message
-from .models import AttendanceSession, DiscordMessageStats, AttendanceSessionStats
-from .serializers import AttendanceSessionSerializer, MemberSerializer
 from django.db import transaction
 from django.http import JsonResponse
-from .models import CohortStats
-from leaderboard.models import LeetcodeStats, GitHubStats
-from leaderboard.serializers import LeetcodeStatsSerializer, GitHubStatsSerializer
-from .serializers import CohortStatsSerializer
-from cohort.models import Cohort
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from email_util.send_email import send_email
+from leaderboard.models import GitHubStats, LeetcodeStats
+from leaderboard.serializers import GitHubStatsSerializer, LeetcodeStatsSerializer
+from members.models import User
+from members.permissions import IsApiKey
+from members.serializers import UserSerializer
+from rest_framework import generics, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .buffer import Message, MessageBuffer
+from .models import (
+    AttendanceSession,
+    AttendanceSessionStats,
+    CohortStats,
+    DiscordMessageStats,
+)
+from .serializers import AttendanceSessionSerializer, MemberSerializer
+
 logger = logging.getLogger(__name__)
 
 
@@ -76,6 +79,7 @@ class CreateAttendanceSession(APIView):
             )
 
         except ValueError as e:
+            logger.error(f"ValueError: {e}")
             return Response(
                 {"error": "Invalid date or timestamp format"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -312,24 +316,24 @@ class CohortStatsBase(APIView):
         cohort_name = request.data.get("cohort_name")
 
         cohort_stats_queryset = CohortStats.objects.filter(
-            member__id=user_id,
-            cohort__is_active=True
+            member__id=user_id, cohort__is_active=True
         )
 
         if cohort_name:
-            cohort_stats_queryset = cohort_stats_queryset.filter(cohort__name=cohort_name)
+            cohort_stats_queryset = cohort_stats_queryset.filter(
+                cohort__name=cohort_name
+            )
             if not cohort_stats_queryset.exists():
                 return JsonResponse(
                     {"error": "Active cohort not found with the provided name"},
-                    status=404
+                    status=404,
                 )
 
         cohort_stats_objects = list(cohort_stats_queryset)
 
         if not cohort_stats_objects:
             return JsonResponse(
-                {"error": "No active cohort stats found for this user"},
-                status=404
+                {"error": "No active cohort stats found for this user"}, status=404
             )
 
         updated_cohorts = []
@@ -344,14 +348,17 @@ class CohortStatsBase(APIView):
             msg = f"User {user_id} has multiple active cohorts {updated_cohorts}. Updated all of them, but you might want to look into this."
             logger.warning(msg)
             try:
-                send_email('swecc@uw.edu', 'sweccuw@gmail.com', "Multiple active cohorts", f"<p>{msg}</p>")
+                send_email(
+                    "swecc@uw.edu",
+                    "sweccuw@gmail.com",
+                    "Multiple active cohorts",
+                    f"<p>{msg}</p>",
+                )
             except Exception as e:
                 logger.error(f"Failed to send email: {e}")
 
-        return Response(
-            {"updated_cohorts": updated_cohorts},
-            status=status.HTTP_200_OK
-        )
+        return Response({"updated_cohorts": updated_cohorts}, status=status.HTTP_200_OK)
+
 
 class UpdateApplicationStatsView(CohortStatsBase):
     def update_stats(self, cohort_stats_object):

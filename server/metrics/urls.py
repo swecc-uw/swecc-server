@@ -1,11 +1,9 @@
 from django.urls import path
+
 from . import views
 
 urlpatterns = [
-    path("health/", 
-         views.GetChronosHealth.as_view(),
-         name="chronos-health"
-    ),
+    path("health/", views.GetChronosHealth.as_view(), name="chronos-health"),
     path(
         "containers/",
         views.GetAllContainerStatus.as_view(),
@@ -37,33 +35,27 @@ urlpatterns = [
         name="metrics-view-all-recent",
     ),
     path(
-        'task/disable/',
-        views.DisableMetricTask.as_view(),
-        name='disable-metrics-poll'
+        "task/disable/", views.DisableMetricTask.as_view(), name="disable-metrics-poll"
     ),
+    path("task/enable/", views.EnableMetricTask.as_view(), name="enable-metrics-poll"),
     path(
-        'task/enable/',
-        views.EnableMetricTask.as_view(),
-        name='enable-metrics-poll'
-    ),
-    path(
-        'task/<job_id>/',
+        "task/<job_id>/",
         views.GetMetricTaskStatus.as_view(),
-        name='metrics-poll-status'
+        name="metrics-poll-status",
     ),
     path(
-        'collect-stat/',
+        "collect-stat/",
         views.GetMetricCollectionStatus.as_view(),
-        name='metrics-collection-status'
+        name="metrics-collection-status",
     ),
     path(
-        'collect/',
+        "collect/",
         views.EnableMetricCollection.as_view(),
-        name='enable-metrics-collection'
+        name="enable-metrics-collection",
     ),
     path(
-        'dis-collect/',
+        "dis-collect/",
         views.DisableMetricCollection.as_view(),
-        name='disable-metrics-collection'
+        name="disable-metrics-collection",
     ),
 ]
