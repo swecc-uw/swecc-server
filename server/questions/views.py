@@ -1,23 +1,23 @@
-from rest_framework import generics, permissions
+import logging
+
+from custom_auth.permissions import IsAdmin, IsVerified
+from django.db import transaction
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
 
 from .models import (
-    BehavioralQuestionQueue,
-    TechnicalQuestion,
-    QuestionTopic,
     BehavioralQuestion,
+    BehavioralQuestionQueue,
+    QuestionTopic,
+    TechnicalQuestion,
     TechnicalQuestionQueue,
 )
 from .serializers import (
-    TechnicalQuestionSerializer,
-    QuestionTopicSerializer,
     BehavioralQuestionSerializer,
+    QuestionTopicSerializer,
+    TechnicalQuestionSerializer,
     UpdateQueueSerializer,
 )
-from custom_auth.permissions import IsAdmin, IsVerified
-import logging
-from rest_framework.response import Response
-from rest_framework import status
-from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +102,7 @@ class QuestionTopicUpdateView(generics.RetrieveUpdateAPIView):
     serializer_class = QuestionTopicSerializer
     permission_classes = [IsAdmin]
     lookup_field = "topic_id"
+
 
 class QuestionQueueUpdateView(generics.GenericAPIView):
     permission_classes = [IsAdmin]

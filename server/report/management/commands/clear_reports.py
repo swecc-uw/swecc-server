@@ -1,8 +1,8 @@
 import logging
 import uuid
+
 from django.core.management.base import BaseCommand
 from report.models import Report
-
 
 logger = logging.getLogger(__name__)
 

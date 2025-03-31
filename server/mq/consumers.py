@@ -1,7 +1,8 @@
+import json
 import logging
+
 import mq
 from pika import BasicProperties
-import json
 from resume_review.models import Resume
 
 logger = logging.getLogger(__name__)

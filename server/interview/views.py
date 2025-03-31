@@ -1,38 +1,38 @@
-from datetime import datetime, timedelta
+import logging
+import random
+from datetime import datetime
 from zoneinfo import ZoneInfo
+
+from custom_auth.permissions import IsAdmin, IsVerified
+from django.core.cache import cache
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.db.models import Max, Q
 from django.utils import timezone
 from django.utils.timezone import now as django_now
-import random
-from rest_framework import generics, status, permissions
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from django.db.models import Max, Q
-from django.core.exceptions import ValidationError
-from django.core.cache import cache
-from django.db import transaction
-import logging
-
-import server.settings as settings
+from email_util.send_email import send_email
+from members.models import User
+from members.serializers import UserSerializer
 from questions.models import (
-    TechnicalQuestion,
     BehavioralQuestion,
+    TechnicalQuestion,
     TechnicalQuestionQueue,
 )
-from custom_auth.permissions import IsAdmin, IsVerified
-from members.serializers import UserSerializer
-from members.models import User
 from questions.serializers import (
     BehavioralQuestionSerializer,
     TechnicalQuestionSerializer,
 )
+from rest_framework import generics, permissions, status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from .algorithm import CommonAvailabilityStableMatching
+from .models import Interview, InterviewAvailability, InterviewPool
 from .notification import (
     interview_paired_notification_html,
     interview_unpaired_notification_html,
 )
-from email_util.send_email import send_email
-from .models import Interview, InterviewAvailability, InterviewPool
 from .serializers import InterviewSerializer
 
 logger = logging.getLogger(__name__)
@@ -66,26 +66,30 @@ def is_valid_availability(availability):
         and all(isinstance(slot, bool) for slot in availability)
     )
 
+
 def get_next_cutoff(user_timezone="America/Los_Angeles", force_current_week=False):
-        """Get the cutoff Sunday at 11 PM in the specified timezone"""
-        try:
-            current_time = django_now().astimezone(ZoneInfo(user_timezone))
-        except Exception as e:
-            logger.error(f"Error getting current time in {user_timezone}: {e}")
-            return None
+    """Get the cutoff Sunday at 11 PM in the specified timezone"""
+    try:
+        current_time = django_now().astimezone(ZoneInfo(user_timezone))
+    except Exception as e:
+        logger.error(f"Error getting current time in {user_timezone}: {e}")
+        return None
 
-        # Get the most recently passed Sunday at 11 PM
-        days_since_sunday = current_time.weekday() + 1
-        last_sunday = current_time - timezone.timedelta(days=days_since_sunday)
-        last_sunday = last_sunday.replace(hour=23, minute=0, second=0, microsecond=0)
-        
-        # By default, return the previous Sunday
-        # If force_current_week, return next Sunday
-        if force_current_week == "true" or force_current_week == True:
-            return last_sunday + timezone.timedelta(days=7)  # One week ahead
-        return last_sunday  # Most recent Sunday
+    # Get the most recently passed Sunday at 11 PM
+    days_since_sunday = current_time.weekday() + 1
+    last_sunday = current_time - timezone.timedelta(days=days_since_sunday)
+    last_sunday = last_sunday.replace(hour=23, minute=0, second=0, microsecond=0)
 
-def get_previous_cutoff(days: int = 7, user_timezone="America/Los_Angeles", force_current_week=False):
+    # By default, return the previous Sunday
+    # If force_current_week, return next Sunday
+    if force_current_week == "true" or force_current_week:
+        return last_sunday + timezone.timedelta(days=7)  # One week ahead
+    return last_sunday  # Most recent Sunday
+
+
+def get_previous_cutoff(
+    days: int = 7, user_timezone="America/Los_Angeles", force_current_week=False
+):
     """Get the previous cutoff Sunday at 11 PM"""
     try:
         current_time = django_now().astimezone(ZoneInfo(user_timezone))
@@ -97,10 +101,10 @@ def get_previous_cutoff(days: int = 7, user_timezone="America/Los_Angeles", forc
     days_since_sunday = current_time.weekday() + 1
     last_sunday = current_time - timezone.timedelta(days=days_since_sunday)
     last_sunday = last_sunday.replace(hour=23, minute=0, second=0, microsecond=0)
-    
+
     # By default, return the Sunday before last
     # If force_current_week, return the previous Sunday
-    if force_current_week == "true" or force_current_week == True:
+    if force_current_week == "true" or force_current_week:
         return last_sunday  # Most recent Sunday
     return last_sunday - timezone.timedelta(days=7)  # Week before last Sunday
 
@@ -116,7 +120,9 @@ class GetSignupData(APIView):
         previous_cutoff = get_previous_cutoff(days)
 
         signups = InterviewPool.objects.filter(
-            timestamp__isnull=False, timestamp__gte=previous_cutoff, timestamp__lte=next_cutoff
+            timestamp__isnull=False,
+            timestamp__gte=previous_cutoff,
+            timestamp__lte=next_cutoff,
         ).values("member__username", "member_id", "timestamp")
 
         signup_data = [
@@ -227,10 +233,12 @@ class GetInterviewPoolStatus(APIView):
 
     def get(self, request):
         try:
-            force_current_week = request.query_params.get('force_current_week', False)
+            force_current_week = request.query_params.get("force_current_week", False)
             next_cutoff = get_next_cutoff(force_current_week=force_current_week)
             previous_cutoff = get_previous_cutoff(force_current_week=force_current_week)
-            interview_pool = InterviewPool.objects.filter(timestamp__gte=previous_cutoff, timestamp__lte=next_cutoff)
+            interview_pool = InterviewPool.objects.filter(
+                timestamp__gte=previous_cutoff, timestamp__lte=next_cutoff
+            )
 
             logger.info(
                 "Interview pool status: %d members signed up", len(interview_pool)
@@ -257,20 +265,24 @@ class PairInterview(APIView):
 
     @transaction.atomic
     def post(self, request):
-        force_current_week = request.data.get('force_current_week', False)
+        force_current_week = request.data.get("force_current_week", False)
         next_cutoff = get_next_cutoff(force_current_week=force_current_week)
         previous_cutoff = get_previous_cutoff(force_current_week=force_current_week)
 
-        logger.info(f"Next cutoff: {next_cutoff}, previous cutoff: {previous_cutoff}, force_current_week: {force_current_week}")
+        logger.info(
+            f"Next cutoff: {next_cutoff}, previous cutoff: {previous_cutoff}, force_current_week: {force_current_week}"
+        )
 
         if next_cutoff is None or previous_cutoff is None:
             return Response(
                 {"detail": "Error getting cutoff time."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
-        pool_members = InterviewPool.objects.filter(timestamp__gte=previous_cutoff, timestamp__lte=next_cutoff)
-        
+
+        pool_members = InterviewPool.objects.filter(
+            timestamp__gte=previous_cutoff, timestamp__lte=next_cutoff
+        )
+
         if len(pool_members) % 2 != 0:
             random_idx_of_death = random.randint(0, len(pool_members) - 1)
             rip = pool_members.pop(random_idx_of_death)
@@ -345,8 +357,6 @@ class PairInterview(APIView):
             if i < j:  # Avoid creating duplicate interviews
                 p1 = pool_members[i].member
                 p2 = pool_members[j].member
-
-                common_slots_count = matching_result.common_slots[i, j]
 
                 interview1 = Interview.objects.create(
                     interviewer=p1,

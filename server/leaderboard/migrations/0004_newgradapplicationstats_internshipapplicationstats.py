@@ -9,32 +9,62 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('leaderboard', '0003_remove_githubstats_public_repos'),
+        ("leaderboard", "0003_remove_githubstats_public_repos"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='NewGradApplicationStats',
+            name="NewGradApplicationStats",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('applied', models.IntegerField(default=0)),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='new_grad_stats', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("applied", models.IntegerField(default=0)),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="new_grad_stats",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name_plural': 'New Grad Application Stats',
-                'ordering': ['-applied'],
+                "verbose_name_plural": "New Grad Application Stats",
+                "ordering": ["-applied"],
             },
         ),
         migrations.CreateModel(
-            name='InternshipApplicationStats',
+            name="InternshipApplicationStats",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('applied', models.IntegerField(default=0)),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='internship_stats', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("applied", models.IntegerField(default=0)),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="internship_stats",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name_plural': 'Internship Application Stats',
-                'ordering': ['-applied'],
+                "verbose_name_plural": "Internship Application Stats",
+                "ordering": ["-applied"],
             },
         ),
     ]

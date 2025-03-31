@@ -1,4 +1,5 @@
 from django.urls import path
+
 from . import views
 
 urlpatterns = [
@@ -62,5 +63,5 @@ urlpatterns = [
         "user/<int:id>/",
         views.GetUserStats.as_view(),
         name="get-user-stats",
-    )
+    ),
 ]

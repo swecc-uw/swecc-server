@@ -1,5 +1,5 @@
-from rest_framework import serializers
 from members.models import User
+from rest_framework import serializers
 
 
 class BaseDirectoryMemberSerializer(serializers.ModelSerializer):

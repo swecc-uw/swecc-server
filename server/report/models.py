@@ -1,8 +1,9 @@
-from django.db import models
 import uuid
+
+from django.db import models
 from interview.models import Interview
-from questions.models import TechnicalQuestion
 from members.models import User
+from questions.models import TechnicalQuestion
 
 
 class Report(models.Model):

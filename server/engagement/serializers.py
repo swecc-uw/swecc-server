@@ -1,8 +1,9 @@
-from rest_framework import serializers
-from .models import AttendanceSession, AttendanceSessionStats, CohortStats
+from cohort.serializers import CohortSerializer
 from members.models import User
 from members.serializers import UsernameSerializer, UserSerializer
-from cohort.serializers import CohortSerializer
+from rest_framework import serializers
+
+from .models import AttendanceSession, AttendanceSessionStats, CohortStats
 
 
 class AttendeeSerializer(serializers.ModelSerializer):

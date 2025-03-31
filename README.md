@@ -9,7 +9,7 @@ We recommend using two separate virtual environments for development and product
 ```bash
 python3 -m venv dev.venv
 source dev.venv/bin/activate
-pip install -r server.requirements.txt
+pip install -r requirements-server.txt
 ```
 
 Add env variables to `dev.venv/bin/activate`

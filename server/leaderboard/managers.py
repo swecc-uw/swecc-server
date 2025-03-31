@@ -1,10 +1,11 @@
-from cache import CacheHandler
 import logging
-from members.serializers import UsernameSerializer
-from .models import LeetcodeStats, GitHubStats
-from engagement.models import AttendanceSessionStats, CohortStats
-from cohort.serializers import CohortHydratedPublicSerializer
 
+from cache import CacheHandler
+from cohort.serializers import CohortHydratedPublicSerializer
+from engagement.models import AttendanceSessionStats, CohortStats
+from members.serializers import UsernameSerializer
+
+from .models import GitHubStats, LeetcodeStats
 
 logger = logging.getLogger(__name__)
 
