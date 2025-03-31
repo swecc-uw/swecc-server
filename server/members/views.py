@@ -9,6 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from supabase import Client, create_client
 from email_util.send_email import send_email
 from .notification import verify_school_email_html
+from mq.producers import publish_verified_email
 
 import jwt
 import time
@@ -334,5 +335,7 @@ class ConfirmVerifySchoolEmail(APIView):
                 {"detail": "Email already in use."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        publish_verified_email(request.user.discord_id)
 
         return Response({"detail": "School email verified"}, status=200)
