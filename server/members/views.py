@@ -10,6 +10,7 @@ from django.db import IntegrityError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from email_util.send_email import send_email
+from mq.producers import publish_verified_email
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -328,5 +329,7 @@ class ConfirmVerifySchoolEmail(APIView):
                 {"detail": "Email already in use."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        publish_verified_email(request.user.discord_id)
 
         return Response({"detail": "School email verified"}, status=200)
