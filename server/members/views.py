@@ -10,14 +10,12 @@ from django.db import IntegrityError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from email_util.send_email import send_email
+from mq.producers import publish_verified_email
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from supabase import Client, create_client
-from email_util.send_email import send_email
-from .notification import verify_school_email_html
-from mq.producers import publish_verified_email
 
 from server import settings
 from server.settings import JWT_SECRET, VERIFICATION_EMAIL_ADDR
