@@ -9,7 +9,7 @@ on:
     types: [created]
 
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
 
     steps:
