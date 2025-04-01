@@ -19,6 +19,7 @@ class BaseReferralDetailsSerializer(serializers.ModelSerializer):
             "active_until",
             "company",
             "expectations",
+            "details",
             "created_at",
             "updated_at",
         ]
@@ -42,7 +43,6 @@ class AdminReferralDetailsSerializer(BaseReferralDetailsSerializer):
 
     class Meta(BaseReferralDetailsSerializer.Meta):
         fields = BaseReferralDetailsSerializer.Meta.fields + [
-            "details",
             "member_username",
             "member_id",
             "documents",

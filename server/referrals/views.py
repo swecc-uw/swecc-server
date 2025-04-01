@@ -171,6 +171,7 @@ class DocumentUploadView(APIView):
 
                 publish_status_changed_event(
                     referral_id=referral.id,
+                    notes="User is requesting to upload a document, moving them back to PENDING",
                     member_id=referral.member.id,
                     previous_status=old_status,
                     new_status="PENDING",
@@ -209,7 +210,7 @@ class ReferralReviewView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            details = request.data.get("details")
+            notes = request.data.get("notes")
             referral = ReferralDetails.objects.select_related("member").get(
                 id=referral_id
             )
@@ -233,13 +234,12 @@ class ReferralReviewView(APIView):
 
             previous_status = referral.status
             referral.status = decision
-            referral.details = details
-            referral.save(update_fields=["status", "updated_at", "details"])
+            referral.save(update_fields=["status", "updated_at"])
 
             if decision == "APPROVED":
                 group, _ = Group.objects.get_or_create(name="is_referral_program")
                 referral.member.groups.add(group)
-            elif decision != "APPROVED" and previous_status == "APPROVED":
+            elif decision != "APPROVED":
                 group = Group.objects.filter(name="is_referral_program").first()
                 if group:
                     referral.member.groups.remove(group)
@@ -247,6 +247,7 @@ class ReferralReviewView(APIView):
             publish_status_changed_event(
                 referral_id=referral.id,
                 member_id=referral.member.id,
+                notes=notes,
                 previous_status=previous_status,
                 new_status=decision,
             )
