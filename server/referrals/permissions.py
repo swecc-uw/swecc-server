@@ -1,7 +1,7 @@
 from rest_framework import permissions
 
 
-class IsOwnerOrAdmin(permissions.BasePermission):
+class ReferralProgramPermissions(permissions.BasePermission):
     def _set_user_roles(self, request, view):
         if not hasattr(request, "_user_roles_cached"):
             user_groups = set(request.user.groups.values_list("name", flat=True))

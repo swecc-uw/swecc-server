@@ -12,7 +12,7 @@ urlpatterns = [
     ),
     path(
         "<int:referral_id>/review/",
-        views.ReferralReviewView.as_view(),
+        views.ReferralStatusChangeView.as_view(),
         name="referral-review",
     ),
     path(

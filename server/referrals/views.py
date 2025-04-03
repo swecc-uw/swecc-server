@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 from server.settings import REFERRAL_AWS_BUCKET_NAME
 
 from .models import ReferralDetails, ReferralDocument
-from .permissions import IsOwnerOrAdmin
+from .permissions import ReferralProgramPermissions
 from .producers import publish_status_changed_event
 from .serializers import (
     AdminReferralDetailsSerializer,
@@ -37,7 +37,7 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 
 class ListCreateReferralView(generics.ListCreateAPIView):
-    permission_classes = [IsOwnerOrAdmin]
+    permission_classes = [ReferralProgramPermissions]
     pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
@@ -110,7 +110,7 @@ class ListCreateReferralView(generics.ListCreateAPIView):
 
 
 class ReferralDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsOwnerOrAdmin]
+    permission_classes = [ReferralProgramPermissions]
 
     def get_serializer_class(self):
         return (
@@ -151,7 +151,7 @@ class ReferralDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class DocumentUploadView(APIView):
-    permission_classes = [IsOwnerOrAdmin]
+    permission_classes = [ReferralProgramPermissions]
 
     def get(self, request, referral_id):
         try:
@@ -198,48 +198,47 @@ class DocumentUploadView(APIView):
             )
 
 
-class ReferralReviewView(APIView):
+class ReferralStatusChangeView(APIView):
     permission_classes = [IsAdmin]
 
     def post(self, request, referral_id):
         try:
-            decision = request.data.get("decision")
-            if decision not in ["APPROVED", "DENIED"]:
-                return Response(
-                    {"error": "Decision must be either APPROVED or DENIED"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
+            new_status = request.data.get("status")
             notes = request.data.get("notes")
+
             referral = ReferralDetails.objects.select_related("member").get(
                 id=referral_id
             )
 
             valid_transitions = {
                 "PENDING": ["APPROVED", "DENIED"],
+                "APPROVED": ["PENDING"],
+                "DENIED": ["PENDING"],
             }
 
             current_status = referral.status
             if (
                 current_status not in valid_transitions
-                or decision not in valid_transitions.get(current_status, [])
+                or new_status not in valid_transitions.get(current_status, [])
             ):
                 return Response(
                     {
-                        "error": f"Invalid status transition from {current_status} to {decision}",
+                        "error": f"Invalid status transition from {current_status} to {new_status}",
                         "valid_transitions": valid_transitions.get(current_status, []),
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
             previous_status = referral.status
-            referral.status = decision
+            referral.status = new_status
             referral.save(update_fields=["status", "updated_at"])
 
-            if decision == "APPROVED":
+            if new_status == "APPROVED":
                 group, _ = Group.objects.get_or_create(name="is_referral_program")
-                referral.member.groups.add(group)
-            elif decision != "APPROVED":
+                if group not in referral.member.groups.all():
+                    referral.member.groups.add(group)
+                referral.member.save()
+            else:
                 group = Group.objects.filter(name="is_referral_program").first()
                 if group:
                     referral.member.groups.remove(group)
@@ -249,7 +248,7 @@ class ReferralReviewView(APIView):
                 member_id=referral.member.id,
                 notes=notes,
                 previous_status=previous_status,
-                new_status=decision,
+                new_status=new_status,
             )
 
             return Response({"status": "Review submitted successfully"})
