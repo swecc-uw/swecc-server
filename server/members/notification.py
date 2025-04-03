@@ -41,7 +41,7 @@ def verify_school_email_html(token):
             display: inline-block;
             padding: 10px 20px;
             background-color: #8852F6;
-            color: white;
+            color: white !important;
             text-decoration: none;
             border-radius: 5px;
             font-size: 16px;
@@ -63,7 +63,7 @@ def verify_school_email_html(token):
         </div>
         <div class="content">
             <p>Click the button below to verify your school email:</p>
-            <a href="{BASE_URL}/verify-school-email/{token}" class="button">Verify Email</a>
+            <a href="{BASE_URL}/verify-school-email/{token.decode()}" class="button">Verify Email</a>
         </div>
         <div class="footer">
             <p>This is an automated message from SWECC</p>
