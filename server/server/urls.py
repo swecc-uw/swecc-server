@@ -4,7 +4,6 @@ from django.urls import include, path
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from .settings import DJANGO_DEBUG
 from .views import ManagementCommandView
 
 logger = logging.getLogger(__name__)
@@ -26,9 +25,13 @@ urlpatterns = [
     path("resume/", include("resume_review.urls")),
 ]
 
-if DJANGO_DEBUG:
-    logger.info("DEBUG is enabled, adding debug urls")
-    urlpatterns += [path("silk/", include("silk.urls", namespace="silk"))]
+
+# uncomment to enable silk in debug mode
+
+# from .settings import DJANGO_DEBUG
+# if DJANGO_DEBUG:
+#     logger.info("DEBUG is enabled, adding debug urls")
+#     urlpatterns += [path("silk/", include("silk.urls", namespace="silk"))]
 
 
 @api_view(["GET"])

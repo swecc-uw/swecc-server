@@ -18,3 +18,4 @@ types-requests
 # misc
 pre-commit
 codespell
+django-silk
