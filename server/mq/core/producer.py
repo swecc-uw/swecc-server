@@ -27,7 +27,7 @@ class AsyncRabbitProducer:
         self._lock = threading.RLock()
 
     async def connect(self, loop=None):
-        async with asyncio.Lock():
+        async with self._lock:
             if self._connected:
                 return self._connection
 

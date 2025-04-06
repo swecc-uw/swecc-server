@@ -1,6 +1,7 @@
 import logging
 
 from django.urls import include, path
+from mq.producers import publish_health_check
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -37,6 +38,7 @@ urlpatterns = [
 @api_view(["GET"])
 def health_check(request):
     logger.info("Health check")
+    publish_health_check()
     return Response({"status": "ok"})
 
 

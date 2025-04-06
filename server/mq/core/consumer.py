@@ -42,7 +42,7 @@ class AsyncRabbitConsumer:
         self._lock = threading.RLock()
 
     async def connect(self, loop=None):
-        async with asyncio.Lock():
+        async with self._lock:
             LOGGER.info(
                 f"Connecting to {self._url} for exchange {self._exchange}, queue {self._queue}"
             )
