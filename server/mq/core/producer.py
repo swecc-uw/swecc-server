@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import threading
 
 from .connection_manager import ConnectionManager
 
@@ -22,28 +23,37 @@ class AsyncRabbitProducer:
         self._channel = None
         self._connected = False
         self._ready = asyncio.Event()
+        self._connection_thread_id = None
+        self._lock = threading.RLock()
 
     async def connect(self, loop=None):
+        async with asyncio.Lock():
+            if self._connected:
+                return self._connection
 
-        if self._connected:
+            self._ready.clear()
+
+            self._connection = await ConnectionManager().connect(
+                loop=loop or asyncio.get_event_loop()
+            )
+
+            LOGGER.info(
+                f"Producer connecting to {self._url} for exchange {self._exchange}"
+            )
+            if not self._connection:
+                LOGGER.error(
+                    f"Failed to create connection for producer {self._exchange}"
+                )
+                return False
+
+            self._connected = True
+            self.open_channel()
+
+            self._connection_thread_id = threading.get_ident()
+
+            await self._ready.wait()
+
             return self._connection
-
-        self._ready.clear()
-
-        self._connection = await ConnectionManager().connect(
-            loop=loop or asyncio.get_event_loop()
-        )
-
-        LOGGER.info(f"Producer connecting to {self._url} for exchange {self._exchange}")
-        if not self._connection:
-            LOGGER.error(f"Failed to create connection for producer {self._exchange}")
-            return False
-        self._connected = True
-        self.open_channel()
-
-        self._ready.set()
-
-        return self._connection
 
     def open_channel(self):
         LOGGER.info(f"Creating a new channel for producer {self._exchange}")
@@ -116,26 +126,69 @@ class AsyncRabbitProducer:
             # convert to bytes
             message = message.encode("utf-8")
 
+        current_thread_id = threading.get_ident()
+
+        if current_thread_id == self._connection_thread_id:
+            return self._do_publish(message, actual_routing_key, properties, mandatory)
+        else:
+            # in a different thread, need to use add_callback_threadsafe
+            publish_event = asyncio.Event()
+            result = [False]
+
+            def threadsafe_publish():
+                try:
+                    success = self._channel.basic_publish(
+                        exchange=self._exchange,
+                        routing_key=actual_routing_key,
+                        body=message,
+                        properties=properties,
+                        mandatory=mandatory,
+                    )
+                    result[0] = success
+                    LOGGER.debug(
+                        f"Published message to {self._exchange} with routing key {actual_routing_key}"
+                    )
+                except Exception as e:
+                    LOGGER.error(f"Failed to publish message: {str(e)}")
+                    result[0] = False
+                    # mark as disconnected so the health monitor will reconnect it
+                    self._connected = False
+
+                # signal completion
+                asyncio.run_coroutine_threadsafe(
+                    self._set_event(publish_event), self._connection._loop
+                )
+
+            try:
+                self._connection.add_callback_threadsafe(threadsafe_publish)
+                await publish_event.wait()
+                return result[0]
+            except Exception as e:
+                LOGGER.error(f"Failed to schedule publish: {str(e)}")
+                self._connected = False
+                return False
+
+    def _do_publish(self, message, routing_key, properties, mandatory):
         try:
             self._channel.basic_publish(
                 exchange=self._exchange,
-                routing_key=actual_routing_key,
+                routing_key=routing_key,
                 body=message,
                 properties=properties,
                 mandatory=mandatory,
             )
             LOGGER.debug(
-                f"Published message to {self._exchange} with routing key {actual_routing_key}"
+                f"Published message to {self._exchange} with routing key {routing_key}"
             )
             return True
         except Exception as e:
             LOGGER.error(f"Failed to publish message: {str(e)}")
             # mark as disconnected so the health monitor will reconnect it
-            # debatable whether this is the right approach, will have
-            # to see how common failures are and whether they are naturally
-            # recovered
             self._connected = False
             return False
+
+    async def _set_event(self, event):
+        event.set()
 
     async def close(self):
         LOGGER.info(f"Closing producer for {self._exchange}")
