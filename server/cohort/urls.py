@@ -15,4 +15,9 @@ urlpatterns = [
         "remove/", views.CohortRemoveMemberView.as_view(), name="cohort-remove-member"
     ),
     path("transfer/", views.CohortTransferView.as_view(), name="cohort-transfer"),
+    path(
+        "sync/discord/",
+        views.LinkCohortsWithDiscordView.as_view(),
+        name="cohort-sync-discord",
+    ),
 ]
