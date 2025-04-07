@@ -402,23 +402,26 @@ class LinkCohortsWithDiscordView(APIView):
     permission_classes = [IsAdmin | IsApiKey]
 
     def get(self, request):
-        cohorts = (
-            Cohort.objects.all()
-            .values("id", "name", "discord_channel_id", "discord_role_id")
-            .prefetch_related(
-                Prefetch(
-                    "members",
-                    queryset=User.objects.only("discord_id"),
+        cohorts = Cohort.objects.all().prefetch_related(
+            Prefetch(
+                "members",
+                queryset=User.objects.filter(discord_id__isnull=False).only(
+                    "id", "discord_id"
                 ),
-            )
+            ),
         )
 
         response_data = [
             {
-                "id": cohort["id"],
-                "name": cohort["name"],
-                "discord_channel_id": cohort["discord_channel_id"],
-                "discord_role_id": cohort["discord_role_id"],
+                "id": cohort.id,
+                "name": cohort.name,
+                "discord_channel_id": cohort.discord_channel_id,
+                "discord_role_id": cohort.discord_role_id,
+                "discord_member_ids": [
+                    member.discord_id
+                    for member in cohort.members.all()
+                    if member.discord_id is not None
+                ],
             }
             for cohort in cohorts
         ]
