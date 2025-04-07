@@ -24,6 +24,7 @@ urlpatterns = [
     path("metrics/", include("metrics.urls")),
     path("cohorts/", include("cohort.urls")),
     path("resume/", include("resume_review.urls")),
+    path("referrals/", include("referrals.urls")),
 ]
 
 if DJANGO_DEBUG:
