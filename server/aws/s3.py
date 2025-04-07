@@ -32,7 +32,7 @@ class S3Client:
 
     def get_presigned_url(self, bucket, key, expiration=3600):
         return self.client.generate_presigned_url(
-            "put_object",
-            Params={"Bucket": bucket, "Key": key},
+            ClientMethod="put_object",
+            Params={"Bucket": bucket, "Key": key, "ContentType": "application/pdf"},
             ExpiresIn=expiration,
         )
