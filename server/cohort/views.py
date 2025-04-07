@@ -472,7 +472,7 @@ class LinkCohortsWithDiscordView(APIView):
         ):
             return True, Response(
                 {
-                    "error": "Invalid data format, item should be a dict with keys: cohort_id, discord_channel_id, discord_role_id"
+                    "error": "Invalid data format, item should be a dict with keys: id, discord_channel_id, discord_role_id"
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
