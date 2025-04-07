@@ -20,6 +20,9 @@ class Cohort(models.Model):
     )
     is_active = models.BooleanField(default=True)
 
+    discord_channel_id = models.BigIntegerField(null=True, blank=True)
+    discord_role_id = models.BigIntegerField(null=True, blank=True)
+
     class Meta:
         ordering = ["name"]
         verbose_name = "Cohort"
