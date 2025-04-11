@@ -18,7 +18,7 @@ MAX_FILE_SIZE = 500
 
 
 class ResumeUploadView(APIView):
-    permission_classes = [IsAuthenticated, IsVerified]
+    permission_classes = [IsVerified]
 
     def post(self, request):
 
