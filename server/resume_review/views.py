@@ -55,14 +55,16 @@ class ResumeUploadView(APIView):
                 {"error": "Duplicate file name."}, status=status.HTTP_400_BAD_REQUEST
             )
 
+        file_key = f"{request.user.id}-{added_resume.id}-{file_name}"
+
         presigned_url = S3Client().get_presigned_url(
-            bucket=AWS_BUCKET_NAME, key=added_resume.file_name
+            bucket=AWS_BUCKET_NAME, key=file_key
         )
 
         return Response(
             {
                 "presigned_url": presigned_url,
-                "key": f"{request.user.id}-{added_resume.id}-{file_name}",
+                "key": file_key,
             },
             status=status.HTTP_201_CREATED,
         )
