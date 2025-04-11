@@ -1,10 +1,10 @@
 import logging
 
 from django.urls import include, path
+from mq.producers import publish_health_check
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from .settings import DJANGO_DEBUG
 from .views import ManagementCommandView
 
 logger = logging.getLogger(__name__)
@@ -26,14 +26,19 @@ urlpatterns = [
     path("resume/", include("resume_review.urls")),
 ]
 
-if DJANGO_DEBUG:
-    logger.info("DEBUG is enabled, adding debug urls")
-    urlpatterns += [path("silk/", include("silk.urls", namespace="silk"))]
+
+# uncomment to enable silk in debug mode
+
+# from .settings import DJANGO_DEBUG
+# if DJANGO_DEBUG:
+#     logger.info("DEBUG is enabled, adding debug urls")
+#     urlpatterns += [path("silk/", include("silk.urls", namespace="silk"))]
 
 
 @api_view(["GET"])
 def health_check(request):
     logger.info("Health check")
+    publish_health_check()
     return Response({"status": "ok"})
 
 

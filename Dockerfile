@@ -1,4 +1,4 @@
-FROM python:3.9 AS development
+FROM python:3.13 AS development
 
 WORKDIR /app
 COPY requirements-server.txt .

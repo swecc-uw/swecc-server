@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import logging
+import threading
 from typing import Any, Callable, Coroutine
 
 from pika.exchange_type import ExchangeType
@@ -37,20 +38,24 @@ class AsyncRabbitConsumer:
         self._channel = None
         self._closing = False
         self._consumer_tag = None
+        self._connection_thread_id = None
+        self._lock = threading.RLock()
 
     async def connect(self, loop=None):
-        LOGGER.info(
-            f"Connecting to {self._url} for exchange {self._exchange}, queue {self._queue}"
-        )
+        async with self._lock:
+            LOGGER.info(
+                f"Connecting to {self._url} for exchange {self._exchange}, queue {self._queue}"
+            )
 
-        try:
-            self._connection = await ConnectionManager().connect(loop=loop)
-        except Exception as e:
-            LOGGER.error(f"Failed to create connection for {self._queue}: {str(e)}")
-            self._connection = None
-            raise
+            try:
+                self._connection = await ConnectionManager().connect(loop=loop)
+                self._connection_thread_id = threading.get_ident()
+            except Exception as e:
+                LOGGER.error(f"Failed to create connection for {self._queue}: {str(e)}")
+                self._connection = None
+                raise
 
-        self.open_channel()
+            self.open_channel()
 
     def open_channel(self):
         LOGGER.info(f"Creating a new channel for {self._queue}")
@@ -153,8 +158,22 @@ class AsyncRabbitConsumer:
 
     def stop_consuming(self):
         if self._channel:
-            LOGGER.info(f"Stopping consumption for {self._queue}")
-            self._channel.basic_cancel(self._consumer_tag, self.on_cancelok)
+            current_thread_id = threading.get_ident()
+            if current_thread_id == self._connection_thread_id:
+                LOGGER.info(f"Stopping consumption for {self._queue}")
+                self._channel.basic_cancel(self._consumer_tag, self.on_cancelok)
+            else:
+                # in a different thread, need to use add_callback_threadsafe
+                try:
+                    self._connection.add_callback_threadsafe(
+                        functools.partial(
+                            self._channel.basic_cancel,
+                            self._consumer_tag,
+                            self.on_cancelok,
+                        )
+                    )
+                except Exception as e:
+                    LOGGER.error(f"Failed to cancel consumer: {str(e)}")
 
     def on_cancelok(self, _unused_frame):
         """consumption is cancelled"""
@@ -164,7 +183,18 @@ class AsyncRabbitConsumer:
     def close_channel(self):
         LOGGER.info(f"Closing the channel for {self._queue}")
         if self._channel:
-            self._channel.close()
+            current_thread_id = threading.get_ident()
+            if current_thread_id == self._connection_thread_id:
+                self._channel.close()
+            else:
+                # in a different thread, need to use add_callback_threadsafe
+                try:
+                    self._connection.add_callback_threadsafe(
+                        functools.partial(self._channel.close)
+                    )
+                except Exception as e:
+                    LOGGER.error(f"Failed to close channel: {str(e)}")
+
         else:
             LOGGER.warning(f"Channel is already closed for {self._queue}")
 

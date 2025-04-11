@@ -81,16 +81,20 @@ INSTALLED_APPS = [
     "rest_framework_api_key",
 ]
 
-if DJANGO_DEBUG:
-    print("DEBUG is enabled, adding debug apps")
-    INSTALLED_APPS += [
-        "silk",
-    ]
+# uncomment to enable silk in debug mode
+# if DJANGO_DEBUG:
+#     print("DEBUG is enabled, adding debug apps")
+#     INSTALLED_APPS += [
+#         "silk",
+#     ]
 
-    SILKY_PYTHON_PROFILER = True  # Enable Python profiler
-    SILKY_ANALYZE_QUERIES = True  # Analyze SQL queries
-    SILKY_MAX_RECORDED_REQUESTS = 10000  # Max number of recorded requests to store
+#     SILKY_PYTHON_PROFILER = True  # Enable Python profiler
+#     SILKY_ANALYZE_QUERIES = True  # Analyze SQL queries
+#     SILKY_MAX_RECORDED_REQUESTS = 10000  # Max number of recorded requests to store
 
+# if DJANGO_DEBUG:
+#     print("DEBUG is enabled, adding debug middleware")
+#     MIDDLEWARE = ["silk.middleware.SilkyMiddleware"] + MIDDLEWARE
 
 FILE_UPLOAD_HANDLERS = [
     "django.core.files.uploadhandler.MemoryFileUploadHandler",
@@ -107,10 +111,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
-
-if DJANGO_DEBUG:
-    print("DEBUG is enabled, adding debug middleware")
-    MIDDLEWARE = ["silk.middleware.SilkyMiddleware"] + MIDDLEWARE
 
 ROOT_URLCONF = "server.urls"
 
@@ -144,6 +144,13 @@ DATABASES = {
         "PASSWORD": DB_PASSWORD,
         "HOST": DB_HOST,
         "PORT": DB_PORT,
+        "OPTIONS": {
+            "pool": {
+                "min_size": 1,
+                "max_size": 5,
+                "timeout": 30,
+            }
+        },
     }
 }
 
