@@ -2,7 +2,6 @@ from aws.s3 import S3Client
 from custom_auth.permissions import IsVerified
 from django.db import IntegrityError
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from resume_review.models import Resume
