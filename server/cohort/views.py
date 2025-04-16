@@ -396,3 +396,104 @@ class CohortDashboardView(APIView):
         }
 
         return Response(response_data)
+
+
+class LinkCohortsWithDiscordView(APIView):
+    permission_classes = [IsAdmin | IsApiKey]
+
+    def get(self, request):
+        cohorts = Cohort.objects.all().prefetch_related(
+            Prefetch(
+                "members",
+                queryset=User.objects.filter(discord_id__isnull=False).only(
+                    "id", "discord_id"
+                ),
+            ),
+        )
+
+        response_data = [
+            {
+                "id": cohort.id,
+                "name": cohort.name,
+                "discord_channel_id": cohort.discord_channel_id,
+                "discord_role_id": cohort.discord_role_id,
+                "discord_member_ids": [
+                    member.discord_id
+                    for member in cohort.members.all()
+                    if member.discord_id is not None
+                ],
+            }
+            for cohort in cohorts
+        ]
+
+        return Response(response_data)
+
+    def post(self, request):
+        """
+        params: list[{id: int, discord_channel_id: int, discord_role_id: int}]
+        """
+        data = request.data
+
+        is_invalid, error_response = self._validate_data(data)
+        if is_invalid:
+            return error_response
+        cohorts = []
+        for item in data:
+            cohort_id = item["id"]
+            discord_channel_id = item["discord_channel_id"]
+            discord_role_id = item["discord_role_id"]
+
+            try:
+                cohort = Cohort.objects.get(pk=cohort_id)
+                cohort.discord_channel_id = discord_channel_id
+                cohort.discord_role_id = discord_role_id
+                cohorts.append(cohort)
+            except Cohort.DoesNotExist:
+                return Response(
+                    {"error": f"No cohort found with id: {cohort_id}"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        Cohort.objects.bulk_update(cohorts, ["discord_channel_id", "discord_role_id"])
+        return Response(
+            {"message": "Cohorts linked with Discord successfully"},
+            status=status.HTTP_200_OK,
+        )
+
+    def _validate_data(self, data):
+        if not isinstance(data, list):
+            return True, Response(
+                {"error": "Invalid data format, expected a list"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not all(
+            isinstance(item, dict)
+            and "id" in item
+            and "discord_channel_id" in item
+            and "discord_role_id" in item
+            for item in data
+        ):
+            return True, Response(
+                {
+                    "error": "Invalid data format, item should be a dict with keys: id, discord_channel_id, discord_role_id"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return False, None
+
+    # delete all mappings
+    def delete(self, request):
+        cohorts = Cohort.objects.all()
+        updates = []
+        for cohort in cohorts:
+            cohort.discord_channel_id = None
+            cohort.discord_role_id = None
+            updates.append(cohort)
+
+        Cohort.objects.bulk_update(updates, ["discord_channel_id", "discord_role_id"])
+
+        return Response(
+            {"message": "All Discord mappings removed successfully"},
+            status=status.HTTP_200_OK,
+        )
