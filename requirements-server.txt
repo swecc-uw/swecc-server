@@ -1,12 +1,12 @@
 asgiref
-Django
+Django==5.1
 django-cors-headers
 djangorestframework
 djangorestframework-simplejwt
 PyJWT
 pytz
 sqlparse
-psycopg2-binary
+psycopg[binary, pool]
 djangorestframework-api-key==2.*
 gunicorn
 numpy
@@ -20,4 +20,3 @@ redis
 PyJWT==1.7.1
 boto3
 pika
-django-silk

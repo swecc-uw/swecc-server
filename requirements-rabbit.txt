@@ -1,8 +1,7 @@
-Django
+Django==5.1
 pika
 django-cors-headers
 djangorestframework
 djangorestframework-simplejwt
 djangorestframework-api-key==2.*
-psycopg2
-django-silk
+psycopg[binary, pool]
