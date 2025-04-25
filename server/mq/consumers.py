@@ -28,7 +28,7 @@ async def reviewed_feedback(
 ):
     body = body.decode("utf-8")
     logger.info(f"Received reviewed resume message: {body}")
-    try: 
+    try:
         body = json.loads(body)
     except json.JSONDecodeError as e:
         logger.error(f"Failed to decode JSON: {e}")
