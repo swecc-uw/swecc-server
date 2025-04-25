@@ -6,3 +6,4 @@ djangorestframework-simplejwt
 djangorestframework-api-key==2.*
 psycopg2
 django-silk
+asgiref
