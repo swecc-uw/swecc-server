@@ -63,6 +63,7 @@ async def reviewed_feedback(
 
         resume_object.feedback = feedback
         resume_object.save()
+        return True
 
     successful = await perform_database_operations()
     if successful:
