@@ -14,7 +14,8 @@ SUPABASE_KEY = os.environ["SUPABASE_KEY"]
 # use for accessing metric from chronos
 METRIC_SERVER_URL = os.environ["METRIC_SERVER_URL"]
 JWT_SECRET = os.environ["JWT_SECRET"]
-AWS_BUCKET_NAME = os.environ["AWS_BUCKET_NAME"]
+RESUME_REVIEW_AWS_BUCKET_NAME = os.environ["RESUME_REVIEW_AWS_BUCKET_NAME"]
+REFERRAL_AWS_BUCKET_NAME = os.environ["REFERRAL_AWS_BUCKET_NAME"]
 VERIFICATION_EMAIL_ADDR = os.environ.get("VERIFICATION_EMAIL_ADDR", "swecc@uw.edu")
 
 print(
@@ -76,6 +77,7 @@ INSTALLED_APPS = [
     "metasync.apps.MetasyncConfig",
     "metrics.apps.MetricsConfig",
     "cohort.apps.CohortConfig",
+    "referrals.apps.ReferralsConfig",
     "resume_review.apps.ResumeReviewConfig",
     "corsheaders",
     "rest_framework_api_key",

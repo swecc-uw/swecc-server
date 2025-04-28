@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from resume_review.models import Resume
 
-from server.settings import AWS_BUCKET_NAME
+from server.settings import RESUME_REVIEW_AWS_BUCKET_NAME
 
 # Create your views here.
 
