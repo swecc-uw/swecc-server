@@ -21,7 +21,7 @@ async def verified_email_callback(
     logger.info(f"Received verified email message: {body}")
 
 
-@mq.consumer(queue="server.reviewed-resume", exchange="ai", routing_key="reviewed")
+@mq.consumer(queue="server.reviewed-resume", exchange="swecc-ai-exchange", routing_key="reviewed")
 async def reviewed_feedback(
     body: bytes,
     properties: BasicProperties,
