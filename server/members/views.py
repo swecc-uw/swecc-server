@@ -297,14 +297,13 @@ class VerifySchoolEmailRequest(APIView):
             from_email=VERIFICATION_EMAIL_ADDR,
             to_email=school_email,
             subject="SWECC Verification: Verify your school email",
-            html_content=verify_school_email_html(token),
+            html_content=verify_school_email_html(token.decode()),
         )
-
         return Response({"token": token}, status=200)
 
 
 class ConfirmVerifySchoolEmail(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsVerified]
 
     def post(self, request, token):
         try:

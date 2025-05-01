@@ -63,7 +63,7 @@ def verify_school_email_html(token):
         </div>
         <div class="content">
             <p>Click the button below to verify your school email:</p>
-            <a href="{BASE_URL}/#/verify-school-email/{token.decode()}" class="button">Verify Email</a>
+            <a href="{BASE_URL}/#/verify-school-email/{token}" class="button">Verify Email</a>
         </div>
         <div class="footer">
             <p>This is an automated message from SWECC</p>
