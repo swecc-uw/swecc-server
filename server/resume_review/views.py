@@ -1,6 +1,5 @@
 from aws.s3 import S3Client
 from custom_auth.permissions import IsVerified
-from django.db import IntegrityError
 from mq.producers import dev_publish_to_review_resume
 from rest_framework import status
 from rest_framework.response import Response
@@ -46,15 +45,10 @@ class ResumeUploadView(APIView):
             )
             oldest_resume.delete()
 
-        try:
-            added_resume = Resume.objects.create(
-                member=request.user, file_name=file_name, file_size=file_size
-            )
-            added_resume.save()
-        except IntegrityError:
-            return Response(
-                {"error": "Duplicate file name."}, status=status.HTTP_400_BAD_REQUEST
-            )
+        added_resume = Resume.objects.create(
+            member=request.user, file_name=file_name, file_size=file_size
+        )
+        added_resume.save()
 
         file_key = f"{request.user.id}-{added_resume.id}-{file_name}"
         presigned_url = S3Client().get_presigned_url(

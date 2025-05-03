@@ -1,5 +1,4 @@
 from django.core.management.base import BaseCommand, CommandParser
-from django.db import IntegrityError
 from members.models import User
 from resume_review.models import Resume
 
@@ -25,17 +24,15 @@ class Command(BaseCommand):
         if member is None:
             self.stdout.write("User not found")
             return
-        try:
-            resume = Resume.objects.create(
-                member=member,
-                feedback=feedback,
-                file_name=file_name,
-                file_size=file_size,
-            )
-            resume.save()
-            self.stdout.write("Successfully created resume")
-        except IntegrityError:
-            self.stdout.write("Duplicate file name found")
+
+        resume = Resume.objects.create(
+            member=member,
+            feedback=feedback,
+            file_name=file_name,
+            file_size=file_size,
+        )
+        resume.save()
+        self.stdout.write("Successfully created resume")
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
