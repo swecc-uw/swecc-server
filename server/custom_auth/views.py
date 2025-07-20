@@ -133,15 +133,20 @@ def check_existing_user(field_values, source="registration"):
 
     if User.objects.filter(username__iexact=username).exists():
         logger.error(f"Error {source}: username already exists")
-        return "Username already exists."
+        return "Username already exists. Try logging in, or use `/reset_password` in the discord server to reset your password."
 
-    if User.objects.filter(discord_username__iexact=discord_username).exists():
+    existing_user_with_discord = User.objects.filter(
+        discord_username__iexact=discord_username
+    ).first()
+
+    if existing_user_with_discord:
         logger.error(f"Error {source}: discord username already exists")
-        return "Discord username already exists."
+        return f"Discord username {discord_username} already exists, in use by user '{existing_user_with_discord.username}'. Try logging in, or use `/reset_password` in the discord server to reset your password."
 
-    if User.objects.filter(email__iexact=email).exists():
+    existing_user_with_email = User.objects.filter(email__iexact=email).first()
+    if existing_user_with_email:
         logger.error(f"Error {source}: email already exists")
-        return "Email already exists."
+        return f"Email {email} already exists, in use by user '{existing_user_with_email.username}'. Try logging in, or use `/reset_password` in the discord server to reset your password."
 
     return None
 
