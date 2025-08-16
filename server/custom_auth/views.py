@@ -2,6 +2,7 @@ import json
 import logging
 import secrets
 import time
+from typing import Dict, Optional, Tuple
 
 import jwt
 from django.contrib.auth import authenticate, login, logout
@@ -18,7 +19,6 @@ from rest_framework import generics, views
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
-from typing import Tuple, Dict, Optional
 from server.settings import JWT_SECRET
 
 from .serializers import UserSerializer
