@@ -37,7 +37,11 @@ class SynchronousRabbitProducer:
         try:
             if self._connection and not self._connection.is_closed:
                 self._connection.close()
-        except:
+        except (
+            pika.exceptions.ConnectionClosed,
+            pika.exceptions.StreamLostError,
+            Exception,
+        ):
             pass  # Ignore errors when closing
 
         # Use same connection parameters as __init__
@@ -59,7 +63,11 @@ class SynchronousRabbitProducer:
                 self._channel.close()
             if self._connection and not self._connection.is_closed:
                 self._connection.close()
-        except:
+        except (
+            pika.exceptions.ConnectionClosed,
+            pika.exceptions.StreamLostError,
+            Exception,
+        ):
             pass  # Ignore errors when closing
 
     def publish(self, routing_key, body, exchange="swecc-server-exchange"):
@@ -78,7 +86,11 @@ class SynchronousRabbitProducer:
                 routing_key=routing_key,
                 body=body,
             )
-        except Exception as e:
+        except (
+            pika.exceptions.ConnectionClosed,
+            pika.exceptions.StreamLostError,
+            pika.exceptions.ChannelClosed,
+        ) as e:
             # Try to reconnect once on failure
             try:
                 self._reconnect()
