@@ -7,7 +7,13 @@ class SynchronousRabbitProducer:
 
     _instance = None
 
-    def __init__(self):
+    def __init__(
+        self,
+        heartbeat=600,
+        blocked_connection_timeout=300,
+        retry_delay=2,
+        socket_timeout=10,
+    ):
         if self._initialized:
             return
 
@@ -15,15 +21,15 @@ class SynchronousRabbitProducer:
         self._initialized = True
 
         # Connection parameters with heartbeat and retry settings
-        connection_params = pika.ConnectionParameters(
+        self.connection_params = pika.ConnectionParameters(
             host=self.host,
-            heartbeat=600,  # 10 minutes
-            blocked_connection_timeout=300,  # 5 minutes
-            retry_delay=2,
-            socket_timeout=10,
+            heartbeat=heartbeat,
+            blocked_connection_timeout=blocked_connection_timeout,
+            retry_delay=retry_delay,
+            socket_timeout=socket_timeout,
         )
 
-        self._connection = pika.BlockingConnection(connection_params)
+        self._connection = pika.BlockingConnection(self.connection_params)
         self._channel = self._connection.channel()
 
     def __new__(cls):
@@ -37,38 +43,11 @@ class SynchronousRabbitProducer:
         try:
             if self._connection and not self._connection.is_closed:
                 self._connection.close()
-        except (
-            pika.exceptions.ConnectionClosed,
-            pika.exceptions.StreamLostError,
-            Exception,
-        ):
+        except BaseException:
             pass  # Ignore errors when closing
 
-        # Use same connection parameters as __init__
-        connection_params = pika.ConnectionParameters(
-            host=self.host,
-            heartbeat=600,  # 10 minutes
-            blocked_connection_timeout=300,  # 5 minutes
-            retry_delay=2,
-            socket_timeout=10,
-        )
-
-        self._connection = pika.BlockingConnection(connection_params)
+        self._connection = pika.BlockingConnection(self.connection_params)
         self._channel = self._connection.channel()
-
-    def close(self):
-        """Properly close the connection"""
-        try:
-            if self._channel and not self._channel.is_closed:
-                self._channel.close()
-            if self._connection and not self._connection.is_closed:
-                self._connection.close()
-        except (
-            pika.exceptions.ConnectionClosed,
-            pika.exceptions.StreamLostError,
-            Exception,
-        ):
-            pass  # Ignore errors when closing
 
     def publish(self, routing_key, body, exchange="swecc-server-exchange"):
         # Check if connection/channel is still open and reconnect if needed
@@ -86,11 +65,7 @@ class SynchronousRabbitProducer:
                 routing_key=routing_key,
                 body=body,
             )
-        except (
-            pika.exceptions.ConnectionClosed,
-            pika.exceptions.StreamLostError,
-            pika.exceptions.ChannelClosed,
-        ) as e:
+        except Exception as e:
             # Try to reconnect once on failure
             try:
                 self._reconnect()
