@@ -43,7 +43,11 @@ class SynchronousRabbitProducer:
         try:
             if self._connection and not self._connection.is_closed:
                 self._connection.close()
-        except BaseException:
+        except (
+            pika.exceptions.ConnectionClosed,
+            pika.exceptions.StreamLostError,
+            Exception,
+        ):
             pass  # Ignore errors when closing
 
         self._connection = pika.BlockingConnection(self.connection_params)
