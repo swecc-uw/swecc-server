@@ -2,6 +2,7 @@ import json
 import logging
 import secrets
 import time
+from typing import Dict, Optional, Tuple
 
 import jwt
 from django.contrib.auth import authenticate, login, logout
@@ -89,7 +90,9 @@ def create_password_reset_creds(user):
     return uid, token
 
 
-def validate_user_data(data, include_password=True):
+def validate_user_data(
+    data, include_password=True
+) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
     first_name = data.get("first_name", "").strip()
     last_name = data.get("last_name", "").strip()
     username = data.get("username", "").strip()
@@ -156,7 +159,7 @@ def register_view(request):
     data = json.loads(request.body)
 
     field_values, error_message = validate_user_data(data)
-    if error_message:
+    if error_message or not field_values:
         logger.error(f"Error registering: {error_message}")
         return JsonResponse({"detail": error_message}, status=400)
 
