@@ -18,8 +18,8 @@ class S3Client:
 
         self.client = boto3.client(
             "s3",
-            aws_access_key_id=self.access_key_id,
-            aws_secret_access_key=self.secret_access_key,
+            aws_access_key_id=self.access_key_id.strip(),
+            aws_secret_access_key=self.secret_access_key.strip(),
             region_name="us-west-2",
         )
 
