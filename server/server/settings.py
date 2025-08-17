@@ -198,6 +198,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://dashboard.swecc.org",
     "https://template.swecc.org",
     "https://rooms.swecc.org",
+    "https://swecc-uw.github.io",
 ]
 CORS_EXPOSE_HEADERS = ["Content-Type", "X-CSRFToken"]
 CORS_ALLOW_CREDENTIALS = True
