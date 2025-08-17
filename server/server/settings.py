@@ -217,6 +217,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://dashboard.swecc.org",
     "https://template.swecc.org",
     "https://rooms.swecc.org",
+    "https://swecc-uw.github.io",
 ]
 
 devclient = "http://localhost:5173"

@@ -6,6 +6,7 @@ from . import views
 
 urlpatterns = [
     path("upload/", views.ResumeUploadView.as_view(), name="resume-upload"),
+    path("", views.ResumeListView.as_view(), name="resume-list"),
 ]
 
 if DJANGO_DEBUG:
