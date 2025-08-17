@@ -20,6 +20,7 @@ class S3Client:
             "s3",
             aws_access_key_id=self.access_key_id,
             aws_secret_access_key=self.secret_access_key,
+            region_name="us-west-2",
         )
 
         self._initialized = True
