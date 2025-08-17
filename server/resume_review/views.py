@@ -89,3 +89,21 @@ class DevPublishToReview(APIView):
 
         dev_publish_to_review_resume(file_key)
         return Response({"success": True}, status=status.HTTP_200_OK)
+
+
+class ResumeListView(APIView):
+    permission_classes = [IsVerified]
+
+    def get(self, request):
+        resumes = Resume.objects.filter(member=request.user).order_by("-created_at")
+        resume_data = [
+            {
+                "id": resume.id,
+                "file_name": resume.file_name,
+                "file_size": resume.file_size,
+                "created_at": resume.created_at,
+                "feedback": resume.feedback,
+            }
+            for resume in resumes
+        ]
+        return Response(resume_data, status=status.HTTP_200_OK)
