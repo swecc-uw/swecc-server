@@ -4,21 +4,21 @@ on:
     branches:
       - main
     paths-ignore:
-      - 'server/rabbit_listener.py'
+      - "server/rabbit_listener.py"
 
   workflow_dispatch:
 
 env:
-  SERVICE_NAME: 'server'
-  NETWORK: 'prod_swecc-network'
-  CPU_LIMIT: '0.5'
-  MEMORY_LIMIT: '512M'
-  CPU_RESERVE: '0.3'
-  MEMORY_RESERVE: '256M'
-  IMAGE: 'swecc-server'
+  SERVICE_NAME: "server"
+  NETWORK: "prod_swecc-network"
+  CPU_LIMIT: "0.5"
+  MEMORY_LIMIT: "512M"
+  CPU_RESERVE: "0.3"
+  MEMORY_RESERVE: "256M"
+  IMAGE: "swecc-server"
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-  CONFIG_NAME: 'server_env'
+  CONFIG_NAME: "server_env"
 
 jobs:
   push_to_dockerhub:
@@ -84,6 +84,9 @@ jobs:
         if: steps.check_service.outputs.existing_service == 'true'
         run: |
           STAGING_NAME="${{ env.SERVICE_NAME }}-staging"
+
+          echo "Ensure no existing staging service"
+          docker service rm $STAGING_NAME || true
 
           echo "Creating temporary service: $STAGING_NAME"
           docker service create \
